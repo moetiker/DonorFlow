@@ -2,7 +2,7 @@
 
 import { NavDropdown } from 'react-bootstrap'
 import { useLocale } from 'next-intl'
-import { locales, localeNames, localeFlags, type Locale } from '@/lib/i18n/config'
+import { locales, localeFlags, type Locale } from '@/lib/i18n/config'
 
 export function LanguageSwitcher() {
   const currentLocale = useLocale() as Locale
@@ -15,11 +15,7 @@ export function LanguageSwitcher() {
 
   return (
     <NavDropdown
-      title={
-        <>
-          {localeFlags[currentLocale]} {localeNames[currentLocale]}
-        </>
-      }
+      title={localeFlags[currentLocale]}
       id="language-dropdown"
       align="end"
     >
@@ -29,7 +25,7 @@ export function LanguageSwitcher() {
           active={locale === currentLocale}
           onClick={() => handleLocaleChange(locale)}
         >
-          {localeFlags[locale]} {localeNames[locale]}
+          {localeFlags[locale]}
         </NavDropdown.Item>
       ))}
     </NavDropdown>
