@@ -1,0 +1,18 @@
+[tools]
+node = "24"
+
+[tasks.install]
+run = "npm ci"
+description = "Install dependencies"
+
+[tasks.build]
+run = "npm run build"
+description = "Build the application"
+
+[tasks.dev]
+run = "npm run dev"
+description = "Start development server"
+
+[tasks.start]
+run = "npm start"
+description = "Start production server"

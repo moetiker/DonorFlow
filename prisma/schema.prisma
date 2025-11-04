@@ -1,0 +1,140 @@
+// Prisma Schema für Spendenverwaltung
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Vereinsmitglieder
+model Member {
+  id              String            @id @default(cuid())
+  firstName       String
+  lastName        String
+  groupId         String?           // Direkte Zuordnung zu einer Gruppe (optional)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Beziehungen
+  group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  sponsors        Sponsor[]
+  memberTargets   MemberTarget[]
+
+  @@index([groupId])
+}
+
+// Gruppen von Vereinsmitgliedern
+model Group {
+  id              String            @id @default(cuid())
+  name            String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Beziehungen
+  members         Member[]
+  sponsors        Sponsor[]
+}
+
+// Vorgabe pro Mitglied pro Vereinsjahr
+model MemberTarget {
+  id              String     @id @default(cuid())
+  memberId        String
+  fiscalYearId    String
+  targetAmount    Float      // CHF
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fiscalYear      FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, fiscalYearId])
+  @@index([fiscalYearId])
+}
+
+// Gönner
+model Sponsor {
+  id              String     @id @default(cuid())
+
+  // Kontaktdaten
+  company         String?    // Firma
+  salutation      String?    // Anrede (Herr, Frau, Fam.)
+  firstName       String?    // Vorname
+  lastName        String?    // Name (wird nach Migration Pflichtfeld)
+  street          String?    // Strasse
+  postalCode      String?    // PLZ
+  city            String?    // Ort
+  phone           String?    // Telefon
+  email           String?    // E-Mail
+
+  notes           String?    // Kommentare / zusätzliche Infos
+
+  // Zuordnung: Entweder zu Mitglied ODER zu Gruppe
+  memberId        String?
+  groupId         String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  member          Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  group           Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  donations       Donation[]
+
+  @@index([memberId])
+  @@index([groupId])
+}
+
+// Spenden von Gönnern
+model Donation {
+  id              String    @id @default(cuid())
+  sponsorId       String
+  amount          Float     // CHF
+  donationDate    DateTime
+  fiscalYearId    String?   // Zuordnung zu Vereinsjahr
+  note            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sponsor         Sponsor      @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  fiscalYear      FiscalYear?  @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+
+  @@index([sponsorId])
+  @@index([donationDate])
+  @@index([fiscalYearId])
+}
+
+// Vereinsjahre (Geschäftsjahre)
+model FiscalYear {
+  id              String         @id @default(cuid())
+  name            String         @unique // z.B. "2024/2025"
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  memberTargets   MemberTarget[]
+  donations       Donation[]
+
+  @@index([startDate])
+}
+
+// Benutzer für Login
+model User {
+  id              String    @id @default(cuid())
+  username        String    @unique
+  passwordHash    String
+  name            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Einstellungen (Key-Value Store)
+model Setting {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  value           String
+  description     String?
+  updatedAt       DateTime  @updatedAt
+}

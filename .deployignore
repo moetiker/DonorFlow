@@ -1,0 +1,36 @@
+# DonorFlow - Files to exclude from deployment
+# These files/directories contain data and should NOT be overwritten
+
+# Database files (CRITICAL - contains all donation data)
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Environment configuration (contains secrets)
+.env
+.env.local
+.env.production
+
+# Logs (preserve existing logs)
+logs/
+*.log
+
+# User uploads and data directories (if any)
+uploads/
+data/
+
+# PM2 runtime
+.pm2/
+pids/
+
+# Development files
+node_modules/
+.next/cache/
+.git/
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp

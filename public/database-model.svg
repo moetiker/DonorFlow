@@ -1,0 +1,297 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100">
+  <defs>
+    <style>
+      .entity { fill: #ffffff; stroke: none; filter: url(#shadow); }
+      .entity-header { fill: #4a90e2; }
+      .entity-header-alt1 { fill: #5cb85c; }
+      .entity-header-alt2 { fill: #f0ad4e; }
+      .entity-header-alt3 { fill: #d9534f; }
+      .entity-text { fill: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: 600; }
+      .field-text { fill: #2c3e50; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }
+      .field-type { fill: #7f8c8d; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-style: italic; }
+      .pk-icon { fill: #f39c12; }
+      .fk-icon { fill: #3498db; }
+      .relation { stroke: #95a5a6; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .relation-label { fill: #7f8c8d; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: 600; }
+      .section-title { fill: #2c3e50; font-family: 'Segoe UI', Arial, sans-serif; font-size: 16px; font-weight: 700; }
+      .info-text { fill: #34495e; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; }
+      .badge { fill: #ecf0f1; stroke: #bdc3c7; stroke-width: 1; }
+      .badge-text { fill: #2c3e50; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; font-weight: 600; }
+    </style>
+
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#95a5a6" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1100" fill="#f8f9fa"/>
+
+  <!-- Title -->
+  <text x="800" y="35" text-anchor="middle" style="fill: #2c3e50; font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; font-weight: 700;">DonorFlow Database Schema</text>
+  <text x="800" y="55" text-anchor="middle" style="fill: #7f8c8d; font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px;">SQLite + Prisma ORM • 8 Models • CUID Identifiers</text>
+
+  <!-- Authentication Section Label -->
+  <rect x="40" y="80" width="220" height="25" fill="#3498db" rx="3"/>
+  <text x="150" y="97" text-anchor="middle" class="entity-text" font-size="13">AUTHENTICATION</text>
+
+  <!-- User -->
+  <g transform="translate(40, 110)">
+    <rect class="entity" width="220" height="150" rx="8"/>
+    <rect class="entity-header" width="220" height="40" rx="8"/>
+    <text class="entity-text" x="110" y="26" text-anchor="middle">👤 User</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="180" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87">username</text>
+    <text class="field-type" x="180" y="87" text-anchor="end">String ⚡</text>
+    <text class="field-text" x="15" y="109">passwordHash</text>
+    <text class="field-type" x="180" y="109" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="131">name</text>
+    <text class="field-type" x="180" y="131" text-anchor="end">String?</text>
+  </g>
+
+  <!-- Core Data Section Label -->
+  <rect x="310" y="80" width="220" height="25" fill="#5cb85c" rx="3"/>
+  <text x="420" y="97" text-anchor="middle" class="entity-text" font-size="13">CORE DATA</text>
+
+  <!-- Member -->
+  <g transform="translate(310, 110)">
+    <rect class="entity" width="240" height="170" rx="8"/>
+    <rect class="entity-header-alt1" width="240" height="40" rx="8"/>
+    <text class="entity-text" x="120" y="26" text-anchor="middle">👥 Member</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="210" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87">firstName</text>
+    <text class="field-type" x="210" y="87" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="109">lastName</text>
+    <text class="field-type" x="210" y="109" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="131"><tspan class="fk-icon">⬤</tspan> groupId</text>
+    <text class="field-type" x="210" y="131" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="153">timestamps</text>
+    <text class="field-type" x="210" y="153" text-anchor="end">DateTime</text>
+  </g>
+
+  <!-- Group -->
+  <g transform="translate(600, 110)">
+    <rect class="entity" width="220" height="150" rx="8"/>
+    <rect class="entity-header-alt1" width="220" height="40" rx="8"/>
+    <text class="entity-text" x="110" y="26" text-anchor="middle">👨‍👩‍👧‍👦 Group</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="190" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87">name</text>
+    <text class="field-type" x="190" y="87" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="109">timestamps</text>
+    <text class="field-type" x="190" y="109" text-anchor="end">DateTime</text>
+  </g>
+
+  <!-- Sponsor -->
+  <g transform="translate(310, 330)">
+    <rect class="entity" width="240" height="290" rx="8"/>
+    <rect class="entity-header-alt1" width="240" height="40" rx="8"/>
+    <text class="entity-text" x="120" y="26" text-anchor="middle">💝 Sponsor</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="210" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="85">company</text>
+    <text class="field-type" x="210" y="85" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="105">salutation</text>
+    <text class="field-type" x="210" y="105" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="125">firstName</text>
+    <text class="field-type" x="210" y="125" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="145">lastName</text>
+    <text class="field-type" x="210" y="145" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="165">street</text>
+    <text class="field-type" x="210" y="165" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="185">postalCode</text>
+    <text class="field-type" x="210" y="185" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="205">city</text>
+    <text class="field-type" x="210" y="205" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="225">phone / email</text>
+    <text class="field-type" x="210" y="225" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="245">notes</text>
+    <text class="field-type" x="210" y="245" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="265"><tspan class="fk-icon">⬤</tspan> memberId</text>
+    <text class="field-type" x="210" y="265" text-anchor="end">String? ⚠️</text>
+    <text class="field-text" x="15" y="285"><tspan class="fk-icon">⬤</tspan> groupId</text>
+    <text class="field-type" x="210" y="285" text-anchor="end">String? ⚠️</text>
+  </g>
+
+  <!-- Financial Section Label -->
+  <rect x="880" y="80" width="220" height="25" fill="#f0ad4e" rx="3"/>
+  <text x="990" y="97" text-anchor="middle" class="entity-text" font-size="13">FINANCIAL</text>
+
+  <!-- FiscalYear -->
+  <g transform="translate(880, 110)">
+    <rect class="entity" width="240" height="170" rx="8"/>
+    <rect class="entity-header-alt2" width="240" height="40" rx="8"/>
+    <text class="entity-text" x="120" y="26" text-anchor="middle">📅 FiscalYear</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="210" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87">name</text>
+    <text class="field-type" x="210" y="87" text-anchor="end">String ⚡</text>
+    <text class="field-text" x="15" y="109">startDate</text>
+    <text class="field-type" x="210" y="109" text-anchor="end">DateTime</text>
+    <text class="field-text" x="15" y="131">endDate</text>
+    <text class="field-type" x="210" y="131" text-anchor="end">DateTime</text>
+    <text class="field-text" x="15" y="153">timestamps</text>
+    <text class="field-type" x="210" y="153" text-anchor="end">DateTime</text>
+  </g>
+
+  <!-- MemberTarget -->
+  <g transform="translate(880, 330)">
+    <rect class="entity" width="240" height="190" rx="8"/>
+    <rect class="entity-header-alt2" width="240" height="40" rx="8"/>
+    <text class="entity-text" x="120" y="26" text-anchor="middle">🎯 MemberTarget</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="210" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87"><tspan class="fk-icon">⬤</tspan> memberId</text>
+    <text class="field-type" x="210" y="87" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="109"><tspan class="fk-icon">⬤</tspan> fiscalYearId</text>
+    <text class="field-type" x="210" y="109" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="131">targetAmount</text>
+    <text class="field-type" x="210" y="131" text-anchor="end">Float (CHF)</text>
+    <text class="field-text" x="15" y="153">timestamps</text>
+    <text class="field-type" x="210" y="153" text-anchor="end">DateTime</text>
+    <rect class="badge" x="10" y="162" width="220" height="20" rx="3"/>
+    <text class="badge-text" x="120" y="175" text-anchor="middle">⚡ UNIQUE (memberId, fiscalYearId)</text>
+  </g>
+
+  <!-- Donation -->
+  <g transform="translate(40, 330)">
+    <rect class="entity" width="240" height="210" rx="8"/>
+    <rect class="entity-header-alt2" width="240" height="40" rx="8"/>
+    <text class="entity-text" x="120" y="26" text-anchor="middle">💰 Donation</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="210" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87"><tspan class="fk-icon">⬤</tspan> sponsorId</text>
+    <text class="field-type" x="210" y="87" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="109"><tspan class="fk-icon">⬤</tspan> fiscalYearId</text>
+    <text class="field-type" x="210" y="109" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="131">amount</text>
+    <text class="field-type" x="210" y="131" text-anchor="end">Float (CHF)</text>
+    <text class="field-text" x="15" y="153">donationDate</text>
+    <text class="field-type" x="210" y="153" text-anchor="end">DateTime</text>
+    <text class="field-text" x="15" y="175">note</text>
+    <text class="field-type" x="210" y="175" text-anchor="end">String?</text>
+    <text class="field-text" x="15" y="197">timestamps</text>
+    <text class="field-type" x="210" y="197" text-anchor="end">DateTime</text>
+  </g>
+
+  <!-- Configuration Section Label -->
+  <rect x="40" y="570" width="220" height="25" fill="#d9534f" rx="3"/>
+  <text x="150" y="587" text-anchor="middle" class="entity-text" font-size="13">CONFIGURATION</text>
+
+  <!-- Setting -->
+  <g transform="translate(40, 600)">
+    <rect class="entity" width="220" height="150" rx="8"/>
+    <rect class="entity-header-alt3" width="220" height="40" rx="8"/>
+    <text class="entity-text" x="110" y="26" text-anchor="middle">⚙️ Setting</text>
+    <text class="field-text" x="15" y="65"><tspan class="pk-icon">⬤</tspan> id</text>
+    <text class="field-type" x="190" y="65" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="87">key</text>
+    <text class="field-type" x="190" y="87" text-anchor="end">String ⚡</text>
+    <text class="field-text" x="15" y="109">value</text>
+    <text class="field-type" x="190" y="109" text-anchor="end">String</text>
+    <text class="field-text" x="15" y="131">description</text>
+    <text class="field-type" x="190" y="131" text-anchor="end">String?</text>
+  </g>
+
+  <!-- Relations -->
+
+  <!-- Member to Group -->
+  <path class="relation" d="M 550 195 L 600 195"/>
+  <text class="relation-label" x="565" y="188">N:1</text>
+
+  <!-- Member to MemberTarget -->
+  <path class="relation" d="M 490 280 Q 490 300, 680 300 Q 870 300, 1000 330"/>
+  <text class="relation-label" x="740" y="295">1:N</text>
+
+  <!-- FiscalYear to MemberTarget -->
+  <path class="relation" d="M 1000 280 L 1000 330"/>
+  <text class="relation-label" x="1010" y="310">1:N</text>
+
+  <!-- Member to Sponsor -->
+  <path class="relation" d="M 430 280 L 430 330"/>
+  <text class="relation-label" x="440" y="310">1:N</text>
+
+  <!-- Group to Sponsor -->
+  <path class="relation" d="M 710 260 Q 710 475, 550 475"/>
+  <text class="relation-label" x="630" y="470">1:N</text>
+
+  <!-- Sponsor to Donation -->
+  <path class="relation" d="M 310 435 L 280 435"/>
+  <text class="relation-label" x="285" y="428">1:N</text>
+
+  <!-- FiscalYear to Donation -->
+  <path class="relation" d="M 880 210 Q 800 210, 800 435 Q 800 435, 280 435"/>
+  <text class="relation-label" x="540 " y="428">1:N</text>
+
+  <!-- Legend Section -->
+  <g transform="translate(1180, 110)">
+    <rect class="entity" width="380" height="280" rx="8"/>
+    <rect fill="#34495e" width="380" height="40" rx="8"/>
+    <text class="entity-text" x="190" y="26" text-anchor="middle">📖 Legend</text>
+
+    <text class="info-text" x="20" y="70" font-weight="600">Icons:</text>
+    <text class="field-text" x="20" y="95"><tspan class="pk-icon">⬤</tspan> Primary Key</text>
+    <text class="field-text" x="20" y="115"><tspan class="fk-icon">⬤</tspan> Foreign Key</text>
+    <text class="field-text" x="20" y="135">⚡ Unique Constraint</text>
+    <text class="field-text" x="20" y="155">⚠️ XOR Constraint (one or the other)</text>
+    <text class="field-text" x="20" y="175">? Nullable Field</text>
+
+    <text class="info-text" x="20" y="205" font-weight="600">Relationships:</text>
+    <line x1="20" y1="220" x2="100" y2="220" class="relation"/>
+    <text class="relation-label" x="110" y="223">1:N = One to Many</text>
+    <line x1="20" y1="240" x2="100" y2="240" class="relation"/>
+    <text class="relation-label" x="110" y="243">N:1 = Many to One</text>
+  </g>
+
+  <!-- Business Rules Section -->
+  <g transform="translate(1180, 420)">
+    <rect class="entity" width="380" height="280" rx="8"/>
+    <rect fill="#e74c3c" width="380" height="40" rx="8"/>
+    <text class="entity-text" x="190" y="26" text-anchor="middle">⚡ Business Rules</text>
+
+    <text class="info-text" x="20" y="70">1. <tspan font-weight="600">Sponsor Assignment (XOR)</tspan></text>
+    <text class="field-text" x="30" y="90">→ Sponsor assigned to Member OR Group</text>
+    <text class="field-text" x="30" y="107">(never both, enforced at application level)</text>
+
+    <text class="info-text" x="20" y="135">2. <tspan font-weight="600">Member Grouping</tspan></text>
+    <text class="field-text" x="30" y="155">→ Member can belong to ONE group</text>
+    <text class="field-text" x="30" y="172">→ Group target = sum of member targets</text>
+
+    <text class="info-text" x="20" y="200">3. <tspan font-weight="600">Target Uniqueness</tspan></text>
+    <text class="field-text" x="30" y="220">→ One target per member per fiscal year</text>
+    <text class="field-text" x="30" y="237">→ Enforced via database constraint</text>
+
+    <text class="info-text" x="20" y="265">4. <tspan font-weight="600">Cascade Deletes</tspan></text>
+    <text class="field-text" x="30" y="285">→ Deleting sponsor removes donations</text>
+  </g>
+
+  <!-- Database Info -->
+  <g transform="translate(1180, 730)">
+    <rect class="entity" width="380" height="130" rx="8"/>
+    <rect fill="#16a085" width="380" height="40" rx="8"/>
+    <text class="entity-text" x="190" y="26" text-anchor="middle">🗄️ Database Info</text>
+
+    <text class="info-text" x="20" y="70"><tspan font-weight="600">Database:</tspan> SQLite</text>
+    <text class="info-text" x="20" y="90"><tspan font-weight="600">ORM:</tspan> Prisma v5</text>
+    <text class="info-text" x="20" y="110"><tspan font-weight="600">Models:</tspan> 8 total entities</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="800" y="1080" text-anchor="middle" style="fill: #95a5a6; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px;">DonorFlow v0.2.0 • Database Schema • Generated 2025-11-03</text>
+</svg>
