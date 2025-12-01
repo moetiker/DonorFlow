@@ -22,6 +22,7 @@ model Member {
   group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
   sponsors        Sponsor[]
   memberTargets   MemberTarget[]
+  donations       Donation[]        // Spenden, die direkt diesem Mitglied zugeordnet sind
 
   @@index([groupId])
 }
@@ -36,6 +37,7 @@ model Group {
   // Beziehungen
   members         Member[]
   sponsors        Sponsor[]
+  donations       Donation[]  // Spenden, die direkt dieser Gruppe zugeordnet sind
 }
 
 // Vorgabe pro Mitglied pro Vereinsjahr
@@ -94,15 +96,25 @@ model Donation {
   donationDate    DateTime
   fiscalYearId    String?   // Zuordnung zu Vereinsjahr
   note            String?
+
+  // Zuordnung: Entweder zu Mitglied ODER zu Gruppe (XOR constraint)
+  // Wird beim Erstellen automatisch vom Sponsor übernommen, kann aber überschrieben werden
+  memberId        String?   // Zuordnung zu Mitglied
+  groupId         String?   // Zuordnung zu Gruppe
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   sponsor         Sponsor      @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
   fiscalYear      FiscalYear?  @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+  member          Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  group           Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   @@index([sponsorId])
   @@index([donationDate])
   @@index([fiscalYearId])
+  @@index([memberId])
+  @@index([groupId])
 }
 
 // Vereinsjahre (Geschäftsjahre)

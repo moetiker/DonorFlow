@@ -36,8 +36,10 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   const t = useTranslations('sponsors')
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
+  const tDonations = useTranslations('donations')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [addDonation, setAddDonation] = useState(false)
   const [formData, setFormData] = useState({
     company: '',
     salutation: '',
@@ -52,6 +54,11 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     assignmentType: 'member' as 'member' | 'group',
     memberId: '',
     groupId: ''
+  })
+  const [donationData, setDonationData] = useState({
+    amount: '',
+    donationDate: new Date().toISOString().split('T')[0],
+    note: ''
   })
 
   useEffect(() => {
@@ -89,6 +96,12 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       })
     }
     setError('')
+    setAddDonation(false)
+    setDonationData({
+      amount: '',
+      donationDate: new Date().toISOString().split('T')[0],
+      note: ''
+    })
   }, [sponsor, show])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,6 +137,32 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error || tErrors('saveFailed'))
+      }
+
+      const sponsorResult = await response.json()
+      const sponsorId = sponsor ? sponsor.id : sponsorResult.id
+
+      // Create donation if checkbox is checked and it's a new sponsor
+      if (!sponsor && addDonation && donationData.amount) {
+        const donationPayload = {
+          sponsorId,
+          amount: parseFloat(donationData.amount),
+          donationDate: donationData.donationDate,
+          note: donationData.note || null,
+          memberId: formData.assignmentType === 'member' ? formData.memberId : null,
+          groupId: formData.assignmentType === 'group' ? formData.groupId : null
+        }
+
+        const donationResponse = await fetch('/api/donations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(donationPayload)
+        })
+
+        if (!donationResponse.ok) {
+          const data = await donationResponse.json()
+          throw new Error(data.error || tErrors('saveFailed'))
+        }
       }
 
       onSave()
@@ -366,6 +405,69 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
                 ))}
               </Form.Select>
             </Form.Group>
+          )}
+
+          {/* Optional first donation - only show for new sponsors */}
+          {!sponsor && (
+            <>
+              <hr className="my-4" />
+
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  id="addDonation"
+                  label={t('addFirstDonation')}
+                  checked={addDonation}
+                  onChange={(e) => setAddDonation(e.target.checked)}
+                  disabled={loading}
+                />
+              </Form.Group>
+
+              {addDonation && (
+                <>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <Form.Group className="mb-3">
+                        <Form.Label>{tDonations('amount')} (CHF) *</Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={donationData.amount}
+                          onChange={(e) => setDonationData({ ...donationData, amount: e.target.value })}
+                          required={addDonation}
+                          disabled={loading}
+                        />
+                      </Form.Group>
+                    </div>
+                    <div className="col-md-6">
+                      <Form.Group className="mb-3">
+                        <Form.Label>{tDonations('date')} *</Form.Label>
+                        <Form.Control
+                          type="date"
+                          value={donationData.donationDate}
+                          onChange={(e) => setDonationData({ ...donationData, donationDate: e.target.value })}
+                          required={addDonation}
+                          disabled={loading}
+                        />
+                      </Form.Group>
+                    </div>
+                  </div>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>{tDonations('note')}</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      placeholder={tDonations('placeholderNote')}
+                      value={donationData.note}
+                      onChange={(e) => setDonationData({ ...donationData, note: e.target.value })}
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                </>
+              )}
+            </>
           )}
         </Modal.Body>
 

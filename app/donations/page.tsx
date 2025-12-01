@@ -14,14 +14,18 @@ type Donation = {
   amount: number
   donationDate: Date
   note: string | null
+  memberId: string | null
+  groupId: string | null
   sponsor: {
     company: string | null
     salutation: string | null
     firstName: string | null
     lastName: string | null
-    member?: { firstName: string; lastName: string }
-    group?: { name: string }
+    member?: { id: string; firstName: string; lastName: string }
+    group?: { id: string; name: string }
   }
+  member?: { id: string; firstName: string; lastName: string }
+  group?: { id: string; name: string }
 }
 
 type Sponsor = {
@@ -30,13 +34,26 @@ type Sponsor = {
   salutation: string | null
   firstName: string | null
   lastName: string | null
-  member?: { firstName: string; lastName: string }
-  group?: { name: string }
+  member?: { id: string; firstName: string; lastName: string }
+  group?: { id: string; name: string }
+}
+
+type Member = {
+  id: string
+  firstName: string
+  lastName: string
+}
+
+type Group = {
+  id: string
+  name: string
 }
 
 export default function DonationsPage() {
   const [donations, setDonations] = useState<Donation[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null)
@@ -48,19 +65,25 @@ export default function DonationsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [donationsRes, sponsorsRes] = await Promise.all([
+      const [donationsRes, sponsorsRes, membersRes, groupsRes] = await Promise.all([
         fetch('/api/donations?include=all'),
-        fetch('/api/sponsors?include=all')
+        fetch('/api/sponsors?include=all'),
+        fetch('/api/members'),
+        fetch('/api/groups')
       ])
 
-      const [donationsData, sponsorsData] = await Promise.all([
+      const [donationsData, sponsorsData, membersData, groupsData] = await Promise.all([
         donationsRes.json(),
-        sponsorsRes.json()
+        sponsorsRes.json(),
+        membersRes.json(),
+        groupsRes.json()
       ])
 
       // Ensure data is an array
       setDonations(Array.isArray(donationsData) ? donationsData : [])
       setSponsors(Array.isArray(sponsorsData) ? sponsorsData : [])
+      setMembers(Array.isArray(membersData) ? membersData : [])
+      setGroups(Array.isArray(groupsData) ? groupsData : [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -192,11 +215,11 @@ export default function DonationsPage() {
                       <td>{formatDate(donation.donationDate)}</td>
                       <td><strong>{getSponsorDisplayName(donation.sponsor)}</strong></td>
                       <td className="text-muted">
-                        {donation.sponsor.member && (
-                          <>{donation.sponsor.member.firstName} {donation.sponsor.member.lastName}</>
+                        {donation.member && (
+                          <>{donation.member.firstName} {donation.member.lastName}</>
                         )}
-                        {donation.sponsor.group && (
-                          <>{donation.sponsor.group.name}</>
+                        {donation.group && (
+                          <>{donation.group.name}</>
                         )}
                       </td>
                       <td><strong className="text-success">{formatCurrency(donation.amount)}</strong></td>
@@ -213,6 +236,8 @@ export default function DonationsPage() {
           show={showModal}
           donation={selectedDonation}
           sponsors={sponsors}
+          members={members}
+          groups={groups}
           onHide={handleModalClose}
           onSave={handleSave}
         />

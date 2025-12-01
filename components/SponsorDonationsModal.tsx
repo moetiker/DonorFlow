@@ -12,6 +12,8 @@ type Donation = {
   donationDate: Date
   note: string | null
   sponsorId: string
+  memberId: string | null
+  groupId: string | null
 }
 
 type Sponsor = {
@@ -20,8 +22,19 @@ type Sponsor = {
   salutation: string | null
   firstName: string | null
   lastName: string | null
-  member?: { firstName: string; lastName: string }
-  group?: { name: string }
+  member?: { id: string; firstName: string; lastName: string }
+  group?: { id: string; name: string }
+}
+
+type Member = {
+  id: string
+  firstName: string
+  lastName: string
+}
+
+type Group = {
+  id: string
+  name: string
 }
 
 type Props = {
@@ -43,6 +56,8 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
   const { formatCurrency, formatDate } = useLocalizedFormatters()
   const [donations, setDonations] = useState<Donation[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(false)
   const [showDonationModal, setShowDonationModal] = useState(false)
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null)
@@ -51,6 +66,8 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
     if (show && sponsorId) {
       loadDonations()
       loadSponsors()
+      loadMembers()
+      loadGroups()
     }
   }, [show, sponsorId])
 
@@ -78,6 +95,28 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
     } catch (error) {
       console.error('Error loading sponsors:', error)
       setSponsors([])
+    }
+  }
+
+  const loadMembers = async () => {
+    try {
+      const response = await fetch('/api/members')
+      const data = await response.json()
+      setMembers(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error loading members:', error)
+      setMembers([])
+    }
+  }
+
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/groups')
+      const data = await response.json()
+      setGroups(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error loading groups:', error)
+      setGroups([])
     }
   }
 
@@ -167,6 +206,8 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
         show={showDonationModal}
         donation={selectedDonation}
         sponsors={sponsors}
+        members={members}
+        groups={groups}
         onHide={() => {
           setShowDonationModal(false)
           setSelectedDonation(null)

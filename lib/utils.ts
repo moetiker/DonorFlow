@@ -100,3 +100,39 @@ export function getSponsorDisplayName(sponsor: {
   const parts = [sponsor.firstName, sponsor.lastName].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : 'Unbekannt'
 }
+
+/**
+ * Returns a display name for a member
+ */
+export function getMemberDisplayName(member: {
+  firstName: string
+  lastName: string
+}): string {
+  return `${member.firstName} ${member.lastName}`
+}
+
+/**
+ * Returns a display name for a group
+ */
+export function getGroupDisplayName(group: {
+  name: string
+}): string {
+  return group.name
+}
+
+/**
+ * Returns the assignment display name for a donation
+ * Shows either the member name or group name
+ */
+export function getDonationAssignmentName(donation: {
+  member?: { firstName: string; lastName: string } | null
+  group?: { name: string } | null
+}): string {
+  if (donation.member) {
+    return getMemberDisplayName(donation.member)
+  }
+  if (donation.group) {
+    return getGroupDisplayName(donation.group)
+  }
+  return 'Unbekannt'
+}

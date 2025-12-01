@@ -151,7 +151,8 @@
     "placeholderPostalCode": "1000",
     "placeholderCity": "Ville",
     "placeholderPhone": "+00 00 000 00 00",
-    "placeholderNotes": "Informations supplémentaires..."
+    "placeholderNotes": "Informations supplémentaires...",
+    "addFirstDonation": "Saisir immédiatement le premier don"
   },
   "donations": {
     "title": "Dons",
@@ -163,12 +164,15 @@
     "date": "Date",
     "note": "Note",
     "assignedTo": "Attribué à",
+    "assignment": "Attribution",
+    "assignmentHelp": "Sélectionnez soit un membre, soit un groupe. L'attribution est héritée du sponsor mais peut être modifiée.",
     "emptyState": "Aucun don disponible",
     "emptyStateDescription": "Ajoutez votre premier don.",
     "emptyStateAction": "Ajouter un don",
     "deleteConfirm": "Voulez-vous vraiment supprimer ce don ?",
     "placeholderNote": "Remarque optionnelle",
     "selectSponsor": "Sélectionner un sponsor",
+    "noResults": "Aucun résultat trouvé",
     "total": "Total"
   },
   "groups": {
@@ -320,7 +324,12 @@
     "type": "Type",
     "amount": "Montant",
     "percentage": "Pourcentage",
-    "membersInGroups": "Membres dans des groupes"
+    "membersInGroups": "Membres dans des groupes",
+    "sponsor": "Sponsor",
+    "sponsorsByAmount": "Sponsors par montant de don",
+    "totalAmount": "Montant total",
+    "allDonations": "Tous les dons chronologiquement",
+    "sponsorsWithoutDonations": "Sponsors assignés sans dons"
   },
   "login": {
     "title": "Gestion des donateurs",

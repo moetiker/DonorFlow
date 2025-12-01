@@ -2,6 +2,7 @@
 
 import { Container, Card, Table, ProgressBar, Alert, Badge, Button } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
+import { PerformanceDetailModal } from '@/components/PerformanceDetailModal'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import jsPDF from 'jspdf'
@@ -67,6 +68,9 @@ export default function PerformancePage() {
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -83,6 +87,24 @@ export default function PerformancePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleMemberClick(memberId: string) {
+    setSelectedMemberId(memberId)
+    setSelectedGroupId(null)
+    setShowDetailModal(true)
+  }
+
+  function handleGroupClick(groupId: string) {
+    setSelectedGroupId(groupId)
+    setSelectedMemberId(null)
+    setShowDetailModal(true)
+  }
+
+  function handleCloseDetail() {
+    setShowDetailModal(false)
+    setSelectedMemberId(null)
+    setSelectedGroupId(null)
   }
 
   async function exportToPDF() {
@@ -430,7 +452,11 @@ export default function PerformancePage() {
                 </thead>
                 <tbody>
                   {groupStats.map((stat) => (
-                    <tr key={stat.group.id}>
+                    <tr
+                      key={stat.group.id}
+                      onClick={() => handleGroupClick(stat.group.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td>
                         <strong>{stat.group.name}</strong>
                         <div className="small text-muted">
@@ -500,7 +526,11 @@ export default function PerformancePage() {
                 </thead>
                 <tbody>
                   {sortedStats.map((stat) => (
-                    <tr key={stat.member.id}>
+                    <tr
+                      key={stat.member.id}
+                      onClick={() => handleMemberClick(stat.member.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td>
                         <strong>
                           {stat.member.firstName} {stat.member.lastName}
@@ -557,6 +587,13 @@ export default function PerformancePage() {
           )}
         </div>
       </Container>
+
+      <PerformanceDetailModal
+        show={showDetailModal}
+        memberId={selectedMemberId}
+        groupId={selectedGroupId}
+        onHide={handleCloseDetail}
+      />
     </>
   )
 }

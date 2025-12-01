@@ -58,6 +58,7 @@ data/
 
 # Claude Code IDE settings
 .claude/
+CLAUDE.md
 
 # test scripts
 test-*.js

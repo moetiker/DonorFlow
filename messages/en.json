@@ -151,7 +151,8 @@
     "placeholderPostalCode": "1000",
     "placeholderCity": "City",
     "placeholderPhone": "+00 00 000 00 00",
-    "placeholderNotes": "Additional information..."
+    "placeholderNotes": "Additional information...",
+    "addFirstDonation": "Add first donation immediately"
   },
   "donations": {
     "title": "Donations",
@@ -163,12 +164,15 @@
     "date": "Date",
     "note": "Note",
     "assignedTo": "Assigned to",
+    "assignment": "Assignment",
+    "assignmentHelp": "Select either a member OR a group. The assignment is inherited from the sponsor but can be changed.",
     "emptyState": "No donations available",
     "emptyStateDescription": "Add your first donation.",
     "emptyStateAction": "Add Donation",
     "deleteConfirm": "Do you really want to delete this donation?",
     "placeholderNote": "Optional remark",
     "selectSponsor": "Select Sponsor",
+    "noResults": "No results found",
     "total": "Total"
   },
   "groups": {
@@ -320,7 +324,12 @@
     "type": "Type",
     "amount": "Amount",
     "percentage": "Percentage",
-    "membersInGroups": "Members in Groups"
+    "membersInGroups": "Members in Groups",
+    "sponsor": "Sponsor",
+    "sponsorsByAmount": "Sponsors by Donation Amount",
+    "totalAmount": "Total Amount",
+    "allDonations": "All Donations Chronologically",
+    "sponsorsWithoutDonations": "Assigned Sponsors Without Donations"
   },
   "login": {
     "title": "Donor Management",

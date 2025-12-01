@@ -15,12 +15,17 @@ export async function GET(
 
     const { id: groupId } = await params
 
-    // Get all donations from sponsors in this group
+    // Get all donations assigned to this group (either via donation.groupId or sponsor.groupId)
     const donations = await prisma.donation.findMany({
       where: {
-        sponsor: {
-          groupId: groupId
-        }
+        OR: [
+          { groupId: groupId },
+          {
+            sponsor: {
+              groupId: groupId
+            }
+          }
+        ]
       },
       include: {
         sponsor: true

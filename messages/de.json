@@ -151,7 +151,8 @@
     "placeholderPostalCode": "1000",
     "placeholderCity": "City",
     "placeholderPhone": "+00 00 000 00 00",
-    "placeholderNotes": "Zusätzliche Informationen..."
+    "placeholderNotes": "Zusätzliche Informationen...",
+    "addFirstDonation": "Erste Spende gleich erfassen"
   },
   "donations": {
     "title": "Spenden",
@@ -163,12 +164,15 @@
     "date": "Datum",
     "note": "Notiz",
     "assignedTo": "Zugeordnet zu",
+    "assignment": "Zuordnung",
+    "assignmentHelp": "Wählen Sie entweder ein Mitglied ODER eine Gruppe aus. Die Zuordnung wird vom Gönner übernommen, kann aber geändert werden.",
     "emptyState": "Keine Spenden vorhanden",
     "emptyStateDescription": "Erfassen Sie Ihre erste Spende.",
     "emptyStateAction": "Spende erfassen",
     "deleteConfirm": "Möchten Sie diese Spende wirklich löschen?",
     "placeholderNote": "Optionale Bemerkung",
     "selectSponsor": "Gönner auswählen",
+    "noResults": "Keine Ergebnisse gefunden",
     "total": "Total"
   },
   "groups": {
@@ -320,7 +324,12 @@
     "type": "Typ",
     "amount": "Betrag",
     "percentage": "Anteil",
-    "membersInGroups": "Mitglieder in Gruppen"
+    "membersInGroups": "Mitglieder in Gruppen",
+    "sponsor": "Gönner",
+    "sponsorsByAmount": "Gönner nach Spendensumme",
+    "totalAmount": "Gesamtbetrag",
+    "allDonations": "Alle Spenden chronologisch",
+    "sponsorsWithoutDonations": "Zugeordnete Gönner ohne Spenden"
   },
   "login": {
     "title": "Gönnerverwaltung",

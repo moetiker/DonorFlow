@@ -23,15 +23,43 @@ export const createDonationSchema = z.object({
   sponsorId: z.string().min(1),
   amount: z.number().positive(),
   donationDate: z.string().min(1),
-  note: z.string().optional().nullable()
-})
+  note: z.string().optional().nullable(),
+  memberId: z.string().optional().nullable(),
+  groupId: z.string().optional().nullable()
+}).refine(
+  data => data.memberId || data.groupId,
+  { message: 'memberOrGroupRequired', path: ['memberId'] }
+).refine(
+  data => !(data.memberId && data.groupId),
+  { message: 'cannotAssignBoth', path: ['groupId'] }
+)
 
 export const updateDonationSchema = z.object({
   sponsorId: z.string().min(1).optional(),
   amount: z.number().positive().optional(),
   donationDate: z.string().min(1).optional(),
-  note: z.string().optional().nullable()
-})
+  note: z.string().optional().nullable(),
+  memberId: z.string().optional().nullable(),
+  groupId: z.string().optional().nullable()
+}).refine(
+  data => {
+    // Only validate XOR if both fields are provided in update
+    if (data.memberId !== undefined && data.groupId !== undefined) {
+      return !(data.memberId && data.groupId)
+    }
+    return true
+  },
+  { message: 'cannotAssignBoth', path: ['groupId'] }
+).refine(
+  data => {
+    // Only validate requirement if both fields are provided in update
+    if (data.memberId !== undefined && data.groupId !== undefined) {
+      return data.memberId || data.groupId
+    }
+    return true
+  },
+  { message: 'memberOrGroupRequired', path: ['memberId'] }
+)
 
 export type CreateDonationInput = z.infer<typeof createDonationSchema>
 export type UpdateDonationInput = z.infer<typeof updateDonationSchema>

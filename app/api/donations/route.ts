@@ -18,7 +18,9 @@ export const GET = withApiRoute(async (request: NextRequest) => {
             member: true,
             group: true
           }
-        }
+        },
+        member: true,  // Include donation's assigned member
+        group: true    // Include donation's assigned group
       }
     })
   })
@@ -32,13 +34,13 @@ export const POST = withApiRoute(async (request: NextRequest) => {
   // Extract locale from Accept-Language header
   const locale = getLocaleFromRequest(request)
 
-  // Validate request body with i18n
+  // Validate request body with i18n (includes XOR validation for memberId/groupId)
   const validation = await validateRequestI18n(createDonationSchema, body, locale)
   if (!validation.success) {
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const { sponsorId, amount, donationDate, note } = validation.data
+  const { sponsorId, amount, donationDate, note, memberId, groupId } = validation.data
 
   // Determine the fiscal year based on donation date
   const parsedDate = new Date(donationDate)
@@ -55,7 +57,9 @@ export const POST = withApiRoute(async (request: NextRequest) => {
       amount,
       donationDate: parsedDate,
       fiscalYearId: fiscalYear?.id || null,
-      note: note || null
+      note: note || null,
+      memberId: memberId || null,
+      groupId: groupId || null
     }
   })
 
