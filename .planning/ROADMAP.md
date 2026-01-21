@@ -74,10 +74,10 @@ Plans:
   2. Each member shows individual target, donated, remaining amounts
   3. Page shows aggregate totals (combined target, donated, remaining)
   4. Each member section can expand to show their sponsor lists
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md - Enhance API for member data, add translations, create group UI with accordion
 
 ### Phase 5: Admin Integration
 **Goal**: Admins can view and share status links from existing UI
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Foundation | 1/1 | Complete | 2026-01-21 |
 | 2. Public API | 1/1 | Complete | 2026-01-21 |
 | 3. Member Status Page | 1/1 | Complete | 2026-01-21 |
-| 4. Group Status Page | 0/TBD | Not started | - |
+| 4. Group Status Page | 0/1 | Planned | - |
 | 5. Admin Integration | 0/TBD | Not started | - |
 
 ---
