@@ -62,3 +62,8 @@ CLAUDE.md
 
 # test scripts
 test-*.js
+prod.db
+prisma.config.ts
+# planning - intel is local only (can be regenerated)
+.planning/intel/
+.planning/codebase/
