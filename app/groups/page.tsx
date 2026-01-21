@@ -13,6 +13,7 @@ import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 type Group = {
   id: string
   name: string
+  statusToken?: string | null
   members?: Array<{
     id: string
     firstName: string
@@ -46,6 +47,7 @@ export default function GroupsPage() {
   const [showDonationsModal, setShowDonationsModal] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const t = useTranslations('groups')
   const tCommon = useTranslations('common')
   const tMembers = useTranslations('members')
@@ -112,6 +114,18 @@ export default function GroupsPage() {
   const handleNewGroup = () => {
     setSelectedGroup(null)
     setShowEditModal(true)
+  }
+
+  const handleCopyStatusLink = async (e: React.MouseEvent, groupId: string, token: string) => {
+    e.stopPropagation()
+    const url = `${window.location.origin}/s/${token}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedId(groupId)
+      setTimeout(() => setCopiedId(null), 1500)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
   }
 
   const calculateGroupStats = (group: Group) => {
@@ -251,6 +265,7 @@ export default function GroupsPage() {
                     <th>{t('members')}</th>
                     <th>{t('sponsors')}</th>
                     <th>{t('status')}</th>
+                    <th className="text-center">{t('statusLink')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -309,6 +324,20 @@ export default function GroupsPage() {
                             </>
                           ) : (
                             <span className="text-muted">{tMembers('noTarget')}</span>
+                          )}
+                        </td>
+                        <td className="text-center">
+                          {group.statusToken ? (
+                            <Button
+                              size="sm"
+                              variant="outline-secondary"
+                              onClick={(e) => handleCopyStatusLink(e, group.id, group.statusToken!)}
+                              title={t('copyStatusLink')}
+                            >
+                              <i className={`bi ${copiedId === group.id ? 'bi-clipboard-check-fill text-success' : 'bi-copy'}`}></i>
+                            </Button>
+                          ) : (
+                            <span className="text-muted">-</span>
                           )}
                         </td>
                       </tr>
