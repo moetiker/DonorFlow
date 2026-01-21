@@ -60,10 +60,10 @@ Plans:
   5. Page is mobile-optimized (works well on phone screens)
   6. Page supports all 4 languages (de, en, fr, it) based on browser preference
   7. Page loads fast with minimal JavaScript
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md - Extend API for LYBUNT, add translations, create status page UI
 
 ### Phase 4: Group Status Page
 **Goal**: Group leaders can see all members' progress in one view
@@ -99,9 +99,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/1 | ✓ Complete | 2026-01-21 |
-| 2. Public API | 1/1 | ✓ Complete | 2026-01-21 |
-| 3. Member Status Page | 0/TBD | Not started | - |
+| 1. Foundation | 1/1 | Complete | 2026-01-21 |
+| 2. Public API | 1/1 | Complete | 2026-01-21 |
+| 3. Member Status Page | 0/1 | Planned | - |
 | 4. Group Status Page | 0/TBD | Not started | - |
 | 5. Admin Integration | 0/TBD | Not started | - |
 
