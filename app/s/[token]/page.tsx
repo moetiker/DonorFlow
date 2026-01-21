@@ -170,6 +170,39 @@ function StatusPageContent({ token }: { token: string }) {
 
   const remaining = Math.max(0, data.progress.target - data.progress.actual)
 
+  // Collect ALL in-kind donations across all sponsors (group + members)
+  const collectAllInKindDonations = () => {
+    const allDonations: { description: string; date: string; sponsorName: string; memberName?: string }[] = []
+
+    if (data.type === 'group') {
+      // Group sponsors
+      data.groupSponsors?.forEach(sponsor => {
+        sponsor.inKindDonations.forEach(d => {
+          allDonations.push({ ...d, sponsorName: sponsor.name })
+        })
+      })
+      // Member sponsors
+      data.members?.forEach(member => {
+        member.sponsors.forEach(sponsor => {
+          sponsor.inKindDonations.forEach(d => {
+            allDonations.push({ ...d, sponsorName: sponsor.name, memberName: member.name })
+          })
+        })
+      })
+    } else {
+      // Member view - just their sponsors
+      data.sponsors?.forEach(sponsor => {
+        sponsor.inKindDonations.forEach(d => {
+          allDonations.push({ ...d, sponsorName: sponsor.name })
+        })
+      })
+    }
+
+    return allDonations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }
+
+  const allInKindDonations = collectAllInKindDonations()
+
   // Determine progress bar color
   const getProgressVariant = (percentage: number) => {
     if (percentage >= 100) return 'success'
@@ -352,6 +385,47 @@ function StatusPageContent({ token }: { token: string }) {
           </div>
         </Card.Body>
       </Card>
+
+      {/* In-Kind Donations Summary - shown prominently if any exist */}
+      {allInKindDonations.length > 0 && (
+        <Card className="mb-3 border-info">
+          <Card.Header className="bg-info text-white">
+            <h2 className="h5 mb-0">
+              🎁 {t('inKindDonations')} ({allInKindDonations.length})
+            </h2>
+          </Card.Header>
+          <Card.Body className="p-0">
+            <div className="table-responsive">
+              <Table className="mb-0" hover>
+                <thead className="table-light">
+                  <tr>
+                    <th>{t('name')}</th>
+                    <th>{t('description')}</th>
+                    {data.type === 'group' && <th className="d-none d-md-table-cell">{t('from')}</th>}
+                    <th className="text-end d-none d-sm-table-cell">{t('date')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allInKindDonations.map((donation, index) => (
+                    <tr key={index}>
+                      <td className="align-middle">{donation.sponsorName}</td>
+                      <td className="align-middle fw-medium">{donation.description}</td>
+                      {data.type === 'group' && (
+                        <td className="align-middle text-muted d-none d-md-table-cell">
+                          {donation.memberName || t('groupDirect')}
+                        </td>
+                      )}
+                      <td className="text-end align-middle d-none d-sm-table-cell">
+                        {formatDate(donation.date)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* Member or Group View */}
       {data.type === 'group' ? (

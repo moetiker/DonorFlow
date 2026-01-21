@@ -453,6 +453,8 @@
     "noMembers": "Nessun membro in questo gruppo",
     "expandToSee": "Tocca per vedere gli sponsor",
     "inKindDonations": "Donazioni in natura",
-    "description": "Descrizione"
+    "description": "Descrizione",
+    "from": "Da",
+    "groupDirect": "Gruppo diretto"
   }
 }
