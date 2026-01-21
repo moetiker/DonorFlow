@@ -48,6 +48,21 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     }
   })
 
+  // Get previous fiscal year (most recent one BEFORE current fiscal year)
+  const previousFiscalYear = currentFiscalYear
+    ? await prisma.fiscalYear.findFirst({
+        where: {
+          endDate: { lt: currentFiscalYear.startDate }
+        },
+        orderBy: {
+          endDate: 'desc'
+        },
+        select: {
+          id: true
+        }
+      })
+    : null
+
   // Try to find member by statusToken first
   const member = await prisma.member.findUnique({
     where: { statusToken: token },
@@ -65,25 +80,31 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           company: true,
           firstName: true,
           lastName: true,
-          donations: currentFiscalYear ? {
+          donations: {
             where: {
-              fiscalYearId: currentFiscalYear.id,
-              type: 'MONETARY'
+              type: 'MONETARY',
+              fiscalYearId: {
+                in: [
+                  currentFiscalYear?.id,
+                  previousFiscalYear?.id
+                ].filter((id): id is string => id !== undefined && id !== null)
+              }
             },
             select: {
               id: true,
               amount: true,
-              donationDate: true
+              donationDate: true,
+              fiscalYearId: true
             },
             orderBy: { donationDate: 'desc' }
-          } : { take: 0 }
+          }
         }
       }
     }
   })
 
   if (member) {
-    const response = buildMemberResponse(member, currentFiscalYear)
+    const response = buildMemberResponse(member, currentFiscalYear, previousFiscalYear?.id ?? null)
     return NextResponse.json(serializeDates(response), {
       headers: {
         'Referrer-Policy': 'no-referrer',
@@ -104,25 +125,31 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           company: true,
           firstName: true,
           lastName: true,
-          donations: currentFiscalYear ? {
+          donations: {
             where: {
-              fiscalYearId: currentFiscalYear.id,
-              type: 'MONETARY'
+              type: 'MONETARY',
+              fiscalYearId: {
+                in: [
+                  currentFiscalYear?.id,
+                  previousFiscalYear?.id
+                ].filter((id): id is string => id !== undefined && id !== null)
+              }
             },
             select: {
               id: true,
               amount: true,
-              donationDate: true
+              donationDate: true,
+              fiscalYearId: true
             },
             orderBy: { donationDate: 'desc' }
-          } : { take: 0 }
+          }
         }
       }
     }
   })
 
   if (group) {
-    const response = buildGroupResponse(group, currentFiscalYear)
+    const response = buildGroupResponse(group, currentFiscalYear, previousFiscalYear?.id ?? null)
     return NextResponse.json(serializeDates(response), {
       headers: {
         'Referrer-Policy': 'no-referrer',
@@ -157,7 +184,7 @@ interface SponsorWithDonations {
   company: string | null
   firstName: string | null
   lastName: string | null
-  donations: { id: string; amount: number | null; donationDate: Date }[]
+  donations: { id: string; amount: number | null; donationDate: Date; fiscalYearId: string | null }[]
 }
 
 interface FiscalYearInfo {
@@ -173,9 +200,9 @@ interface GroupWithSponsors {
   sponsors: SponsorWithDonations[]
 }
 
-function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearInfo | null) {
+function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
   const target = member.memberTargets[0]?.targetAmount ?? 0
-  const { actual, sponsors } = calculateSponsorsProgress(member.sponsors)
+  const { actual, sponsors } = calculateSponsorsProgress(member.sponsors, fiscalYear?.id ?? null, previousFiscalYearId)
   const percentage = target > 0 ? Math.round((actual / target) * 100) : 0
 
   return {
@@ -195,10 +222,10 @@ function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearI
   }
 }
 
-function buildGroupResponse(group: GroupWithSponsors, fiscalYear: FiscalYearInfo | null) {
+function buildGroupResponse(group: GroupWithSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
   // Group target calculation deferred to Phase 4 (aggregate of member targets)
   const target = 0
-  const { actual, sponsors } = calculateSponsorsProgress(group.sponsors)
+  const { actual, sponsors } = calculateSponsorsProgress(group.sponsors, fiscalYear?.id ?? null, previousFiscalYearId)
   const percentage = 0 // No target yet
 
   return {
@@ -218,16 +245,36 @@ function buildGroupResponse(group: GroupWithSponsors, fiscalYear: FiscalYearInfo
   }
 }
 
-function calculateSponsorsProgress(sponsors: SponsorWithDonations[]) {
+function calculateSponsorsProgress(
+  sponsors: SponsorWithDonations[],
+  currentFiscalYearId: string | null,
+  previousFiscalYearId: string | null
+) {
   let totalActual = 0
   const sponsorsList = sponsors.map(sponsor => {
-    const totalAmount = sponsor.donations.reduce((sum, d) => sum + (d.amount ?? 0), 0)
-    const lastDonation = sponsor.donations[0]?.donationDate ?? null
+    // Filter donations by fiscal year
+    const currentYearDonations = sponsor.donations.filter(
+      d => d.fiscalYearId === currentFiscalYearId
+    )
+    const previousYearDonations = sponsor.donations.filter(
+      d => d.fiscalYearId === previousFiscalYearId
+    )
+
+    // Calculate totals for current year only
+    const totalAmount = currentYearDonations.reduce((sum, d) => sum + (d.amount ?? 0), 0)
+    const lastDonation = currentYearDonations[0]?.donationDate ?? null
     totalActual += totalAmount
+
+    // LYBUNT detection: donated last year but not this year
+    const donatedThisYear = currentYearDonations.length > 0
+    const donatedLastYear = previousYearDonations.length > 0
+    const isLYBUNT = donatedLastYear && !donatedThisYear
 
     return {
       name: getSponsorDisplayName(sponsor),
-      donated: sponsor.donations.length > 0,
+      donated: donatedThisYear,
+      donatedLastYear,
+      isLYBUNT,
       totalAmount,
       lastDonation
     }
