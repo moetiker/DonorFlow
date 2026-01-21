@@ -46,3 +46,23 @@ export function withApiRoute<T extends any[]>(
     }
   })
 }
+
+/**
+ * Wraps public API route handlers with error handling (NO authentication)
+ * Use this for routes in /api/public/ namespace only
+ */
+export function withPublicApiRoute<T extends any[]>(
+  handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
+) {
+  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+    try {
+      return await handler(request, ...args)
+    } catch (error) {
+      console.error(`Public API Error: ${request.method} ${request.url}`, error)
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 }
+      )
+    }
+  }
+}
