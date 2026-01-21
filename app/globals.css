@@ -61,3 +61,75 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Status page mobile optimizations */
+.status-page {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.status-page .card {
+  border-radius: 0.5rem;
+}
+
+.status-page .card-header {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.status-page .progress {
+  border-radius: 0.5rem;
+}
+
+.status-page .table {
+  font-size: 0.9rem;
+}
+
+.status-page .table td,
+.status-page .table th {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+/* LYBUNT highlighting */
+.status-page .table-warning {
+  --bs-table-bg: #fff3cd;
+  --bs-table-border-color: #ffc107;
+}
+
+.status-page .lybunt-badge {
+  font-size: 0.7rem;
+  font-weight: normal;
+}
+
+/* Mobile touch targets */
+@media (max-width: 575.98px) {
+  .status-page {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .status-page .card-body {
+    padding: 0.75rem;
+  }
+
+  .status-page .table {
+    font-size: 0.85rem;
+  }
+
+  .status-page .table td,
+  .status-page .table th {
+    padding: 0.65rem 0.4rem;
+  }
+
+  .status-page .h4 {
+    font-size: 1.15rem;
+  }
+
+  .status-page .h5 {
+    font-size: 1rem;
+  }
+
+  .status-page .h6 {
+    font-size: 0.9rem;
+  }
+}
