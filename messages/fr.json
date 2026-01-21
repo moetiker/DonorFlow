@@ -439,6 +439,11 @@
     "noSponsors": "Aucun sponsor attribué",
     "noDonationsYet": "Aucun don reçu pour l'instant",
     "allDonated": "Tous les sponsors ont fait un don !",
-    "footer": "Page de statut pour"
+    "footer": "Page de statut pour",
+    "groupMembers": "Membres",
+    "groupSponsors": "Sponsors du groupe",
+    "memberProgress": "{actual} sur {target}",
+    "noMembers": "Aucun membre dans ce groupe",
+    "expandToSee": "Appuyez pour voir les sponsors"
   }
 }

@@ -439,6 +439,11 @@
     "noSponsors": "Keine Gönner zugeordnet",
     "noDonationsYet": "Noch keine Spenden eingegangen",
     "allDonated": "Alle Gönner haben gespendet!",
-    "footer": "Statusseite für"
+    "footer": "Statusseite für",
+    "groupMembers": "Mitglieder",
+    "groupSponsors": "Gruppen-Sponsoren",
+    "memberProgress": "{actual} von {target}",
+    "noMembers": "Keine Mitglieder in dieser Gruppe",
+    "expandToSee": "Tippen um Sponsoren zu sehen"
   }
 }
