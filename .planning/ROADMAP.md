@@ -87,10 +87,10 @@ Plans:
   1. Group detail/list shows status link with copy-to-clipboard button
   2. Member detail (for members without groups) shows status link with copy button
   3. Links can be copied with one click
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md - Add statusToken to API responses, add copy buttons to Groups and Members pages
 
 ## Progress
 
@@ -103,7 +103,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Public API | 1/1 | Complete | 2026-01-21 |
 | 3. Member Status Page | 1/1 | Complete | 2026-01-21 |
 | 4. Group Status Page | 1/1 | Complete | 2026-01-21 |
-| 5. Admin Integration | 0/TBD | Not started | - |
+| 5. Admin Integration | 0/1 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-21*
