@@ -38,11 +38,11 @@ Requirements for the status link feature. Each maps to roadmap phases.
 
 ### Technical Requirements
 
-- [ ] **TECH-01**: Status pages accessible via token URL without authentication (e.g., /s/[token])
+- [x] **TECH-01**: Status pages accessible via token URL without authentication (e.g., /s/[token])
 - [ ] **TECH-02**: Status pages are mobile-optimized (responsive, touch-friendly)
 - [ ] **TECH-03**: Status pages support all 4 languages (de, en, fr, it)
 - [ ] **TECH-04**: Status pages load fast (minimal JavaScript, simple data)
-- [ ] **TECH-05**: Invalid tokens show friendly error page
+- [x] **TECH-05**: Invalid tokens show friendly error page
 
 ## v2 Requirements
 
@@ -94,11 +94,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GROUP-02 | Phase 4: Group Status Page | Pending |
 | GROUP-03 | Phase 4: Group Status Page | Pending |
 | GROUP-04 | Phase 4: Group Status Page | Pending |
-| TECH-01 | Phase 2: Public API | Pending |
+| TECH-01 | Phase 2: Public API | Complete |
 | TECH-02 | Phase 3: Member Status Page | Pending |
 | TECH-03 | Phase 3: Member Status Page | Pending |
 | TECH-04 | Phase 3: Member Status Page | Pending |
-| TECH-05 | Phase 2: Public API | Pending |
+| TECH-05 | Phase 2: Public API | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
