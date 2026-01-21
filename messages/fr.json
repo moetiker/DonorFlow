@@ -348,7 +348,11 @@
     "sponsorsByAmount": "Sponsors par montant de don",
     "totalAmount": "Montant total",
     "allDonations": "Tous les dons chronologiquement",
-    "sponsorsWithoutDonations": "Sponsors assignés sans dons"
+    "sponsorsWithoutDonations": "Sponsors assignés sans dons",
+    "inKindDonations": "Dons en nature",
+    "description": "Description",
+    "assignedTo": "Attribué à",
+    "date": "Date"
   },
   "login": {
     "title": "Gestion des donateurs",

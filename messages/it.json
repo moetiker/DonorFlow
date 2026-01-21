@@ -348,7 +348,11 @@
     "sponsorsByAmount": "Sponsor per importo donazione",
     "totalAmount": "Importo totale",
     "allDonations": "Tutte le donazioni cronologicamente",
-    "sponsorsWithoutDonations": "Sponsor assegnati senza donazioni"
+    "sponsorsWithoutDonations": "Sponsor assegnati senza donazioni",
+    "inKindDonations": "Donazioni in natura",
+    "description": "Descrizione",
+    "assignedTo": "Assegnato a",
+    "date": "Data"
   },
   "login": {
     "title": "Gestione donatori",

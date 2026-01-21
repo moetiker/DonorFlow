@@ -43,6 +43,17 @@ type GroupStat = {
   }>
 }
 
+type InKindDonation = {
+  id: string
+  description: string
+  donationDate: string
+  sponsorName: string
+  assignedTo: {
+    type: 'member' | 'group'
+    name: string
+  } | null
+}
+
 type ReportData = {
   currentYear: {
     id: string
@@ -59,6 +70,7 @@ type ReportData = {
   memberActual: number
   groupActual: number
   overallPercentage: number
+  inKindDonations: InKindDonation[]
 }
 
 export default function PerformancePage() {
@@ -304,6 +316,46 @@ export default function PerformancePage() {
         })
       }
 
+      // In-Kind Donations
+      if (inKindDonations && inKindDonations.length > 0) {
+        yPosition = (pdf as any).lastAutoTable?.finalY + 10 || yPosition + 10
+
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage()
+          yPosition = margin
+        }
+
+        pdf.setFontSize(14)
+        pdf.text(`${t('inKindDonations')} (${inKindDonations.length})`, margin, yPosition)
+        yPosition += 5
+
+        const inKindTableData = inKindDonations.map(donation => [
+          donation.sponsorName,
+          donation.description,
+          donation.assignedTo ? donation.assignedTo.name : '-',
+          formatDate(donation.donationDate)
+        ])
+
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [[t('sponsor'), t('description'), t('assignedTo'), t('date')]],
+          body: inKindTableData,
+          margin: { left: margin, right: margin },
+          theme: 'striped',
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [13, 202, 240], textColor: 0 },
+          columnStyles: {
+            0: { cellWidth: 45 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 45 },
+            3: { halign: 'right', cellWidth: 25 }
+          },
+          didDrawPage: () => {
+            addFooter(pdf.getCurrentPageInfo().pageNumber)
+          }
+        })
+      }
+
       // Add footer to first page if not already added
       if (pdf.getCurrentPageInfo().pageNumber === 1) {
         addFooter(1)
@@ -351,7 +403,7 @@ export default function PerformancePage() {
     )
   }
 
-  const { currentYear, memberStats, groupStats, unassignedTotal, unassignedCount, totalTarget, totalActual, memberActual, groupActual, overallPercentage } = data
+  const { currentYear, memberStats, groupStats, unassignedTotal, unassignedCount, totalTarget, totalActual, memberActual, groupActual, overallPercentage, inKindDonations } = data
 
   // Sort by percentage descending
   const sortedStats = [...memberStats].sort((a, b) => b.percentage - a.percentage)
@@ -584,6 +636,45 @@ export default function PerformancePage() {
                 {t('unassignedInfo')}
               </div>
             </Alert>
+          )}
+
+          {/* In-Kind Donations */}
+          {inKindDonations && inKindDonations.length > 0 && (
+            <Card className="mb-4 border-info">
+              <Card.Header className="bg-info text-white">
+                <h5 className="mb-0">🎁 {t('inKindDonations')} ({inKindDonations.length})</h5>
+              </Card.Header>
+              <Card.Body>
+                <Table responsive hover>
+                  <thead>
+                    <tr>
+                      <th>{t('sponsor')}</th>
+                      <th>{t('description')}</th>
+                      <th>{t('assignedTo')}</th>
+                      <th className="text-end">{t('date')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inKindDonations.map((donation) => (
+                      <tr key={donation.id}>
+                        <td><strong>{donation.sponsorName}</strong></td>
+                        <td>{donation.description}</td>
+                        <td>
+                          {donation.assignedTo ? (
+                            <Badge bg={donation.assignedTo.type === 'group' ? 'primary' : 'secondary'}>
+                              {donation.assignedTo.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td className="text-end">{formatDate(donation.donationDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
           )}
         </div>
       </Container>

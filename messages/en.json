@@ -348,7 +348,11 @@
     "sponsorsByAmount": "Sponsors by Donation Amount",
     "totalAmount": "Total Amount",
     "allDonations": "All Donations Chronologically",
-    "sponsorsWithoutDonations": "Assigned Sponsors Without Donations"
+    "sponsorsWithoutDonations": "Assigned Sponsors Without Donations",
+    "inKindDonations": "In-Kind Donations",
+    "description": "Description",
+    "assignedTo": "Assigned To",
+    "date": "Date"
   },
   "login": {
     "title": "Donor Management",

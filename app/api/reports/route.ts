@@ -15,7 +15,7 @@ export const GET = withApiRoute(async () => {
       return NextResponse.json({ currentYear: null })
     }
 
-    // Get only members WITHOUT group membership
+    // Get only members WITHOUT group membership (MONETARY donations only)
     const members = await prisma.member.findMany({
       where: {
         groupId: null
@@ -25,7 +25,8 @@ export const GET = withApiRoute(async () => {
           include: {
             donations: {
               where: {
-                fiscalYearId: currentYear.id
+                fiscalYearId: currentYear.id,
+                type: 'MONETARY'
               }
             }
           }
@@ -38,11 +39,11 @@ export const GET = withApiRoute(async () => {
       }
     })
 
-    // Calculate stats for each member (individual donations only)
+    // Calculate stats for each member (individual MONETARY donations only)
     const memberStats = members.map(member => {
       // Get all donations from this member's direct sponsors
       const donations = member.sponsors.flatMap(sponsor => sponsor.donations)
-      const actual = donations.reduce((sum, d) => sum + d.amount, 0)
+      const actual = donations.reduce((sum, d) => sum + (d.amount || 0), 0)
 
       // Get target if exists
       const target = member.memberTargets[0]?.targetAmount || 0
@@ -65,14 +66,15 @@ export const GET = withApiRoute(async () => {
     // Sort by percentage descending
     memberStats.sort((a, b) => b.percentage - a.percentage)
 
-    // Get group donations
+    // Get group donations (MONETARY only)
     const groups = await prisma.group.findMany({
       include: {
         sponsors: {
           include: {
             donations: {
               where: {
-                fiscalYearId: currentYear.id
+                fiscalYearId: currentYear.id,
+                type: 'MONETARY'
               }
             }
           }
@@ -81,10 +83,10 @@ export const GET = withApiRoute(async () => {
       }
     })
 
-    // Get group stats with targets
+    // Get group stats with targets (MONETARY donations only)
     const groupStatsPromises = groups.map(async group => {
       const donations = group.sponsors.flatMap(sponsor => sponsor.donations)
-      const actual = donations.reduce((sum, d) => sum + d.amount, 0)
+      const actual = donations.reduce((sum, d) => sum + (d.amount || 0), 0)
       const memberCount = group.members.length
 
       // Get targets for all members in this group
@@ -124,7 +126,7 @@ export const GET = withApiRoute(async () => {
       .filter(stat => stat.actual > 0 || stat.target > 0) // Only groups with donations or targets
       .sort((a, b) => b.percentage - a.percentage) // Sort by percentage descending
 
-    // Get unassigned donations (sponsors with no member and no group)
+    // Get unassigned donations (sponsors with no member and no group, MONETARY only)
     const unassignedSponsors = await prisma.sponsor.findMany({
       where: {
         memberId: null,
@@ -133,14 +135,62 @@ export const GET = withApiRoute(async () => {
       include: {
         donations: {
           where: {
-            fiscalYearId: currentYear.id
+            fiscalYearId: currentYear.id,
+            type: 'MONETARY'
           }
         }
       }
     })
 
     const unassignedDonations = unassignedSponsors.flatMap(s => s.donations)
-    const unassignedTotal = unassignedDonations.reduce((sum, d) => sum + d.amount, 0)
+    const unassignedTotal = unassignedDonations.reduce((sum, d) => sum + (d.amount || 0), 0)
+
+    // Get ALL in-kind donations for current fiscal year
+    const inKindDonations = await prisma.donation.findMany({
+      where: {
+        fiscalYearId: currentYear.id,
+        type: 'IN_KIND'
+      },
+      include: {
+        sponsor: {
+          select: {
+            id: true,
+            company: true,
+            firstName: true,
+            lastName: true,
+            member: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            },
+            group: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        donationDate: 'desc'
+      }
+    })
+
+    // Format in-kind donations for response
+    const formattedInKindDonations = inKindDonations.map(d => ({
+      id: d.id,
+      description: d.description || '',
+      donationDate: d.donationDate,
+      sponsorName: d.sponsor.company || `${d.sponsor.firstName || ''} ${d.sponsor.lastName || ''}`.trim(),
+      assignedTo: d.sponsor.member
+        ? { type: 'member' as const, name: `${d.sponsor.member.firstName} ${d.sponsor.member.lastName}` }
+        : d.sponsor.group
+          ? { type: 'group' as const, name: d.sponsor.group.name }
+          : null
+    }))
 
     // Get ALL member targets (including those in groups) for total target calculation
     const allMemberTargets = await prisma.memberTarget.findMany({
@@ -170,6 +220,7 @@ export const GET = withApiRoute(async () => {
       totalActual,
       memberActual,
       groupActual,
-      overallPercentage
+      overallPercentage,
+      inKindDonations: formattedInKindDonations
     })
 })

@@ -348,7 +348,11 @@
     "sponsorsByAmount": "Gönner nach Spendensumme",
     "totalAmount": "Gesamtbetrag",
     "allDonations": "Alle Spenden chronologisch",
-    "sponsorsWithoutDonations": "Zugeordnete Gönner ohne Spenden"
+    "sponsorsWithoutDonations": "Zugeordnete Gönner ohne Spenden",
+    "inKindDonations": "Sachspenden",
+    "description": "Beschreibung",
+    "assignedTo": "Zugeordnet zu",
+    "date": "Datum"
   },
   "login": {
     "title": "Gönnerverwaltung",
