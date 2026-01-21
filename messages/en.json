@@ -118,7 +118,11 @@
     "emptyStateDescription": "Add your first club member.",
     "emptyStateAction": "Add Member",
     "sponsorCount": "{count} Sponsors",
-    "deleteConfirm": "Do you really want to delete this member?"
+    "deleteConfirm": "Do you really want to delete this member?",
+    "statusLink": "Status Link",
+    "copyStatusLink": "Copy status link",
+    "linkCopied": "Link copied!",
+    "useGroupLink": "See group"
   },
   "sponsors": {
     "title": "Sponsors",
@@ -203,7 +207,10 @@
     "deleteConfirm": "Do you really want to delete this group?",
     "searchPlaceholder": "Search group (name, member)...",
     "noMembers": "No Members",
-    "status": "Status"
+    "status": "Status",
+    "statusLink": "Status Link",
+    "copyStatusLink": "Copy status link",
+    "linkCopied": "Link copied!"
   },
   "targets": {
     "title": "Targets",

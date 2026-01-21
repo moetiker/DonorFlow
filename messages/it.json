@@ -118,7 +118,11 @@
     "emptyStateDescription": "Aggiungi il tuo primo membro del club.",
     "emptyStateAction": "Aggiungi membro",
     "sponsorCount": "{count} Sponsor",
-    "deleteConfirm": "Vuoi davvero eliminare questo membro?"
+    "deleteConfirm": "Vuoi davvero eliminare questo membro?",
+    "statusLink": "Link stato",
+    "copyStatusLink": "Copia link stato",
+    "linkCopied": "Link copiato!",
+    "useGroupLink": "Vedi gruppo"
   },
   "sponsors": {
     "title": "Sponsor",
@@ -203,7 +207,10 @@
     "deleteConfirm": "Vuoi davvero eliminare questo gruppo?",
     "searchPlaceholder": "Cerca gruppo (nome, membro)...",
     "noMembers": "Nessun membro",
-    "status": "Stato"
+    "status": "Stato",
+    "statusLink": "Link stato",
+    "copyStatusLink": "Copia link stato",
+    "linkCopied": "Link copiato!"
   },
   "targets": {
     "title": "Obiettivi",

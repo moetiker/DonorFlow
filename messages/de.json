@@ -118,7 +118,11 @@
     "emptyStateDescription": "Erfassen Sie Ihr erstes Vereinsmitglied.",
     "emptyStateAction": "Mitglied erfassen",
     "sponsorCount": "{count} Gönner",
-    "deleteConfirm": "Möchten Sie dieses Mitglied wirklich löschen?"
+    "deleteConfirm": "Möchten Sie dieses Mitglied wirklich löschen?",
+    "statusLink": "Status-Link",
+    "copyStatusLink": "Status-Link kopieren",
+    "linkCopied": "Link kopiert!",
+    "useGroupLink": "Siehe Gruppe"
   },
   "sponsors": {
     "title": "Gönner",
@@ -203,7 +207,10 @@
     "deleteConfirm": "Möchten Sie diese Gruppe wirklich löschen?",
     "searchPlaceholder": "Gruppe suchen (Name, Mitglied)...",
     "noMembers": "Keine Mitglieder",
-    "status": "Status"
+    "status": "Status",
+    "statusLink": "Status-Link",
+    "copyStatusLink": "Status-Link kopieren",
+    "linkCopied": "Link kopiert!"
   },
   "targets": {
     "title": "Vorgaben",
