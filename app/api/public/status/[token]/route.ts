@@ -82,7 +82,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           lastName: true,
           donations: {
             where: {
-              type: 'MONETARY',
               fiscalYearId: {
                 in: [
                   currentFiscalYear?.id,
@@ -92,7 +91,9 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
             },
             select: {
               id: true,
+              type: true,
               amount: true,
+              description: true,
               donationDate: true,
               fiscalYearId: true
             },
@@ -137,7 +138,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
               lastName: true,
               donations: {
                 where: {
-                  type: 'MONETARY',
                   fiscalYearId: {
                     in: [
                       currentFiscalYear?.id,
@@ -147,7 +147,9 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
                 },
                 select: {
                   id: true,
+                  type: true,
                   amount: true,
+                  description: true,
                   donationDate: true,
                   fiscalYearId: true
                 },
@@ -165,7 +167,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           lastName: true,
           donations: {
             where: {
-              type: 'MONETARY',
               fiscalYearId: {
                 in: [
                   currentFiscalYear?.id,
@@ -175,7 +176,9 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
             },
             select: {
               id: true,
+              type: true,
               amount: true,
+              description: true,
               donationDate: true,
               fiscalYearId: true
             },
@@ -222,7 +225,7 @@ interface SponsorWithDonations {
   company: string | null
   firstName: string | null
   lastName: string | null
-  donations: { id: string; amount: number | null; donationDate: Date; fiscalYearId: string | null }[]
+  donations: { id: string; type: string; amount: number | null; description: string | null; donationDate: Date; fiscalYearId: string | null }[]
 }
 
 interface FiscalYearInfo {
@@ -342,15 +345,25 @@ function calculateSponsorsProgress(
       d => d.fiscalYearId === previousFiscalYearId
     )
 
-    // Calculate totals for current year only
-    const totalAmount = currentYearDonations.reduce((sum, d) => sum + (d.amount ?? 0), 0)
-    const lastDonation = currentYearDonations[0]?.donationDate ?? null
+    // Separate monetary and in-kind donations for current year
+    const monetaryDonations = currentYearDonations.filter(d => d.type === 'MONETARY')
+    const inKindDonations = currentYearDonations.filter(d => d.type === 'IN_KIND')
+
+    // Calculate totals for current year monetary donations only
+    const totalAmount = monetaryDonations.reduce((sum, d) => sum + (d.amount ?? 0), 0)
+    const lastDonation = monetaryDonations[0]?.donationDate ?? null
     totalActual += totalAmount
 
-    // LYBUNT detection: donated last year but not this year
+    // LYBUNT detection: donated last year but not this year (any type counts)
     const donatedThisYear = currentYearDonations.length > 0
     const donatedLastYear = previousYearDonations.length > 0
     const isLYBUNT = donatedLastYear && !donatedThisYear
+
+    // Build in-kind donations list
+    const inKindList = inKindDonations.map(d => ({
+      description: d.description ?? '',
+      date: d.donationDate
+    }))
 
     return {
       name: getSponsorDisplayName(sponsor),
@@ -358,7 +371,8 @@ function calculateSponsorsProgress(
       donatedLastYear,
       isLYBUNT,
       totalAmount,
-      lastDonation
+      lastDonation,
+      inKindDonations: inKindList
     }
   })
 

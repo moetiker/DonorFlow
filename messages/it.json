@@ -451,6 +451,8 @@
     "groupSponsors": "Sponsor del gruppo",
     "memberProgress": "{actual} di {target}",
     "noMembers": "Nessun membro in questo gruppo",
-    "expandToSee": "Tocca per vedere gli sponsor"
+    "expandToSee": "Tocca per vedere gli sponsor",
+    "inKindDonations": "Donazioni in natura",
+    "description": "Descrizione"
   }
 }
