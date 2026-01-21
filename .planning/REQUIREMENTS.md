@@ -17,17 +17,17 @@ Requirements for the status link feature. Each maps to roadmap phases.
 
 ### Status Page - Core Display
 
-- [ ] **STAT-01**: Status page shows member's target amount for current fiscal year
-- [ ] **STAT-02**: Status page shows total amount donated toward target
-- [ ] **STAT-03**: Status page shows visual progress bar (donated vs target)
-- [ ] **STAT-04**: Status page shows remaining amount needed to reach target
+- [x] **STAT-01**: Status page shows member's target amount for current fiscal year
+- [x] **STAT-02**: Status page shows total amount donated toward target
+- [x] **STAT-03**: Status page shows visual progress bar (donated vs target)
+- [x] **STAT-04**: Status page shows remaining amount needed to reach target
 
 ### Status Page - Sponsor Lists
 
-- [ ] **LIST-01**: Status page lists sponsors who donated this year (name, amount, date)
-- [ ] **LIST-02**: Status page lists sponsors who haven't donated yet this year
-- [ ] **LIST-03**: LYBUNT: Sponsors who donated last year but not this year are visually highlighted
-- [ ] **LIST-04**: Sponsor lists show company name or personal name (using existing display logic)
+- [x] **LIST-01**: Status page lists sponsors who donated this year (name, amount, date)
+- [x] **LIST-02**: Status page lists sponsors who haven't donated yet this year
+- [x] **LIST-03**: LYBUNT: Sponsors who donated last year but not this year are visually highlighted
+- [x] **LIST-04**: Sponsor lists show company name or personal name (using existing display logic)
 
 ### Group Status Page
 
@@ -39,9 +39,9 @@ Requirements for the status link feature. Each maps to roadmap phases.
 ### Technical Requirements
 
 - [x] **TECH-01**: Status pages accessible via token URL without authentication (e.g., /s/[token])
-- [ ] **TECH-02**: Status pages are mobile-optimized (responsive, touch-friendly)
-- [ ] **TECH-03**: Status pages support all 4 languages (de, en, fr, it)
-- [ ] **TECH-04**: Status pages load fast (minimal JavaScript, simple data)
+- [x] **TECH-02**: Status pages are mobile-optimized (responsive, touch-friendly)
+- [x] **TECH-03**: Status pages support all 4 languages (de, en, fr, it)
+- [x] **TECH-04**: Status pages load fast (minimal JavaScript, simple data)
 - [x] **TECH-05**: Invalid tokens show friendly error page
 
 ## v2 Requirements
@@ -82,22 +82,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKEN-03 | Phase 1: Foundation | Complete |
 | TOKEN-04 | Phase 5: Admin Integration | Pending |
 | TOKEN-05 | Phase 5: Admin Integration | Pending |
-| STAT-01 | Phase 3: Member Status Page | Pending |
-| STAT-02 | Phase 3: Member Status Page | Pending |
-| STAT-03 | Phase 3: Member Status Page | Pending |
-| STAT-04 | Phase 3: Member Status Page | Pending |
-| LIST-01 | Phase 3: Member Status Page | Pending |
-| LIST-02 | Phase 3: Member Status Page | Pending |
-| LIST-03 | Phase 3: Member Status Page | Pending |
-| LIST-04 | Phase 3: Member Status Page | Pending |
+| STAT-01 | Phase 3: Member Status Page | Complete |
+| STAT-02 | Phase 3: Member Status Page | Complete |
+| STAT-03 | Phase 3: Member Status Page | Complete |
+| STAT-04 | Phase 3: Member Status Page | Complete |
+| LIST-01 | Phase 3: Member Status Page | Complete |
+| LIST-02 | Phase 3: Member Status Page | Complete |
+| LIST-03 | Phase 3: Member Status Page | Complete |
+| LIST-04 | Phase 3: Member Status Page | Complete |
 | GROUP-01 | Phase 4: Group Status Page | Pending |
 | GROUP-02 | Phase 4: Group Status Page | Pending |
 | GROUP-03 | Phase 4: Group Status Page | Pending |
 | GROUP-04 | Phase 4: Group Status Page | Pending |
 | TECH-01 | Phase 2: Public API | Complete |
-| TECH-02 | Phase 3: Member Status Page | Pending |
-| TECH-03 | Phase 3: Member Status Page | Pending |
-| TECH-04 | Phase 3: Member Status Page | Pending |
+| TECH-02 | Phase 3: Member Status Page | Complete |
+| TECH-03 | Phase 3: Member Status Page | Complete |
+| TECH-04 | Phase 3: Member Status Page | Complete |
 | TECH-05 | Phase 2: Public API | Complete |
 
 **Coverage:**
