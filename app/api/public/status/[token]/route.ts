@@ -119,6 +119,44 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     select: {
       id: true,
       name: true,
+      members: {
+        orderBy: { lastName: 'asc' },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          memberTargets: currentFiscalYear ? {
+            where: { fiscalYearId: currentFiscalYear.id },
+            select: { targetAmount: true }
+          } : { take: 0 },
+          sponsors: {
+            select: {
+              id: true,
+              company: true,
+              firstName: true,
+              lastName: true,
+              donations: {
+                where: {
+                  type: 'MONETARY',
+                  fiscalYearId: {
+                    in: [
+                      currentFiscalYear?.id,
+                      previousFiscalYear?.id
+                    ].filter((id): id is string => id !== undefined && id !== null)
+                  }
+                },
+                select: {
+                  id: true,
+                  amount: true,
+                  donationDate: true,
+                  fiscalYearId: true
+                },
+                orderBy: { donationDate: 'desc' }
+              }
+            }
+          }
+        }
+      },
       sponsors: {
         select: {
           id: true,
@@ -200,6 +238,13 @@ interface GroupWithSponsors {
   sponsors: SponsorWithDonations[]
 }
 
+interface GroupWithMembersAndSponsors {
+  id: string
+  name: string
+  members: MemberWithSponsors[]
+  sponsors: SponsorWithDonations[]
+}
+
 function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
   const target = member.memberTargets[0]?.targetAmount ?? 0
   const { actual, sponsors } = calculateSponsorsProgress(member.sponsors, fiscalYear?.id ?? null, previousFiscalYearId)
@@ -222,11 +267,47 @@ function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearI
   }
 }
 
-function buildGroupResponse(group: GroupWithSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
-  // Group target calculation deferred to Phase 4 (aggregate of member targets)
-  const target = 0
-  const { actual, sponsors } = calculateSponsorsProgress(group.sponsors, fiscalYear?.id ?? null, previousFiscalYearId)
-  const percentage = 0 // No target yet
+function buildGroupResponse(group: GroupWithMembersAndSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
+  // Calculate aggregate target from all members
+  const aggregateTarget = group.members.reduce((sum, member) => {
+    const memberTarget = member.memberTargets[0]?.targetAmount ?? 0
+    return sum + memberTarget
+  }, 0)
+
+  // Build member data with individual progress and sponsors
+  const members = group.members.map(member => {
+    const memberTarget = member.memberTargets[0]?.targetAmount ?? 0
+    const { actual: memberActual, sponsors: memberSponsors } = calculateSponsorsProgress(
+      member.sponsors,
+      fiscalYear?.id ?? null,
+      previousFiscalYearId
+    )
+    const memberPercentage = memberTarget > 0 ? Math.round((memberActual / memberTarget) * 100) : 0
+
+    return {
+      id: member.id,
+      name: getMemberDisplayName(member),
+      progress: {
+        target: memberTarget,
+        actual: memberActual,
+        percentage: memberPercentage
+      },
+      sponsors: memberSponsors
+    }
+  })
+
+  // Calculate group-level sponsors (those directly assigned to the group)
+  const { actual: groupSponsorsActual, sponsors: groupSponsors } = calculateSponsorsProgress(
+    group.sponsors,
+    fiscalYear?.id ?? null,
+    previousFiscalYearId
+  )
+
+  // Aggregate actual = sum of all member donations + group-level donations
+  const aggregateActual = members.reduce((sum, member) => sum + member.progress.actual, 0) + groupSponsorsActual
+
+  // Calculate aggregate percentage
+  const aggregatePercentage = aggregateTarget > 0 ? Math.round((aggregateActual / aggregateTarget) * 100) : 0
 
   return {
     type: 'group' as const,
@@ -237,11 +318,12 @@ function buildGroupResponse(group: GroupWithSponsors, fiscalYear: FiscalYearInfo
       endDate: fiscalYear.endDate
     } : null,
     progress: {
-      target,
-      actual,
-      percentage
+      target: aggregateTarget,
+      actual: aggregateActual,
+      percentage: aggregatePercentage
     },
-    sponsors
+    members,
+    groupSponsors
   }
 }
 
