@@ -12,7 +12,7 @@ This roadmap delivers token-based public status links for DonorFlow, enabling me
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Database schema for tokens, secure generation utility
+- [x] **Phase 1: Foundation** - Database schema for tokens, secure generation utility
 - [ ] **Phase 2: Public API** - Token validation endpoint, middleware bypass for public routes
 - [ ] **Phase 3: Member Status Page** - Mobile-first UI showing progress and sponsor lists
 - [ ] **Phase 4: Group Status Page** - Aggregate view for all members in a group
@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md - Token generation utility, schema update, Prisma extension, backfill script
+- [x] 01-01-PLAN.md - Token generation utility, schema update, Prisma extension, backfill script
 
 ### Phase 2: Public API
 **Goal**: Public endpoints respond to token requests without authentication
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/1 | Ready to execute | - |
+| 1. Foundation | 1/1 | ✓ Complete | 2026-01-21 |
 | 2. Public API | 0/TBD | Not started | - |
 | 3. Member Status Page | 0/TBD | Not started | - |
 | 4. Group Status Page | 0/TBD | Not started | - |

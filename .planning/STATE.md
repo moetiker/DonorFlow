@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** Members can quickly check their donation collection progress on mobile, without needing admin access.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 - Public API
 
 ## Current Position
 
-Phase: 1 of 5 (Foundation)
-Plan: 1 of TBD in current phase
-Status: In progress
-Last activity: 2026-01-21 — Completed 01-01-PLAN.md (Status Token Infrastructure)
+Phase: 2 of 5 (Public API)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-01-21 — Phase 1 complete, verified
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@ Progress: [█░░░░░░░░░] 10%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1/TBD | 5 min | 5 min |
+| 1. Foundation | 1/1 ✓ | 5 min | 5 min |
 | 2. Public API | 0/TBD | - | - |
 | 3. Member Status Page | 0/TBD | - | - |
 | 4. Group Status Page | 0/TBD | - | - |
