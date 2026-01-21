@@ -14,9 +14,18 @@ type Sponsor = {
 
 type Donation = {
   id: string
-  amount: number
+  type: 'MONETARY' | 'IN_KIND'
+  amount: number | null
+  description: string | null
   donationDate: Date
   note: string | null
+  sponsor: Sponsor
+}
+
+type InKindDonation = {
+  id: string
+  description: string
+  donationDate: Date
   sponsor: Sponsor
 }
 
@@ -27,7 +36,8 @@ type DetailData = {
   actual: number
   difference: number
   percentage: number
-  donations: Donation[]
+  donations: Donation[]  // Monetary donations only
+  inKindDonations: InKindDonation[]
   sponsors: Array<{
     sponsor: Sponsor
     totalAmount: number
@@ -104,15 +114,26 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
         }
       }
 
-      // Calculate actual total
-      const actual = donations.reduce((sum, d) => sum + d.amount, 0)
+      // Separate monetary and in-kind donations
+      const monetaryDonations = donations.filter((d: Donation) => d.type === 'MONETARY')
+      const inKindDonations: InKindDonation[] = donations
+        .filter((d: Donation) => d.type === 'IN_KIND')
+        .map((d: Donation) => ({
+          id: d.id,
+          description: d.description || '',
+          donationDate: d.donationDate,
+          sponsor: d.sponsor
+        }))
+
+      // Calculate actual total (monetary only)
+      const actual = monetaryDonations.reduce((sum, d) => sum + (d.amount || 0), 0)
       const difference = actual - target
       const percentage = target > 0 ? (actual / target) * 100 : 0
 
-      // Group donations by sponsor
+      // Group monetary donations by sponsor
       const sponsorMap = new Map<string, { sponsor: Sponsor; totalAmount: number; donationCount: number }>()
 
-      donations.forEach(donation => {
+      monetaryDonations.forEach((donation: Donation) => {
         const key = donation.sponsor.id
         if (!sponsorMap.has(key)) {
           sponsorMap.set(key, {
@@ -122,7 +143,7 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
           })
         }
         const entry = sponsorMap.get(key)!
-        entry.totalAmount += donation.amount
+        entry.totalAmount += donation.amount || 0
         entry.donationCount += 1
       })
 
@@ -151,7 +172,8 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
         actual,
         difference,
         percentage,
-        donations: donations.sort((a, b) => new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()),
+        donations: monetaryDonations.sort((a, b) => new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()),
+        inKindDonations: inKindDonations.sort((a, b) => new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()),
         sponsors,
         sponsorsWithoutDonations
       })
@@ -259,7 +281,7 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
                   <tr key={donation.id}>
                     <td>{formatDate(donation.donationDate)}</td>
                     <td>{getSponsorDisplayName(donation.sponsor)}</td>
-                    <td className="text-end"><strong>{formatCurrency(donation.amount)}</strong></td>
+                    <td className="text-end"><strong>{formatCurrency(donation.amount || 0)}</strong></td>
                     <td className="text-muted">{donation.note || '-'}</td>
                   </tr>
                 ))}
@@ -270,6 +292,31 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
               <Alert variant="info" className="text-center">
                 {tDonations('emptyState')}
               </Alert>
+            )}
+
+            {/* In-Kind Donations */}
+            {data.inKindDonations.length > 0 && (
+              <>
+                <h6 className="mb-3 mt-4">🎁 {t('inKindDonations')} ({data.inKindDonations.length})</h6>
+                <Table striped hover className="table-info">
+                  <thead>
+                    <tr>
+                      <th>{tDonations('date')}</th>
+                      <th>{tDonations('sponsor')}</th>
+                      <th>{t('description')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.inKindDonations.map((donation) => (
+                      <tr key={donation.id}>
+                        <td>{formatDate(donation.donationDate)}</td>
+                        <td><strong>{getSponsorDisplayName(donation.sponsor)}</strong></td>
+                        <td>{donation.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </>
             )}
 
             {/* Sponsors without donations */}

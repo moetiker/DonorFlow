@@ -211,15 +211,10 @@ function StatusPageContent({ token }: { token: string }) {
     return 'danger'
   }
 
-  // Render sponsor tables for a member
+  // Render sponsor tables for a member (in-kind donations are shown in top-level section)
   const renderSponsorTables = (sponsors: SponsorData[]) => {
     const donatedSponsors = sponsors.filter(s => s.donated)
     const notDonatedSponsors = sponsors.filter(s => !s.donated)
-
-    // Collect all in-kind donations
-    const allInKindDonations = sponsors.flatMap(s =>
-      s.inKindDonations.map(d => ({ ...d, sponsorName: s.name }))
-    )
 
     return (
       <>
@@ -259,41 +254,6 @@ function StatusPageContent({ token }: { token: string }) {
             )}
           </Card.Body>
         </Card>
-
-        {/* In-Kind Donations */}
-        {allInKindDonations.length > 0 && (
-          <Card className="mb-3">
-            <Card.Header className="bg-info text-white py-2">
-              <h2 className="h6 mb-0">
-                {t('inKindDonations')} ({allInKindDonations.length})
-              </h2>
-            </Card.Header>
-            <Card.Body className="p-0">
-              <div className="table-responsive">
-                <Table className="mb-0" size="sm">
-                  <thead>
-                    <tr>
-                      <th>{t('name')}</th>
-                      <th>{t('description')}</th>
-                      <th className="text-end d-none d-sm-table-cell">{t('date')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allInKindDonations.map((donation, index) => (
-                      <tr key={index}>
-                        <td className="align-middle">{donation.sponsorName}</td>
-                        <td className="align-middle">{donation.description}</td>
-                        <td className="text-end align-middle d-none d-sm-table-cell">
-                          {formatDate(donation.date)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </Card.Body>
-          </Card>
-        )}
 
         {/* Not Yet Donated Sponsors */}
         <Card className="mb-3">
