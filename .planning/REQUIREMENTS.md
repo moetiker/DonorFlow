@@ -77,34 +77,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOKEN-01 | Phase 1 | Pending |
-| TOKEN-02 | Phase 1 | Pending |
-| TOKEN-03 | Phase 1 | Pending |
-| TOKEN-04 | Phase 4 | Pending |
-| TOKEN-05 | Phase 4 | Pending |
-| STAT-01 | Phase 3 | Pending |
-| STAT-02 | Phase 3 | Pending |
-| STAT-03 | Phase 3 | Pending |
-| STAT-04 | Phase 3 | Pending |
-| LIST-01 | Phase 3 | Pending |
-| LIST-02 | Phase 3 | Pending |
-| LIST-03 | Phase 3 | Pending |
-| LIST-04 | Phase 3 | Pending |
-| GROUP-01 | Phase 3 | Pending |
-| GROUP-02 | Phase 3 | Pending |
-| GROUP-03 | Phase 3 | Pending |
-| GROUP-04 | Phase 3 | Pending |
-| TECH-01 | Phase 2 | Pending |
-| TECH-02 | Phase 3 | Pending |
-| TECH-03 | Phase 3 | Pending |
-| TECH-04 | Phase 3 | Pending |
-| TECH-05 | Phase 2 | Pending |
+| TOKEN-01 | Phase 1: Foundation | Pending |
+| TOKEN-02 | Phase 1: Foundation | Pending |
+| TOKEN-03 | Phase 1: Foundation | Pending |
+| TOKEN-04 | Phase 5: Admin Integration | Pending |
+| TOKEN-05 | Phase 5: Admin Integration | Pending |
+| STAT-01 | Phase 3: Member Status Page | Pending |
+| STAT-02 | Phase 3: Member Status Page | Pending |
+| STAT-03 | Phase 3: Member Status Page | Pending |
+| STAT-04 | Phase 3: Member Status Page | Pending |
+| LIST-01 | Phase 3: Member Status Page | Pending |
+| LIST-02 | Phase 3: Member Status Page | Pending |
+| LIST-03 | Phase 3: Member Status Page | Pending |
+| LIST-04 | Phase 3: Member Status Page | Pending |
+| GROUP-01 | Phase 4: Group Status Page | Pending |
+| GROUP-02 | Phase 4: Group Status Page | Pending |
+| GROUP-03 | Phase 4: Group Status Page | Pending |
+| GROUP-04 | Phase 4: Group Status Page | Pending |
+| TECH-01 | Phase 2: Public API | Pending |
+| TECH-02 | Phase 3: Member Status Page | Pending |
+| TECH-03 | Phase 3: Member Status Page | Pending |
+| TECH-04 | Phase 3: Member Status Page | Pending |
+| TECH-05 | Phase 2: Public API | Pending |
 
 **Coverage:**
 - v1 requirements: 22 total
 - Mapped to phases: 22
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-21*
-*Last updated: 2026-01-21 after initial definition*
+*Last updated: 2026-01-21 after roadmap creation*
