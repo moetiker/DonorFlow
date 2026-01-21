@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, use } from 'react'
-import { Container, Card, ProgressBar, Table, Alert, Badge, Spinner } from 'react-bootstrap'
+import { Container, Card, ProgressBar, Table, Alert, Badge, Spinner, Accordion } from 'react-bootstrap'
 import { NextIntlClientProvider } from 'next-intl'
 import { useTranslations } from 'next-intl'
 import { detectBrowserLocale } from '@/lib/i18n/utils'
@@ -14,6 +14,17 @@ interface SponsorData {
   isLYBUNT: boolean
   totalAmount: number
   lastDonation: string | null
+}
+
+interface MemberData {
+  id: string
+  name: string
+  progress: {
+    target: number
+    actual: number
+    percentage: number
+  }
+  sponsors: SponsorData[]
 }
 
 interface StatusData {
@@ -29,7 +40,9 @@ interface StatusData {
     actual: number
     percentage: number
   }
-  sponsors: SponsorData[]
+  sponsors?: SponsorData[]
+  members?: MemberData[]
+  groupSponsors?: SponsorData[]
 }
 
 interface PageProps {
@@ -149,8 +162,6 @@ function StatusPageContent({ token }: { token: string }) {
     )
   }
 
-  const donatedSponsors = data.sponsors.filter(s => s.donated)
-  const notDonatedSponsors = data.sponsors.filter(s => !s.donated)
   const remaining = Math.max(0, data.progress.target - data.progress.actual)
 
   // Determine progress bar color
@@ -159,6 +170,97 @@ function StatusPageContent({ token }: { token: string }) {
     if (percentage >= 75) return 'info'
     if (percentage >= 50) return 'warning'
     return 'danger'
+  }
+
+  // Render sponsor tables for a member
+  const renderSponsorTables = (sponsors: SponsorData[]) => {
+    const donatedSponsors = sponsors.filter(s => s.donated)
+    const notDonatedSponsors = sponsors.filter(s => !s.donated)
+
+    return (
+      <>
+        {/* Donated Sponsors */}
+        <Card className="mb-3">
+          <Card.Header className="bg-success text-white py-2">
+            <h2 className="h6 mb-0">
+              {t('sponsorsWhoDonated')} ({donatedSponsors.length})
+            </h2>
+          </Card.Header>
+          <Card.Body className="p-0">
+            {donatedSponsors.length === 0 ? (
+              <p className="text-muted text-center py-3 mb-0">{t('noDonationsYet')}</p>
+            ) : (
+              <div className="table-responsive">
+                <Table className="mb-0" size="sm">
+                  <thead>
+                    <tr>
+                      <th>{t('name')}</th>
+                      <th className="text-end">{t('amount')}</th>
+                      <th className="text-end d-none d-sm-table-cell">{t('date')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {donatedSponsors.map((sponsor, index) => (
+                      <tr key={index}>
+                        <td className="align-middle">{sponsor.name}</td>
+                        <td className="text-end align-middle">{formatCurrency(sponsor.totalAmount)}</td>
+                        <td className="text-end align-middle d-none d-sm-table-cell">
+                          {sponsor.lastDonation ? formatDate(sponsor.lastDonation) : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </Card.Body>
+        </Card>
+
+        {/* Not Yet Donated Sponsors */}
+        <Card className="mb-3">
+          <Card.Header className="bg-secondary text-white py-2">
+            <h2 className="h6 mb-0">
+              {t('sponsorsNotYetDonated')} ({notDonatedSponsors.length})
+            </h2>
+          </Card.Header>
+          <Card.Body className="p-0">
+            {notDonatedSponsors.length === 0 ? (
+              <p className="text-success text-center py-3 mb-0 fw-bold">{t('allDonated')}</p>
+            ) : (
+              <div className="table-responsive">
+                <Table className="mb-0" size="sm">
+                  <thead>
+                    <tr>
+                      <th>{t('name')}</th>
+                      <th className="text-end"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {notDonatedSponsors.map((sponsor, index) => (
+                      <tr key={index} className={sponsor.isLYBUNT ? 'table-warning' : ''}>
+                        <td className="align-middle">
+                          {sponsor.name}
+                          {sponsor.isLYBUNT && (
+                            <Badge bg="warning" text="dark" className="ms-2 lybunt-badge">
+                              {t('lybunt')}
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="text-end align-middle">
+                          {sponsor.isLYBUNT && (
+                            <span className="text-warning d-sm-none">!</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </Card.Body>
+        </Card>
+      </>
+    )
   }
 
   return (
@@ -205,86 +307,51 @@ function StatusPageContent({ token }: { token: string }) {
         </Card.Body>
       </Card>
 
-      {/* Donated Sponsors */}
-      <Card className="mb-3">
-        <Card.Header className="bg-success text-white py-2">
-          <h2 className="h6 mb-0">
-            {t('sponsorsWhoDonated')} ({donatedSponsors.length})
-          </h2>
-        </Card.Header>
-        <Card.Body className="p-0">
-          {donatedSponsors.length === 0 ? (
-            <p className="text-muted text-center py-3 mb-0">{t('noDonationsYet')}</p>
-          ) : (
-            <div className="table-responsive">
-              <Table className="mb-0" size="sm">
-                <thead>
-                  <tr>
-                    <th>{t('name')}</th>
-                    <th className="text-end">{t('amount')}</th>
-                    <th className="text-end d-none d-sm-table-cell">{t('date')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donatedSponsors.map((sponsor, index) => (
-                    <tr key={index}>
-                      <td className="align-middle">{sponsor.name}</td>
-                      <td className="text-end align-middle">{formatCurrency(sponsor.totalAmount)}</td>
-                      <td className="text-end align-middle d-none d-sm-table-cell">
-                        {sponsor.lastDonation ? formatDate(sponsor.lastDonation) : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+      {/* Member or Group View */}
+      {data.type === 'group' ? (
+        <>
+          {/* Group-level sponsors section */}
+          {data.groupSponsors && data.groupSponsors.length > 0 && (
+            <>
+              <h3 className="h5 mt-4 mb-3">{t('groupSponsors')}</h3>
+              {renderSponsorTables(data.groupSponsors)}
+            </>
           )}
-        </Card.Body>
-      </Card>
 
-      {/* Not Yet Donated Sponsors */}
-      <Card className="mb-3">
-        <Card.Header className="bg-secondary text-white py-2">
-          <h2 className="h6 mb-0">
-            {t('sponsorsNotYetDonated')} ({notDonatedSponsors.length})
-          </h2>
-        </Card.Header>
-        <Card.Body className="p-0">
-          {notDonatedSponsors.length === 0 ? (
-            <p className="text-success text-center py-3 mb-0 fw-bold">{t('allDonated')}</p>
+          {/* Members section */}
+          <h3 className="h5 mt-4 mb-3">{t('groupMembers')}</h3>
+          {!data.members || data.members.length === 0 ? (
+            <Alert variant="info">{t('noMembers')}</Alert>
           ) : (
-            <div className="table-responsive">
-              <Table className="mb-0" size="sm">
-                <thead>
-                  <tr>
-                    <th>{t('name')}</th>
-                    <th className="text-end"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {notDonatedSponsors.map((sponsor, index) => (
-                    <tr key={index} className={sponsor.isLYBUNT ? 'table-warning' : ''}>
-                      <td className="align-middle">
-                        {sponsor.name}
-                        {sponsor.isLYBUNT && (
-                          <Badge bg="warning" text="dark" className="ms-2 lybunt-badge">
-                            {t('lybunt')}
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="text-end align-middle">
-                        {sponsor.isLYBUNT && (
-                          <span className="text-warning d-sm-none">!</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+            <Accordion alwaysOpen>
+              {data.members.map((member) => (
+                <Accordion.Item key={member.id} eventKey={member.id}>
+                  <Accordion.Header>
+                    <div className="d-flex justify-content-between align-items-center w-100 me-2">
+                      <strong>{member.name}</strong>
+                      <span className="text-muted small">
+                        {formatCurrency(member.progress.actual)} / {formatCurrency(member.progress.target)}
+                      </span>
+                    </div>
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    {member.sponsors.length === 0 ? (
+                      <p className="text-muted text-center py-3 mb-0">{t('noSponsors')}</p>
+                    ) : (
+                      renderSponsorTables(member.sponsors)
+                    )}
+                  </Accordion.Body>
+                </Accordion.Item>
+              ))}
+            </Accordion>
           )}
-        </Card.Body>
-      </Card>
+        </>
+      ) : (
+        <>
+          {/* Member view - show sponsors directly */}
+          {data.sponsors && renderSponsorTables(data.sponsors)}
+        </>
+      )}
 
       {/* Footer */}
       <p className="text-center text-muted small mb-0">
