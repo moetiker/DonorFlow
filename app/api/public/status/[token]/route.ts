@@ -15,6 +15,11 @@ interface RouteParams {
  * No authentication required - access is granted via capability URL token
  *
  * GET /api/public/status/[token]
+ *
+ * Donation attribution logic:
+ * - A donation is credited to member M if: donation.memberId = M.id OR (donation.memberId IS NULL AND sponsor.memberId = M.id)
+ * - A donation is credited to group G if: donation.groupId = G.id OR (donation.groupId IS NULL AND sponsor.groupId = G.id)
+ * - Donation-level overrides take precedence over sponsor assignments
  */
 export const GET = withPublicApiRoute(async (request: NextRequest, { params }: RouteParams) => {
   const { token } = await params
@@ -63,6 +68,11 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
       })
     : null
 
+  const fiscalYearIds = [
+    currentFiscalYear?.id,
+    previousFiscalYear?.id
+  ].filter((id): id is string => id !== undefined && id !== null)
+
   // Try to find member by statusToken first
   const member = await prisma.member.findUnique({
     where: { statusToken: token },
@@ -79,33 +89,49 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           id: true,
           company: true,
           firstName: true,
-          lastName: true,
-          donations: {
-            where: {
-              fiscalYearId: {
-                in: [
-                  currentFiscalYear?.id,
-                  previousFiscalYear?.id
-                ].filter((id): id is string => id !== undefined && id !== null)
-              }
-            },
-            select: {
-              id: true,
-              type: true,
-              amount: true,
-              description: true,
-              donationDate: true,
-              fiscalYearId: true
-            },
-            orderBy: { donationDate: 'desc' }
-          }
+          lastName: true
         }
       }
     }
   })
 
   if (member) {
-    const response = buildMemberResponse(member, currentFiscalYear, previousFiscalYear?.id ?? null)
+    // Get donations credited to this member
+    // Either: donation.memberId = member.id (explicit override)
+    // Or: donation.memberId IS NULL AND sponsor.memberId = member.id (sponsor's assignment)
+    const donations = await prisma.donation.findMany({
+      where: {
+        fiscalYearId: { in: fiscalYearIds },
+        OR: [
+          // Explicit override to this member
+          { memberId: member.id },
+          // No override, sponsor assigned to this member
+          {
+            memberId: null,
+            sponsor: { memberId: member.id }
+          }
+        ]
+      },
+      select: {
+        id: true,
+        type: true,
+        amount: true,
+        description: true,
+        donationDate: true,
+        fiscalYearId: true,
+        sponsor: {
+          select: {
+            id: true,
+            company: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: { donationDate: 'desc' }
+    })
+
+    const response = buildMemberResponse(member, donations, currentFiscalYear, previousFiscalYear?.id ?? null)
     return NextResponse.json(serializeDates(response), {
       headers: {
         'Referrer-Policy': 'no-referrer',
@@ -135,26 +161,7 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
               id: true,
               company: true,
               firstName: true,
-              lastName: true,
-              donations: {
-                where: {
-                  fiscalYearId: {
-                    in: [
-                      currentFiscalYear?.id,
-                      previousFiscalYear?.id
-                    ].filter((id): id is string => id !== undefined && id !== null)
-                  }
-                },
-                select: {
-                  id: true,
-                  type: true,
-                  amount: true,
-                  description: true,
-                  donationDate: true,
-                  fiscalYearId: true
-                },
-                orderBy: { donationDate: 'desc' }
-              }
+              lastName: true
             }
           }
         }
@@ -164,33 +171,89 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           id: true,
           company: true,
           firstName: true,
-          lastName: true,
-          donations: {
-            where: {
-              fiscalYearId: {
-                in: [
-                  currentFiscalYear?.id,
-                  previousFiscalYear?.id
-                ].filter((id): id is string => id !== undefined && id !== null)
-              }
-            },
-            select: {
-              id: true,
-              type: true,
-              amount: true,
-              description: true,
-              donationDate: true,
-              fiscalYearId: true
-            },
-            orderBy: { donationDate: 'desc' }
-          }
+          lastName: true
         }
       }
     }
   })
 
   if (group) {
-    const response = buildGroupResponse(group, currentFiscalYear, previousFiscalYear?.id ?? null)
+    // Get donations credited to this group (group-level)
+    // Either: donation.groupId = group.id (explicit override)
+    // Or: donation.groupId IS NULL AND sponsor.groupId = group.id (sponsor's assignment)
+    const groupDonations = await prisma.donation.findMany({
+      where: {
+        fiscalYearId: { in: fiscalYearIds },
+        OR: [
+          // Explicit override to this group
+          { groupId: group.id },
+          // No override, sponsor assigned to this group
+          {
+            groupId: null,
+            memberId: null,  // Also no member override
+            sponsor: { groupId: group.id }
+          }
+        ]
+      },
+      select: {
+        id: true,
+        type: true,
+        amount: true,
+        description: true,
+        donationDate: true,
+        fiscalYearId: true,
+        sponsor: {
+          select: {
+            id: true,
+            company: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: { donationDate: 'desc' }
+    })
+
+    // Get donations for each member in the group
+    const memberDonationsMap = new Map<string, typeof groupDonations>()
+
+    for (const member of group.members) {
+      const memberDonations = await prisma.donation.findMany({
+        where: {
+          fiscalYearId: { in: fiscalYearIds },
+          OR: [
+            // Explicit override to this member
+            { memberId: member.id },
+            // No override, sponsor assigned to this member
+            {
+              memberId: null,
+              groupId: null,  // Also no group override
+              sponsor: { memberId: member.id }
+            }
+          ]
+        },
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          description: true,
+          donationDate: true,
+          fiscalYearId: true,
+          sponsor: {
+            select: {
+              id: true,
+              company: true,
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { donationDate: 'desc' }
+      })
+      memberDonationsMap.set(member.id, memberDonations)
+    }
+
+    const response = buildGroupResponse(group, groupDonations, memberDonationsMap, currentFiscalYear, previousFiscalYear?.id ?? null)
     return NextResponse.json(serializeDates(response), {
       headers: {
         'Referrer-Policy': 'no-referrer',
@@ -212,20 +275,29 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
   )
 })
 
-interface MemberWithSponsors {
+interface MemberBasic {
   id: string
   firstName: string
   lastName: string
   memberTargets: { targetAmount: number }[]
-  sponsors: SponsorWithDonations[]
+  sponsors: SponsorBasic[]
 }
 
-interface SponsorWithDonations {
+interface SponsorBasic {
   id: string
   company: string | null
   firstName: string | null
   lastName: string | null
-  donations: { id: string; type: string; amount: number | null; description: string | null; donationDate: Date; fiscalYearId: string | null }[]
+}
+
+interface DonationWithSponsor {
+  id: string
+  type: string
+  amount: number | null
+  description: string | null
+  donationDate: Date
+  fiscalYearId: string | null
+  sponsor: SponsorBasic
 }
 
 interface FiscalYearInfo {
@@ -235,22 +307,26 @@ interface FiscalYearInfo {
   endDate: Date
 }
 
-interface GroupWithSponsors {
+interface GroupBasic {
   id: string
   name: string
-  sponsors: SponsorWithDonations[]
+  members: MemberBasic[]
+  sponsors: SponsorBasic[]
 }
 
-interface GroupWithMembersAndSponsors {
-  id: string
-  name: string
-  members: MemberWithSponsors[]
-  sponsors: SponsorWithDonations[]
-}
-
-function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
+function buildMemberResponse(
+  member: MemberBasic,
+  donations: DonationWithSponsor[],
+  fiscalYear: FiscalYearInfo | null,
+  previousFiscalYearId: string | null
+) {
   const target = member.memberTargets[0]?.targetAmount ?? 0
-  const { actual, sponsors } = calculateSponsorsProgress(member.sponsors, fiscalYear?.id ?? null, previousFiscalYearId)
+  const { actual, sponsors } = calculateSponsorsProgressFromDonations(
+    member.sponsors,
+    donations,
+    fiscalYear?.id ?? null,
+    previousFiscalYearId
+  )
   const percentage = target > 0 ? Math.round((actual / target) * 100) : 0
 
   return {
@@ -270,7 +346,13 @@ function buildMemberResponse(member: MemberWithSponsors, fiscalYear: FiscalYearI
   }
 }
 
-function buildGroupResponse(group: GroupWithMembersAndSponsors, fiscalYear: FiscalYearInfo | null, previousFiscalYearId: string | null) {
+function buildGroupResponse(
+  group: GroupBasic,
+  groupDonations: DonationWithSponsor[],
+  memberDonationsMap: Map<string, DonationWithSponsor[]>,
+  fiscalYear: FiscalYearInfo | null,
+  previousFiscalYearId: string | null
+) {
   // Calculate aggregate target from all members
   const aggregateTarget = group.members.reduce((sum, member) => {
     const memberTarget = member.memberTargets[0]?.targetAmount ?? 0
@@ -280,8 +362,10 @@ function buildGroupResponse(group: GroupWithMembersAndSponsors, fiscalYear: Fisc
   // Build member data with individual progress and sponsors
   const members = group.members.map(member => {
     const memberTarget = member.memberTargets[0]?.targetAmount ?? 0
-    const { actual: memberActual, sponsors: memberSponsors } = calculateSponsorsProgress(
+    const memberDonations = memberDonationsMap.get(member.id) || []
+    const { actual: memberActual, sponsors: memberSponsors } = calculateSponsorsProgressFromDonations(
       member.sponsors,
+      memberDonations,
       fiscalYear?.id ?? null,
       previousFiscalYearId
     )
@@ -300,8 +384,9 @@ function buildGroupResponse(group: GroupWithMembersAndSponsors, fiscalYear: Fisc
   })
 
   // Calculate group-level sponsors (those directly assigned to the group)
-  const { actual: groupSponsorsActual, sponsors: groupSponsors } = calculateSponsorsProgress(
+  const { actual: groupSponsorsActual, sponsors: groupSponsors } = calculateSponsorsProgressFromDonations(
     group.sponsors,
+    groupDonations,
     fiscalYear?.id ?? null,
     previousFiscalYearId
   )
@@ -330,18 +415,43 @@ function buildGroupResponse(group: GroupWithMembersAndSponsors, fiscalYear: Fisc
   }
 }
 
-function calculateSponsorsProgress(
-  sponsors: SponsorWithDonations[],
+function calculateSponsorsProgressFromDonations(
+  sponsors: SponsorBasic[],
+  donations: DonationWithSponsor[],
   currentFiscalYearId: string | null,
   previousFiscalYearId: string | null
 ) {
   let totalActual = 0
-  const sponsorsList = sponsors.map(sponsor => {
+
+  // Group donations by sponsor
+  const donationsBySponsor = new Map<string, DonationWithSponsor[]>()
+  for (const donation of donations) {
+    const sponsorId = donation.sponsor.id
+    if (!donationsBySponsor.has(sponsorId)) {
+      donationsBySponsor.set(sponsorId, [])
+    }
+    donationsBySponsor.get(sponsorId)!.push(donation)
+  }
+
+  // Build unique sponsors list (from both assigned sponsors and donation sponsors)
+  const sponsorMap = new Map<string, SponsorBasic>()
+  for (const sponsor of sponsors) {
+    sponsorMap.set(sponsor.id, sponsor)
+  }
+  for (const donation of donations) {
+    if (!sponsorMap.has(donation.sponsor.id)) {
+      sponsorMap.set(donation.sponsor.id, donation.sponsor)
+    }
+  }
+
+  const sponsorsList = Array.from(sponsorMap.values()).map(sponsor => {
+    const sponsorDonations = donationsBySponsor.get(sponsor.id) || []
+
     // Filter donations by fiscal year
-    const currentYearDonations = sponsor.donations.filter(
+    const currentYearDonations = sponsorDonations.filter(
       d => d.fiscalYearId === currentFiscalYearId
     )
-    const previousYearDonations = sponsor.donations.filter(
+    const previousYearDonations = sponsorDonations.filter(
       d => d.fiscalYearId === previousFiscalYearId
     )
 
