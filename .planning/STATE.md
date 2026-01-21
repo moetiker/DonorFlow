@@ -10,32 +10,32 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 2 of 5 (Public API)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-01-21 — Phase 1 complete, verified
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-01-21 — Completed 02-01-PLAN.md (Public Status API)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 5 min
-- Total execution time: 0.08 hours
+- Total plans completed: 2
+- Average duration: 5.5 min
+- Total execution time: 0.18 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1/1 ✓ | 5 min | 5 min |
-| 2. Public API | 0/TBD | - | - |
+| 1. Foundation | 1/1 | 5 min | 5 min |
+| 2. Public API | 1/TBD | 6 min | 6 min |
 | 3. Member Status Page | 0/TBD | - | - |
 | 4. Group Status Page | 0/TBD | - | - |
 | 5. Admin Integration | 0/TBD | - | - |
 
 **Recent Trend:**
-- Last 5 plans: 5 min
-- Trend: Starting
+- Last 5 plans: 5 min, 6 min
+- Trend: Consistent
 
 *Updated after each plan completion*
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - 01-01: 32-char base64url tokens (192 bits entropy) for capability URLs
 - 01-01: Prisma Client Extensions for auto-generation on create
 - 01-01: Only ungrouped members get tokens; grouped members use group's token
+- 02-01: 404 for invalid tokens (not 401/403) to avoid information disclosure
+- 02-01: Group targets set to 0 (aggregate calculation deferred to Phase 4)
+- 02-01: Security headers: Referrer-Policy: no-referrer, Cache-Control: private, max-age=60
 
 ### Pending Todos
 
@@ -60,8 +63,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-21T17:31:03Z
-Stopped at: Completed 01-01-PLAN.md (Status Token Infrastructure)
+Last session: 2026-01-21T21:38:56Z
+Stopped at: Completed 02-01-PLAN.md (Public Status API)
 Resume file: None
 
 ---
