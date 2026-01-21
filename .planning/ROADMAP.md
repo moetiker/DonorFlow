@@ -29,10 +29,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Members without a group have a statusToken field that auto-generates on creation
   3. Tokens are 32-character URL-safe strings (192 bits entropy)
   4. Existing groups and members can have tokens generated via migration/seed
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md - Token generation utility, schema update, Prisma extension, backfill script
 
 ### Phase 2: Public API
 **Goal**: Public endpoints respond to token requests without authentication
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/1 | Ready to execute | - |
 | 2. Public API | 0/TBD | Not started | - |
 | 3. Member Status Page | 0/TBD | Not started | - |
 | 4. Group Status Page | 0/TBD | Not started | - |
