@@ -43,10 +43,10 @@ Plans:
   2. Invalid tokens return 404 with user-friendly error (not 401/403)
   3. Public routes bypass NextAuth middleware (no login redirect)
   4. API returns only safe fields (no PII like email, phone, address)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md - Middleware bypass, public route wrapper, token status endpoint
 
 ### Phase 3: Member Status Page
 **Goal**: Members can view their donation progress on mobile via status link
@@ -99,8 +99,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/1 | ✓ Complete | 2026-01-21 |
-| 2. Public API | 0/TBD | Not started | - |
+| 1. Foundation | 1/1 | Complete | 2026-01-21 |
+| 2. Public API | 0/1 | Planned | - |
 | 3. Member Status Page | 0/TBD | Not started | - |
 | 4. Group Status Page | 0/TBD | Not started | - |
 | 5. Admin Integration | 0/TBD | Not started | - |
