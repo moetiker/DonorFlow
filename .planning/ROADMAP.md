@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Database schema for tokens, secure generation utility
 - [x] **Phase 2: Public API** - Token validation endpoint, middleware bypass for public routes
 - [x] **Phase 3: Member Status Page** - Mobile-first UI showing progress and sponsor lists
-- [ ] **Phase 4: Group Status Page** - Aggregate view for all members in a group
+- [x] **Phase 4: Group Status Page** - Aggregate view for all members in a group
 - [ ] **Phase 5: Admin Integration** - Link visibility and copy functionality in admin UI
 
 ## Phase Details
@@ -77,7 +77,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md - Enhance API for member data, add translations, create group UI with accordion
+- [x] 04-01-PLAN.md - Enhance API for member data, add translations, create group UI with accordion
 
 ### Phase 5: Admin Integration
 **Goal**: Admins can view and share status links from existing UI
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Foundation | 1/1 | Complete | 2026-01-21 |
 | 2. Public API | 1/1 | Complete | 2026-01-21 |
 | 3. Member Status Page | 1/1 | Complete | 2026-01-21 |
-| 4. Group Status Page | 0/1 | Planned | - |
+| 4. Group Status Page | 1/1 | Complete | 2026-01-21 |
 | 5. Admin Integration | 0/TBD | Not started | - |
 
 ---

@@ -31,10 +31,10 @@ Requirements for the status link feature. Each maps to roadmap phases.
 
 ### Group Status Page
 
-- [ ] **GROUP-01**: Group status link shows all members in the group
-- [ ] **GROUP-02**: Group page shows each member's individual progress (target, donated, remaining)
-- [ ] **GROUP-03**: Group page shows aggregate totals (all members combined)
-- [ ] **GROUP-04**: Group page allows expanding each member to see their sponsor lists
+- [x] **GROUP-01**: Group status link shows all members in the group
+- [x] **GROUP-02**: Group page shows each member's individual progress (target, donated, remaining)
+- [x] **GROUP-03**: Group page shows aggregate totals (all members combined)
+- [x] **GROUP-04**: Group page allows expanding each member to see their sponsor lists
 
 ### Technical Requirements
 
@@ -90,10 +90,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-02 | Phase 3: Member Status Page | Complete |
 | LIST-03 | Phase 3: Member Status Page | Complete |
 | LIST-04 | Phase 3: Member Status Page | Complete |
-| GROUP-01 | Phase 4: Group Status Page | Pending |
-| GROUP-02 | Phase 4: Group Status Page | Pending |
-| GROUP-03 | Phase 4: Group Status Page | Pending |
-| GROUP-04 | Phase 4: Group Status Page | Pending |
+| GROUP-01 | Phase 4: Group Status Page | Complete |
+| GROUP-02 | Phase 4: Group Status Page | Complete |
+| GROUP-03 | Phase 4: Group Status Page | Complete |
+| GROUP-04 | Phase 4: Group Status Page | Complete |
 | TECH-01 | Phase 2: Public API | Complete |
 | TECH-02 | Phase 3: Member Status Page | Complete |
 | TECH-03 | Phase 3: Member Status Page | Complete |
