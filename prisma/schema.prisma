@@ -6,7 +6,12 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+}
+
+// Spendenart
+enum DonationType {
+  MONETARY  // Geldspende
+  IN_KIND   // Sachspende
 }
 
 // Vereinsmitglieder
@@ -17,6 +22,7 @@ model Member {
   groupId         String?           // Direkte Zuordnung zu einer Gruppe (optional)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  statusToken     String?           @unique  // For members without group - public status link
 
   // Beziehungen
   group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
@@ -33,6 +39,7 @@ model Group {
   name            String
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  statusToken     String?           @unique  // Public status link for group
 
   // Beziehungen
   members         Member[]
@@ -90,20 +97,22 @@ model Sponsor {
 
 // Spenden von Gönnern
 model Donation {
-  id              String    @id @default(cuid())
+  id              String       @id @default(cuid())
   sponsorId       String
-  amount          Float     // CHF
+  type            DonationType @default(MONETARY)  // Spendenart (Geld oder Sach)
+  amount          Float?       // CHF (nur für Geldspenden)
+  description     String?      // Beschreibung (nur für Sachspenden)
   donationDate    DateTime
-  fiscalYearId    String?   // Zuordnung zu Vereinsjahr
+  fiscalYearId    String?      // Zuordnung zu Vereinsjahr
   note            String?
 
   // Zuordnung: Entweder zu Mitglied ODER zu Gruppe (XOR constraint)
   // Wird beim Erstellen automatisch vom Sponsor übernommen, kann aber überschrieben werden
-  memberId        String?   // Zuordnung zu Mitglied
-  groupId         String?   // Zuordnung zu Gruppe
+  memberId        String?      // Zuordnung zu Mitglied
+  groupId         String?      // Zuordnung zu Gruppe
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   sponsor         Sponsor      @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
   fiscalYear      FiscalYear?  @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
@@ -115,6 +124,7 @@ model Donation {
   @@index([fiscalYearId])
   @@index([memberId])
   @@index([groupId])
+  @@index([type])
 }
 
 // Vereinsjahre (Geschäftsjahre)
