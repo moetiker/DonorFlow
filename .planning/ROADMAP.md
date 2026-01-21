@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Public API** - Token validation endpoint, middleware bypass for public routes
 - [x] **Phase 3: Member Status Page** - Mobile-first UI showing progress and sponsor lists
 - [x] **Phase 4: Group Status Page** - Aggregate view for all members in a group
-- [ ] **Phase 5: Admin Integration** - Link visibility and copy functionality in admin UI
+- [x] **Phase 5: Admin Integration** - Link visibility and copy functionality in admin UI
 
 ## Phase Details
 
@@ -90,7 +90,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md - Add statusToken to API responses, add copy buttons to Groups and Members pages
+- [x] 05-01-PLAN.md - Add statusToken to API responses, add copy buttons to Groups and Members pages
 
 ## Progress
 
@@ -103,7 +103,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Public API | 1/1 | Complete | 2026-01-21 |
 | 3. Member Status Page | 1/1 | Complete | 2026-01-21 |
 | 4. Group Status Page | 1/1 | Complete | 2026-01-21 |
-| 5. Admin Integration | 0/1 | Not started | - |
+| 5. Admin Integration | 1/1 | Complete | 2026-01-21 |
 
 ---
 *Roadmap created: 2026-01-21*

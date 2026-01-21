@@ -12,8 +12,8 @@ Requirements for the status link feature. Each maps to roadmap phases.
 - [x] **TOKEN-01**: Groups have an auto-generated secret status token stored in database
 - [x] **TOKEN-02**: Members without a group have an auto-generated secret status token
 - [x] **TOKEN-03**: Tokens are static (generated once, never change)
-- [ ] **TOKEN-04**: Admin can see and copy status link for any group in group list/detail
-- [ ] **TOKEN-05**: Admin can see and copy status link for members without groups
+- [x] **TOKEN-04**: Admin can see and copy status link for any group in group list/detail
+- [x] **TOKEN-05**: Admin can see and copy status link for members without groups
 
 ### Status Page - Core Display
 
@@ -80,8 +80,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKEN-01 | Phase 1: Foundation | Complete |
 | TOKEN-02 | Phase 1: Foundation | Complete |
 | TOKEN-03 | Phase 1: Foundation | Complete |
-| TOKEN-04 | Phase 5: Admin Integration | Pending |
-| TOKEN-05 | Phase 5: Admin Integration | Pending |
+| TOKEN-04 | Phase 5: Admin Integration | Complete |
+| TOKEN-05 | Phase 5: Admin Integration | Complete |
 | STAT-01 | Phase 3: Member Status Page | Complete |
 | STAT-02 | Phase 3: Member Status Page | Complete |
 | STAT-03 | Phase 3: Member Status Page | Complete |
