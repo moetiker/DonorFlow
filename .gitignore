@@ -44,14 +44,15 @@ prisma/*.db-journal
 logs/
 *.log
 
-# deployment scripts (server-specific)
-deploy-remote.sh
-ecosystem.config.js
+# deployment (keep examples, ignore environment-specific configs)
+deploy-config.*.sh
+!deploy-config.example.sh
+deploy-temp/
+migrate-to-current.sh
+backup-setup.sh
 
 # local start script
 start.sh
-deploy.sh
-deploy-rsync.sh
 
 # local data
 data/

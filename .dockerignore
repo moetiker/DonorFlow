@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Dependencies (will be installed fresh in container)
+node_modules
+
+# Build outputs (will be generated in container)
+.next
+build
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode
+.idea
+.claude
+
+# Deployment
+deploy-config.*.sh
+deploy-temp
+
+# Misc
+.DS_Store
+coverage
+*.pem

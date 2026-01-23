@@ -6,10 +6,12 @@ Modern donation management system for clubs and organizations.
 
 - **Member & Group Management**: Organize members, auto-create groups
 - **Sponsor Assignment**: Assign to members or groups
-- **Donation Tracking**: Record and track all donations
+- **Donation Tracking**: Record monetary and in-kind donations
+- **In-Kind Donations**: Track non-monetary contributions with descriptions
 - **Fiscal Years & Targets**: Set goals, copy targets automatically
 - **Performance Reports**: Real-time dashboard with PDF export
-- **Multi-Language**: German, English, French, Italian
+- **Public Status Pages**: Shareable links for members/groups to view progress
+- **Multi-Language**: German, English, French, Italian (auto-detect)
 - **Import/Export**: Bulk import from CSV
 
 ## Tech Stack
@@ -63,10 +65,62 @@ mise run setup
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment options:
-- VPS with PM2 + Nginx (recommended)
-- Railway (simple)
-- Docker
+### Quick Deploy (Podman + systemd)
+
+```bash
+# Configure deployment target
+cp deploy-config.example.sh deploy-config.production.sh
+# Edit deploy-config.production.sh with your server details
+
+# Deploy
+./deploy.sh
+```
+
+The deploy script:
+1. Bumps version and creates git tag
+2. Builds in Podman container (reproducible Linux binaries)
+3. Creates tar archive and uploads to server
+4. Extracts with automatic backup of previous deployment
+5. Preserves database, .env, and logs
+6. Syncs database schema and generates status tokens
+7. Restarts via systemd user service
+
+### First-time Server Setup
+
+```bash
+# On the server, after first deploy:
+mkdir -p ~/.config/systemd/user
+cp ~/donorflow/current/donorflow.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable donorflow
+loginctl enable-linger $USER
+systemctl --user start donorflow
+```
+
+### Useful Commands
+
+```bash
+# View logs
+journalctl --user -u donorflow -f
+
+# Restart service
+systemctl --user restart donorflow
+
+# Check status
+systemctl --user status donorflow
+```
+
+### Server Structure
+
+```
+~/donorflow/
+├── current/           # Active deployment
+│   ├── .next/
+│   ├── prisma/prod.db
+│   ├── .env
+│   └── logs/
+├── backup-*/          # Previous deployments (last 3 kept)
+```
 
 ## Security Checklist
 

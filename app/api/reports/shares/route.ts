@@ -18,14 +18,15 @@ export async function GET() {
       })
     }
 
-    // Get all members with their donations and group info
+    // Get all members with their MONETARY donations and group info
     const members = await prisma.member.findMany({
       include: {
         sponsors: {
           include: {
             donations: {
               where: {
-                fiscalYearId: currentYear.id
+                fiscalYearId: currentYear.id,
+                type: 'MONETARY'
               }
             }
           }
@@ -36,7 +37,8 @@ export async function GET() {
               include: {
                 donations: {
                   where: {
-                    fiscalYearId: currentYear.id
+                    fiscalYearId: currentYear.id,
+                    type: 'MONETARY'
                   }
                 }
               }
@@ -47,19 +49,19 @@ export async function GET() {
       }
     })
 
-    // Calculate shares for each member
+    // Calculate shares for each member (MONETARY donations only)
     const memberShares = members.map(member => {
       let amount = 0
 
       // Add direct donations from member's sponsors
       amount += member.sponsors.reduce((sum, sponsor) => {
-        return sum + sponsor.donations.reduce((dSum, d) => dSum + d.amount, 0)
+        return sum + sponsor.donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
       }, 0)
 
       // If member is in a group, add linear share of group donations
       if (member.group) {
         const groupDonations = member.group.sponsors.reduce((sum, sponsor) => {
-          return sum + sponsor.donations.reduce((dSum, d) => dSum + d.amount, 0)
+          return sum + sponsor.donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
         }, 0)
         const memberCount = member.group.members.length
         if (memberCount > 0) {
@@ -76,10 +78,11 @@ export async function GET() {
       }
     }).filter(share => share.amount > 0)
 
-    // Get unassigned donations
+    // Get unassigned MONETARY donations
     const unassignedDonations = await prisma.donation.findMany({
       where: {
         fiscalYearId: currentYear.id,
+        type: 'MONETARY',
         sponsor: {
           memberId: null,
           groupId: null
@@ -87,7 +90,7 @@ export async function GET() {
       }
     })
 
-    const unassignedTotal = unassignedDonations.reduce((sum, d) => sum + d.amount, 0)
+    const unassignedTotal = unassignedDonations.reduce((sum, d) => sum + (d.amount || 0), 0)
 
     if (unassignedTotal > 0) {
       memberShares.push({

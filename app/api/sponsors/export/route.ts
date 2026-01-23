@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         : '-'
 
       const donationCount = sponsor.donations.length
-      const donationSum = sponsor.donations.reduce((sum, d) => sum + d.amount, 0)
+      const donationSum = sponsor.donations.reduce((sum, d) => sum + (d.amount || 0), 0)
 
       return [
         escapeCSV(sponsor.company),

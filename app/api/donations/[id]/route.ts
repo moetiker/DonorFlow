@@ -29,7 +29,7 @@ export const PUT = withApiRoute(async (
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const { sponsorId, amount, donationDate, note, memberId, groupId } = validation.data
+  const { sponsorId, type, amount, description, donationDate, note, memberId, groupId } = validation.data
 
   // Merge with existing values to validate XOR constraint
   const mergedMemberId = memberId !== undefined ? memberId : existingDonation.memberId
@@ -39,21 +39,23 @@ export const PUT = withApiRoute(async (
   if (!mergedMemberId && !mergedGroupId) {
     const messages = await import(`@/messages/${locale}.json`)
     return NextResponse.json({
-      error: messages.default.validation.errors.memberOrGroupRequired
+      error: messages.default.validation.memberOrGroupRequired
     }, { status: 400 })
   }
 
   if (mergedMemberId && mergedGroupId) {
     const messages = await import(`@/messages/${locale}.json`)
     return NextResponse.json({
-      error: messages.default.validation.errors.cannotAssignBoth
+      error: messages.default.validation.cannotAssignBoth
     }, { status: 400 })
   }
 
   // Build update data object (only include provided fields)
   const updateData: any = {}
   if (sponsorId !== undefined) updateData.sponsorId = sponsorId
+  if (type !== undefined) updateData.type = type
   if (amount !== undefined) updateData.amount = amount
+  if (description !== undefined) updateData.description = description || null
   if (note !== undefined) updateData.note = note || null
   if (memberId !== undefined) updateData.memberId = memberId || null
   if (groupId !== undefined) updateData.groupId = groupId || null

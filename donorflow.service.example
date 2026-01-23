@@ -1,0 +1,31 @@
+# DonorFlow systemd user service
+#
+# Installation:
+#   mkdir -p ~/.config/systemd/user
+#   cp donorflow.service.example ~/.config/systemd/user/donorflow.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable donorflow
+#   loginctl enable-linger $USER
+#   systemctl --user start donorflow
+#
+# Note: %h is replaced by systemd with the user's home directory
+
+[Unit]
+Description=DonorFlow - Donation Management System
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/donorflow/current
+ExecStart=%h/.local/share/mise/shims/node node_modules/.bin/next start -p 7526 -H 0.0.0.0
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=7526
+
+# Logging
+StandardOutput=append:%h/donorflow/current/logs/out.log
+StandardError=append:%h/donorflow/current/logs/error.log
+
+[Install]
+WantedBy=default.target

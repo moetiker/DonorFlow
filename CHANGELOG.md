@@ -2,6 +2,47 @@
 
 All notable changes to DonorFlow will be documented in this file.
 
+## [0.5.0] - 2026-01-22
+
+### Added
+- **In-Kind Donations (Sachspenden)**
+  - New donation type for non-monetary contributions
+  - Description field for in-kind donations
+  - Dedicated section in status pages and detail modals
+  - Included in performance reports and PDF export
+
+- **Public Status Pages**
+  - Shareable links for members and groups to view their donation progress
+  - Mobile-optimized responsive design
+  - Auto-detect browser language (de, en, fr, it)
+  - LYBUNT (Last Year But Unfortunately Not This) detection highlights
+  - Group view with accordion for member details
+  - Progress bars with color-coded achievement levels
+
+- **Status Link Management**
+  - Copy-to-clipboard buttons on members and groups pages
+  - Auto-generated secure tokens for each member/group
+  - Public API endpoints for status data
+
+- **New Deployment System**
+  - Podman-based container builds for reproducible Linux binaries
+  - Atomic deployments with automatic backup/rollback
+  - Switched from pm2 to systemd user service
+  - Automatic version bumping with git tags
+  - Database preserved across deployments
+  - Schema auto-sync on deploy
+
+### Changed
+- Donation model now supports assignment override (can differ from sponsor's default)
+- Status pages respect donation-level assignment overrides
+
+### Technical
+- Added `Dockerfile.build` for Podman builds
+- New `deploy.sh` script with Podman + systemd support
+- `ecosystem.config.js` uses `__dirname` for portable paths
+- Added `.env.production.example` template
+- Deployment structure changed to `/path/current/` with backups
+
 ## [0.2.1] - 2025-11-03
 
 ### Changed

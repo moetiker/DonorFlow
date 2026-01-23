@@ -8,7 +8,9 @@ import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
 type Donation = {
   id: string
-  amount: number
+  type: 'MONETARY' | 'IN_KIND'
+  amount: number | null
+  description: string | null
   donationDate: Date
   note: string | null
   sponsorId: string
@@ -136,7 +138,7 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
     setSelectedDonation(null)
   }
 
-  const totalAmount = donations.reduce((sum, d) => sum + d.amount, 0)
+  const totalAmount = donations.reduce((sum, d) => sum + (d.amount || 0), 0)
 
   return (
     <>
@@ -178,7 +180,8 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
                   <thead>
                     <tr>
                       <th>{t('date')}</th>
-                      <th>{t('amount')}</th>
+                      <th>{t('type')}</th>
+                      <th>{t('amountOrDescription')}</th>
                       <th>{t('note')}</th>
                     </tr>
                   </thead>
@@ -190,7 +193,18 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
                         style={{ cursor: 'pointer' }}
                       >
                         <td>{formatDate(donation.donationDate)}</td>
-                        <td><strong>{formatCurrency(donation.amount)}</strong></td>
+                        <td>
+                          <Badge bg={donation.type === 'MONETARY' ? 'success' : 'info'}>
+                            {donation.type === 'MONETARY' ? t('monetary') : t('inKind')}
+                          </Badge>
+                        </td>
+                        <td>
+                          {donation.type === 'MONETARY' ? (
+                            <strong>{formatCurrency(donation.amount || 0)}</strong>
+                          ) : (
+                            <em>{donation.description || '-'}</em>
+                          )}
+                        </td>
                         <td className="text-muted">{donation.note || '-'}</td>
                       </tr>
                     ))}

@@ -1,0 +1,42 @@
+# Build container for DonorFlow
+# This creates a reproducible build environment with Linux-native binaries
+
+FROM node:24-slim
+
+# Install build essentials for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files first (for better layer caching)
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install ALL dependencies (including devDependencies for build)
+RUN npm ci
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy source files
+COPY . .
+
+# Build Next.js application
+RUN npm run build
+
+# Remove devDependencies to reduce size
+RUN npm prune --omit=dev
+
+# Re-generate Prisma client after pruning (in case it was removed)
+RUN npx prisma generate
+
+# The built application is now in /app with:
+# - .next/ (Next.js build output)
+# - node_modules/ (production dependencies with Linux binaries)
+# - prisma/ (schema and scripts)
+# - public/ (static assets)
+# - package.json, ecosystem.config.js, etc.

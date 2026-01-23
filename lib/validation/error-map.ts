@@ -5,151 +5,165 @@ import { interpolate } from './i18n'
  * Create Zod error map with i18n support
  * Maps Zod error codes to translated messages with parameter interpolation
  *
- * This is the industry-standard approach for internationalizing Zod validation errors.
- * It uses Zod's built-in errorMap feature to provide custom, localized error messages.
+ * Updated for Zod v4 compatibility.
  *
  * @param translations - The validation namespace from messages/{locale}.json
  * @returns A Zod error map function
- *
- * @example
- * const messages = await getMessages('de')
- * const errorMap = createZodI18nErrorMap(messages.validation)
- * const result = schema.safeParse(data, { errorMap })
  */
 export function createZodI18nErrorMap(
   translations: Record<string, string>
-): z.ZodErrorMap {
-  return (issue, ctx) => {
+): (issue: z.ZodIssue) => { message: string } {
+  return (issue) => {
     let message: string
 
-    switch (issue.code) {
-      case z.ZodIssueCode.invalid_type:
-        if (issue.received === z.ZodParsedType.undefined) {
+    // Use string comparison for issue codes to handle Zod v4 changes
+    const code = issue.code as string
+
+    switch (code) {
+      case 'invalid_type': {
+        // Check if this is a "required" error (value is undefined/missing)
+        // Zod v4 uses 'received' property, fallback to checking 'input'
+        const typeIssue = issue as { received?: string; input?: unknown }
+        const isUndefined = typeIssue.received === 'undefined' ||
+                           typeIssue.input === undefined
+        if (isUndefined) {
           message = translations.required || 'Required'
         } else {
           message = translations.invalidType || 'Invalid type'
         }
         break
+      }
 
-      case z.ZodIssueCode.invalid_literal:
-        message = translations.invalidLiteral || 'Invalid literal value'
+      case 'invalid_literal':
+      case 'invalid_value':
+        message = translations.invalidLiteral || 'Invalid value'
         break
 
-      case z.ZodIssueCode.unrecognized_keys:
+      case 'unrecognized_keys':
         message = translations.unrecognizedKeys || 'Unrecognized keys'
         break
 
-      case z.ZodIssueCode.invalid_union:
+      case 'invalid_union':
         message = translations.invalidUnion || 'Invalid input'
         break
 
-      case z.ZodIssueCode.invalid_union_discriminator:
+      case 'invalid_union_discriminator':
         message = translations.invalidUnionDiscriminator || 'Invalid discriminator value'
         break
 
-      case z.ZodIssueCode.invalid_enum_value:
+      case 'invalid_enum_value':
         message = translations.invalidEnumValue || 'Invalid enum value'
         break
 
-      case z.ZodIssueCode.invalid_arguments:
+      case 'invalid_arguments':
         message = translations.invalidArguments || 'Invalid function arguments'
         break
 
-      case z.ZodIssueCode.invalid_return_type:
+      case 'invalid_return_type':
         message = translations.invalidReturnType || 'Invalid function return type'
         break
 
-      case z.ZodIssueCode.invalid_date:
+      case 'invalid_date':
         message = translations.invalidDate || 'Invalid date'
         break
 
-      case z.ZodIssueCode.invalid_string:
-        if (issue.validation === 'email') {
+      case 'invalid_string':
+      case 'invalid_format': {
+        // Handle string format validation (Zod v4 uses invalid_format)
+        const validation = (issue as { format?: string }).format ||
+                          (issue as { validation?: string }).validation
+        if (validation === 'email') {
           message = translations.email || 'Invalid email address'
-        } else if (issue.validation === 'url') {
+        } else if (validation === 'url') {
           message = translations.invalidUrl || 'Invalid URL'
-        } else if (issue.validation === 'uuid') {
+        } else if (validation === 'uuid') {
           message = translations.invalidUuid || 'Invalid UUID'
-        } else if (issue.validation === 'cuid') {
+        } else if (validation === 'cuid') {
           message = translations.invalidCuid || 'Invalid CUID'
-        } else if (issue.validation === 'regex') {
+        } else if (validation === 'regex') {
           message = translations.invalidRegex || 'Invalid format'
         } else {
           message = translations.invalidString || 'Invalid string'
         }
         break
+      }
 
-      case z.ZodIssueCode.too_small:
-        if (issue.type === 'string') {
-          if (issue.minimum === 1) {
-            // Special case: min(1) typically means "required"
+      case 'too_small': {
+        const smallIssue = issue as {
+          origin?: string
+          type?: string
+          minimum?: number | bigint
+          min?: number | bigint
+          inclusive?: boolean
+        }
+        const type = smallIssue.origin || smallIssue.type
+        const minimum = smallIssue.minimum ?? smallIssue.min ?? 0
+
+        if (type === 'string') {
+          if (minimum === 1 || minimum === BigInt(1)) {
             message = translations.required || 'Required'
           } else {
             message = interpolate(
               translations.minLength || 'Must be at least {min} characters',
-              { min: Number(issue.minimum) }
+              { min: Number(minimum) }
             )
           }
-        } else if (issue.type === 'number') {
-          if (issue.minimum === 0 && !issue.inclusive) {
-            // positive() - must be greater than 0
+        } else if (type === 'number') {
+          if ((minimum === 0 || minimum === BigInt(0)) && !smallIssue.inclusive) {
             message = translations.positive || 'Must be greater than 0'
-          } else if (issue.minimum === 0 && issue.inclusive) {
-            // nonnegative() - must be >= 0
+          } else if ((minimum === 0 || minimum === BigInt(0)) && smallIssue.inclusive) {
             message = translations.nonnegative || 'Must be positive'
           } else {
             message = interpolate(
               translations.minValue || 'Must be at least {min}',
-              { min: Number(issue.minimum) }
+              { min: Number(minimum) }
             )
           }
-        } else if (issue.type === 'array') {
+        } else if (type === 'array') {
           message = interpolate(
             translations.minItems || 'Must contain at least {min} items',
-            { min: Number(issue.minimum) }
-          )
-        } else if (issue.type === 'date') {
-          message = interpolate(
-            translations.minDate || 'Date must be after {min}',
-            { min: new Date(issue.minimum as number).toLocaleDateString() }
+            { min: Number(minimum) }
           )
         } else {
           message = translations.tooSmall || 'Too small'
         }
         break
+      }
 
-      case z.ZodIssueCode.too_big:
-        if (issue.type === 'string') {
+      case 'too_big': {
+        const bigIssue = issue as {
+          origin?: string
+          type?: string
+          maximum?: number | bigint
+          max?: number | bigint
+        }
+        const type = bigIssue.origin || bigIssue.type
+        const maximum = bigIssue.maximum ?? bigIssue.max ?? 0
+
+        if (type === 'string') {
           message = interpolate(
             translations.maxLength || 'Must be at most {max} characters',
-            { max: Number(issue.maximum) }
+            { max: Number(maximum) }
           )
-        } else if (issue.type === 'number') {
+        } else if (type === 'number') {
           message = interpolate(
             translations.maxValue || 'Must be at most {max}',
-            { max: Number(issue.maximum) }
+            { max: Number(maximum) }
           )
-        } else if (issue.type === 'array') {
+        } else if (type === 'array') {
           message = interpolate(
             translations.maxItems || 'Must contain at most {max} items',
-            { max: Number(issue.maximum) }
-          )
-        } else if (issue.type === 'date') {
-          message = interpolate(
-            translations.maxDate || 'Date must be before {max}',
-            { max: new Date(issue.maximum as number).toLocaleDateString() }
+            { max: Number(maximum) }
           )
         } else {
           message = translations.tooBig || 'Too big'
         }
         break
+      }
 
-      case z.ZodIssueCode.custom:
+      case 'custom':
         // For custom error messages (like refine())
-        // Check if message is a translation key
-        const customMessage = issue.message || ctx.defaultError
-
-        // If it's a known validation key, translate it
+        const customMessage = issue.message || 'Validation failed'
         if (customMessage && translations[customMessage]) {
           message = translations[customMessage]
         } else {
@@ -157,23 +171,25 @@ export function createZodI18nErrorMap(
         }
         break
 
-      case z.ZodIssueCode.invalid_intersection_types:
+      case 'invalid_intersection_types':
         message = translations.invalidIntersectionTypes || 'Intersection results could not be merged'
         break
 
-      case z.ZodIssueCode.not_multiple_of:
+      case 'not_multiple_of': {
+        const multipleOfIssue = issue as { multipleOf?: number }
         message = interpolate(
           translations.notMultipleOf || 'Must be a multiple of {multipleOf}',
-          { multipleOf: Number(issue.multipleOf) }
+          { multipleOf: Number(multipleOfIssue.multipleOf || 0) }
         )
         break
+      }
 
-      case z.ZodIssueCode.not_finite:
+      case 'not_finite':
         message = translations.notFinite || 'Number must be finite'
         break
 
       default:
-        message = ctx.defaultError
+        message = issue.message || 'Validation failed'
     }
 
     return { message }

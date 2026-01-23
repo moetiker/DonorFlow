@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Table, Form, InputGroup } from 'react-bootstrap'
+import { Container, Card, Button, Table, Form, InputGroup, Badge, ButtonGroup } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { DonationModal } from '@/components/DonationModal'
 import { useState, useEffect } from 'react'
@@ -11,7 +11,9 @@ import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 type Donation = {
   id: string
   sponsorId: string
-  amount: number
+  type: 'MONETARY' | 'IN_KIND'
+  amount: number | null
+  description: string | null
   donationDate: Date
   note: string | null
   memberId: string | null
@@ -58,6 +60,7 @@ export default function DonationsPage() {
   const [showModal, setShowModal] = useState(false)
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'MONETARY' | 'IN_KIND'>('ALL')
   const t = useTranslations('donations')
   const tCommon = useTranslations('common')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
@@ -65,8 +68,9 @@ export default function DonationsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
+      const typeParam = typeFilter !== 'ALL' ? `&type=${typeFilter}` : ''
       const [donationsRes, sponsorsRes, membersRes, groupsRes] = await Promise.all([
-        fetch('/api/donations?include=all'),
+        fetch(`/api/donations?include=all${typeParam}`),
         fetch('/api/sponsors?include=all'),
         fetch('/api/members'),
         fetch('/api/groups')
@@ -93,7 +97,7 @@ export default function DonationsPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [typeFilter])
 
   const handleRowClick = (donation: Donation) => {
     setSelectedDonation(donation)
@@ -125,11 +129,13 @@ export default function DonationsPage() {
       : ''
     const groupName = donation.sponsor.group ? donation.sponsor.group.name.toLowerCase() : ''
     const note = (donation.note || '').toLowerCase()
+    const description = (donation.description || '').toLowerCase()
 
     return sponsorName.includes(searchLower) ||
            memberName.includes(searchLower) ||
            groupName.includes(searchLower) ||
-           note.includes(searchLower)
+           note.includes(searchLower) ||
+           description.includes(searchLower)
   })
 
   return (
@@ -144,25 +150,55 @@ export default function DonationsPage() {
           </Button>
         </div>
 
-        {!loading && donations.length > 0 && (
+        {!loading && (
           <Card className="mb-3">
             <Card.Body>
-              <InputGroup>
-                <InputGroup.Text>
-                  <i className="bi bi-search"></i>
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
-                    <i className="bi bi-x"></i>
+              <div className="d-flex flex-column flex-md-row gap-3 align-items-md-center">
+                <ButtonGroup>
+                  <Button
+                    variant={typeFilter === 'ALL' ? 'primary' : 'outline-primary'}
+                    onClick={() => setTypeFilter('ALL')}
+                    size="sm"
+                  >
+                    {t('allDonations')}
                   </Button>
+                  <Button
+                    variant={typeFilter === 'MONETARY' ? 'success' : 'outline-success'}
+                    onClick={() => setTypeFilter('MONETARY')}
+                    size="sm"
+                  >
+                    <i className="bi bi-cash me-1"></i>
+                    {t('monetary')}
+                  </Button>
+                  <Button
+                    variant={typeFilter === 'IN_KIND' ? 'info' : 'outline-info'}
+                    onClick={() => setTypeFilter('IN_KIND')}
+                    size="sm"
+                  >
+                    <i className="bi bi-gift me-1"></i>
+                    {t('inKind')}
+                  </Button>
+                </ButtonGroup>
+
+                {donations.length > 0 && (
+                  <InputGroup className="flex-grow-1">
+                    <InputGroup.Text>
+                      <i className="bi bi-search"></i>
+                    </InputGroup.Text>
+                    <Form.Control
+                      type="text"
+                      placeholder={t('searchPlaceholder')}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                      <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
+                        <i className="bi bi-x"></i>
+                      </Button>
+                    )}
+                  </InputGroup>
                 )}
-              </InputGroup>
+              </div>
               {searchTerm && (
                 <small className="text-muted mt-2 d-block">
                   {filteredDonations.length} von {donations.length} {t('title')}
@@ -198,9 +234,10 @@ export default function DonationsPage() {
                 <thead>
                   <tr>
                     <th>{t('date')}</th>
+                    <th>{t('type')}</th>
                     <th>{t('sponsor')}</th>
                     <th>{t('assignedTo')}</th>
-                    <th>{t('amount')}</th>
+                    <th>{t('amountOrDescription')}</th>
                     <th>{t('note')}</th>
                   </tr>
                 </thead>
@@ -213,6 +250,13 @@ export default function DonationsPage() {
                       className="align-middle"
                     >
                       <td>{formatDate(donation.donationDate)}</td>
+                      <td>
+                        {donation.type === 'MONETARY' ? (
+                          <Badge bg="success">{t('monetary')}</Badge>
+                        ) : (
+                          <Badge bg="info">{t('inKind')}</Badge>
+                        )}
+                      </td>
                       <td><strong>{getSponsorDisplayName(donation.sponsor)}</strong></td>
                       <td className="text-muted">
                         {donation.member && (
@@ -222,7 +266,13 @@ export default function DonationsPage() {
                           <>{donation.group.name}</>
                         )}
                       </td>
-                      <td><strong className="text-success">{formatCurrency(donation.amount)}</strong></td>
+                      <td>
+                        {donation.type === 'MONETARY' ? (
+                          <strong className="text-success">{formatCurrency(donation.amount || 0)}</strong>
+                        ) : (
+                          <span className="text-muted">{donation.description}</span>
+                        )}
+                      </td>
                       <td className="text-muted">{donation.note || '-'}</td>
                     </tr>
                   ))}

@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
-import { createDonationSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
+import { createDonationSchema, validateRequestI18n, getLocaleFromRequest, type DonationType } from '@/lib/validation'
 
 export const GET = withApiRoute(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const includeAll = searchParams.get('include') === 'all'
+  const typeFilter = searchParams.get('type') as DonationType | null
 
   const donations = await prisma.donation.findMany({
+    where: typeFilter ? { type: typeFilter } : undefined,
     orderBy: { donationDate: 'desc' },
     take: 100,
     ...(includeAll && {
@@ -40,7 +42,7 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const { sponsorId, amount, donationDate, note, memberId, groupId } = validation.data
+  const { sponsorId, type, amount, description, donationDate, note, memberId, groupId } = validation.data
 
   // Determine the fiscal year based on donation date
   const parsedDate = new Date(donationDate)
@@ -54,7 +56,9 @@ export const POST = withApiRoute(async (request: NextRequest) => {
   const donation = await prisma.donation.create({
     data: {
       sponsorId,
-      amount,
+      type: type || 'MONETARY',
+      amount: amount || null,
+      description: description || null,
       donationDate: parsedDate,
       fiscalYearId: fiscalYear?.id || null,
       note: note || null,

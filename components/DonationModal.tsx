@@ -39,7 +39,9 @@ function getSponsorDisplayName(sponsor: Sponsor) {
 type Donation = {
   id: string
   sponsorId: string
-  amount: number
+  type: 'MONETARY' | 'IN_KIND'
+  amount: number | null
+  description: string | null
   donationDate: Date
   note: string | null
   memberId: string | null
@@ -64,7 +66,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     sponsorId: '',
+    type: 'MONETARY' as 'MONETARY' | 'IN_KIND',
     amount: '',
+    description: '',
     donationDate: new Date().toISOString().split('T')[0],
     note: '',
     memberId: '',
@@ -78,7 +82,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     if (donation) {
       setFormData({
         sponsorId: donation.sponsorId,
-        amount: donation.amount.toString(),
+        type: donation.type || 'MONETARY',
+        amount: donation.amount?.toString() || '',
+        description: donation.description || '',
         donationDate: new Date(donation.donationDate).toISOString().split('T')[0],
         note: donation.note || '',
         memberId: donation.memberId || '',
@@ -94,7 +100,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     } else {
       setFormData({
         sponsorId: '',
+        type: 'MONETARY',
         amount: '',
+        description: '',
         donationDate: new Date().toISOString().split('T')[0],
         note: '',
         memberId: '',
@@ -168,13 +176,22 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     setLoading(true)
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         sponsorId: formData.sponsorId,
-        amount: parseFloat(formData.amount),
+        type: formData.type,
         donationDate: formData.donationDate,
         note: formData.note || null,
         memberId: formData.memberId || null,
         groupId: formData.groupId || null
+      }
+
+      // Add type-specific fields
+      if (formData.type === 'MONETARY') {
+        payload.amount = parseFloat(formData.amount)
+        payload.description = null
+      } else {
+        payload.description = formData.description
+        payload.amount = null
       }
 
       const url = donation ? `/api/donations/${donation.id}` : '/api/donations'
@@ -308,17 +325,60 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>{t('amount')} (CHF) *</Form.Label>
-            <Form.Control
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              required
-              disabled={loading}
-            />
+            <Form.Label>{t('donationType')} *</Form.Label>
+            <div className="d-flex gap-3">
+              <Form.Check
+                type="radio"
+                id="type-monetary"
+                label={t('monetary')}
+                checked={formData.type === 'MONETARY'}
+                onChange={() => setFormData({ ...formData, type: 'MONETARY' })}
+                disabled={loading || !!donation}
+              />
+              <Form.Check
+                type="radio"
+                id="type-inkind"
+                label={t('inKind')}
+                checked={formData.type === 'IN_KIND'}
+                onChange={() => setFormData({ ...formData, type: 'IN_KIND' })}
+                disabled={loading || !!donation}
+              />
+            </div>
+            <Form.Text className="text-muted">
+              {formData.type === 'MONETARY'
+                ? t('monetaryHelp')
+                : t('inKindHelp')
+              }
+            </Form.Text>
           </Form.Group>
+
+          {formData.type === 'MONETARY' ? (
+            <Form.Group className="mb-3">
+              <Form.Label>{t('amount')} (CHF) *</Form.Label>
+              <Form.Control
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                required
+                disabled={loading}
+              />
+            </Form.Group>
+          ) : (
+            <Form.Group className="mb-3">
+              <Form.Label>{t('description')} *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder={t('placeholderDescription')}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                required
+                disabled={loading}
+                maxLength={200}
+              />
+            </Form.Group>
+          )}
 
           <Form.Group className="mb-3">
             <Form.Label>{t('date')} *</Form.Label>

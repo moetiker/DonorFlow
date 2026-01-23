@@ -1,11 +1,10 @@
 import { z } from 'zod'
 import { type Locale, defaultLocale } from '@/lib/i18n/config'
-import { getMessages, getLocaleFromRequest, interpolate } from '@/lib/validation/i18n'
+import { getMessages, getLocaleFromRequest } from '@/lib/validation/i18n'
 import { createZodI18nErrorMap } from '@/lib/validation/error-map'
 
-// Re-export i18n utilities for convenience
-export { getLocaleFromRequest, getMessages, interpolate } from '@/lib/validation/i18n'
-export { createZodI18nErrorMap } from '@/lib/validation/error-map'
+// Re-export i18n utilities for API route convenience
+export { getLocaleFromRequest, getMessages } from '@/lib/validation/i18n'
 
 /**
  * Validation schemas for API routes using Zod
@@ -16,50 +15,83 @@ export { createZodI18nErrorMap } from '@/lib/validation/error-map'
  */
 
 // ============================================================================
+// XOR Validation Helpers (Member OR Group, not both)
+// ============================================================================
+
+type MemberGroupFields = { memberId?: string | null; groupId?: string | null }
+
+/** Validates that either memberId OR groupId is provided (for create operations) */
+const requireMemberOrGroup = (data: MemberGroupFields) => data.memberId || data.groupId
+
+/** Validates that both memberId AND groupId are not provided simultaneously */
+const preventBothMemberAndGroup = (data: MemberGroupFields) => !(data.memberId && data.groupId)
+
+/** For update operations: only validate if both fields are explicitly provided */
+const requireMemberOrGroupOnUpdate = (data: MemberGroupFields) => {
+  if (data.memberId !== undefined && data.groupId !== undefined) {
+    return data.memberId || data.groupId
+  }
+  return true
+}
+
+const preventBothOnUpdate = (data: MemberGroupFields) => {
+  if (data.memberId !== undefined && data.groupId !== undefined) {
+    return !(data.memberId && data.groupId)
+  }
+  return true
+}
+
+// Reusable refinement configs
+const memberOrGroupRequiredRefinement = {
+  message: 'memberOrGroupRequired',
+  path: ['memberId']
+}
+
+const cannotAssignBothRefinement = {
+  message: 'cannotAssignBoth',
+  path: ['groupId']
+}
+
+// ============================================================================
 // Donation Schemas
 // ============================================================================
 
+export const donationTypeSchema = z.enum(['MONETARY', 'IN_KIND'])
+export type DonationType = z.infer<typeof donationTypeSchema>
+
 export const createDonationSchema = z.object({
   sponsorId: z.string().min(1),
-  amount: z.number().positive(),
+  type: donationTypeSchema.default('MONETARY'),
+  amount: z.number().positive().optional().nullable(),
+  description: z.string().optional().nullable(),
   donationDate: z.string().min(1),
   note: z.string().optional().nullable(),
   memberId: z.string().optional().nullable(),
   groupId: z.string().optional().nullable()
-}).refine(
-  data => data.memberId || data.groupId,
-  { message: 'memberOrGroupRequired', path: ['memberId'] }
-).refine(
-  data => !(data.memberId && data.groupId),
-  { message: 'cannotAssignBoth', path: ['groupId'] }
-)
+})
+  .refine(requireMemberOrGroup, memberOrGroupRequiredRefinement)
+  .refine(preventBothMemberAndGroup, cannotAssignBothRefinement)
+  .refine(
+    (data) => data.type === 'IN_KIND' || (data.amount !== null && data.amount !== undefined),
+    { message: 'amountRequiredForMonetary', path: ['amount'] }
+  )
+  .refine(
+    (data) => data.type === 'MONETARY' || (data.description && data.description.trim().length > 0),
+    { message: 'descriptionRequiredForInKind', path: ['description'] }
+  )
 
 export const updateDonationSchema = z.object({
   sponsorId: z.string().min(1).optional(),
-  amount: z.number().positive().optional(),
+  type: donationTypeSchema.optional(),
+  amount: z.number().positive().optional().nullable(),
+  description: z.string().optional().nullable(),
   donationDate: z.string().min(1).optional(),
   note: z.string().optional().nullable(),
   memberId: z.string().optional().nullable(),
   groupId: z.string().optional().nullable()
-}).refine(
-  data => {
-    // Only validate XOR if both fields are provided in update
-    if (data.memberId !== undefined && data.groupId !== undefined) {
-      return !(data.memberId && data.groupId)
-    }
-    return true
-  },
-  { message: 'cannotAssignBoth', path: ['groupId'] }
-).refine(
-  data => {
-    // Only validate requirement if both fields are provided in update
-    if (data.memberId !== undefined && data.groupId !== undefined) {
-      return data.memberId || data.groupId
-    }
-    return true
-  },
-  { message: 'memberOrGroupRequired', path: ['memberId'] }
-)
+})
+  .refine(preventBothOnUpdate, cannotAssignBothRefinement)
+  .refine(requireMemberOrGroupOnUpdate, memberOrGroupRequiredRefinement)
 
 export type CreateDonationInput = z.infer<typeof createDonationSchema>
 export type UpdateDonationInput = z.infer<typeof updateDonationSchema>
@@ -77,20 +109,14 @@ export const createSponsorSchema = z.object({
   postalCode: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable().or(z.literal('')),
+  email: z.email().optional().nullable().or(z.literal('')),
   notes: z.string().optional().nullable(),
   memberId: z.string().optional().nullable(),
   groupId: z.string().optional().nullable()
-}).refine(
-  data => data.lastName || data.company,
-  { message: 'nameOrCompanyRequired', path: ['lastName'] }
-).refine(
-  data => data.memberId || data.groupId,
-  { message: 'memberOrGroupRequired', path: ['memberId'] }
-).refine(
-  data => !(data.memberId && data.groupId),
-  { message: 'cannotAssignBoth', path: ['groupId'] }
-)
+})
+  .refine(data => data.lastName || data.company, { message: 'nameOrCompanyRequired', path: ['lastName'] })
+  .refine(requireMemberOrGroup, memberOrGroupRequiredRefinement)
+  .refine(preventBothMemberAndGroup, cannotAssignBothRefinement)
 
 export const updateSponsorSchema = z.object({
   company: z.string().optional().nullable(),
@@ -101,29 +127,13 @@ export const updateSponsorSchema = z.object({
   postalCode: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable().or(z.literal('')),
+  email: z.email().optional().nullable().or(z.literal('')),
   notes: z.string().optional().nullable(),
   memberId: z.string().optional().nullable(),
   groupId: z.string().optional().nullable()
-}).refine(
-  data => {
-    // Only validate if both are provided
-    if (data.memberId !== undefined && data.groupId !== undefined) {
-      return !(data.memberId && data.groupId)
-    }
-    return true
-  },
-  { message: 'cannotAssignBoth', path: ['groupId'] }
-).refine(
-  data => {
-    // Only validate if both are provided
-    if (data.memberId !== undefined && data.groupId !== undefined) {
-      return data.memberId || data.groupId
-    }
-    return true
-  },
-  { message: 'memberOrGroupRequired', path: ['memberId'] }
-)
+})
+  .refine(preventBothOnUpdate, cannotAssignBothRefinement)
+  .refine(requireMemberOrGroupOnUpdate, memberOrGroupRequiredRefinement)
 
 export type CreateSponsorInput = z.infer<typeof createSponsorSchema>
 export type UpdateSponsorInput = z.infer<typeof updateSponsorSchema>
@@ -243,16 +253,18 @@ export async function validateRequestI18n<T>(
     // Create locale-aware error map
     const errorMap = createZodI18nErrorMap(messages.validation)
 
-    // Parse with custom error map
-    const validated = schema.parse(data, { errorMap })
-    return { success: true, data: validated }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      // Return the first error message (already translated)
-      const firstError = error.errors[0]
-      return { success: false, error: firstError.message }
+    // Use safeParse and translate errors manually (Zod v4 API change)
+    const result = schema.safeParse(data)
+
+    if (result.success) {
+      return { success: true, data: result.data }
     }
 
+    // Translate the first error using our error map
+    const firstIssue = result.error.issues[0]
+    const translated = errorMap(firstIssue)
+    return { success: false, error: translated.message }
+  } catch (error) {
     // Fallback error message
     try {
       const messages = await getMessages(locale)
@@ -279,7 +291,7 @@ export function validateRequest<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       // Return the first error message
-      const firstError = error.errors[0]
+      const firstError = error.issues[0]
       return { success: false, error: firstError.message }
     }
     return { success: false, error: 'Validierung fehlgeschlagen' }
