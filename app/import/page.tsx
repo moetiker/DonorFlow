@@ -51,7 +51,7 @@ export default function ImportPage() {
         throw new Error(data.error || t('uploadSuccess'))
       }
 
-      setSuccess(t('uploadSuccess', { count: data.count }))
+      setSuccess(t('uploadSuccess', { count: data.count, created: data.created, updated: data.updated }))
       setFile(null)
       if (e.target instanceof HTMLFormElement) {
         e.target.reset()

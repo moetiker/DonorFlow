@@ -295,7 +295,7 @@
     "utf8Required": "Stellen Sie sicher, dass Ihre CSV-Datei UTF-8 kodiert ist und die richtige Spaltenreihenfolge hat",
     "selectFile": "CSV-Datei auswählen",
     "upload": "Hochladen",
-    "uploadSuccess": "Erfolgreich {count} Datensätze importiert",
+    "uploadSuccess": "Erfolgreich {count} Datensätze verarbeitet ({created} neu, {updated} aktualisiert)",
     "importButton": "Importieren"
   },
   "reports": {

@@ -295,7 +295,7 @@
     "utf8Required": "Make sure your CSV file is UTF-8 encoded and has the correct column order",
     "selectFile": "Select CSV File",
     "upload": "Upload",
-    "uploadSuccess": "Successfully imported {count} records",
+    "uploadSuccess": "Successfully processed {count} records ({created} new, {updated} updated)",
     "importButton": "Import"
   },
   "reports": {
