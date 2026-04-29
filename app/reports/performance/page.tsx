@@ -1,10 +1,11 @@
 'use client'
 
-import { Container, Card, Table, ProgressBar, Alert, Badge, Button } from 'react-bootstrap'
+import { Container, Card, Table, ProgressBar, Alert, Badge, Button, Form } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { PerformanceDetailModal } from '@/components/PerformanceDetailModal'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useTranslations } from 'next-intl'
@@ -54,13 +55,16 @@ type InKindDonation = {
   } | null
 }
 
+type FiscalYear = {
+  id: string
+  name: string
+  startDate?: string
+  endDate?: string
+}
+
 type ReportData = {
-  currentYear: {
-    id: string
-    name: string
-    startDate: string
-    endDate: string
-  } | null
+  currentYear: FiscalYear | null
+  allYears: FiscalYear[]
   memberStats: MemberStat[]
   groupStats: GroupStat[]
   unassignedTotal: number
@@ -77,6 +81,8 @@ export default function PerformancePage() {
   const t = useTranslations('reports')
   const tCommon = useTranslations('common')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get('year')
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -87,11 +93,12 @@ export default function PerformancePage() {
 
   useEffect(() => {
     loadReportData()
-  }, [])
+  }, [yearParam])
 
   async function loadReportData() {
     try {
-      const response = await fetch('/api/reports')
+      const url = yearParam ? `/api/reports?year=${yearParam}` : '/api/reports'
+      const response = await fetch(url)
       const result = await response.json()
       setData(result)
     } catch (error) {
@@ -99,6 +106,10 @@ export default function PerformancePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleYearChange(yearId: string) {
+    window.location.href = `/reports/performance?year=${yearId}`
   }
 
   function handleMemberClick(memberId: string) {
@@ -403,7 +414,7 @@ export default function PerformancePage() {
     )
   }
 
-  const { currentYear, memberStats, groupStats, unassignedTotal, unassignedCount, totalTarget, totalActual, memberActual, groupActual, overallPercentage, inKindDonations } = data
+  const { currentYear, allYears, memberStats, groupStats, unassignedTotal, unassignedCount, totalTarget, totalActual, memberActual, groupActual, overallPercentage, inKindDonations } = data
 
   // Sort by percentage descending
   const sortedStats = [...memberStats].sort((a, b) => b.percentage - a.percentage)
@@ -440,9 +451,22 @@ export default function PerformancePage() {
         </div>
 
         <div ref={reportRef}>
-          <Alert variant="info" className="mb-4">
-            <strong>{t('fiscalYear')}:</strong> {currentYear.name}
-          </Alert>
+          <Card className="mb-4">
+            <Card.Body className="py-2">
+              <div className="d-flex align-items-center gap-3">
+                <strong>{t('fiscalYear')}:</strong>
+                <Form.Select
+                  value={currentYear.id}
+                  onChange={(e) => handleYearChange(e.target.value)}
+                  style={{ width: 'auto', minWidth: '200px' }}
+                >
+                  {allYears.map(year => (
+                    <option key={year.id} value={year.id}>{year.name}</option>
+                  ))}
+                </Form.Select>
+              </div>
+            </Card.Body>
+          </Card>
 
           {/* Overall Summary */}
           <Card className="mb-4">
@@ -683,6 +707,7 @@ export default function PerformancePage() {
         show={showDetailModal}
         memberId={selectedMemberId}
         groupId={selectedGroupId}
+        fiscalYearId={currentYear?.id || null}
         onHide={handleCloseDetail}
       />
     </>

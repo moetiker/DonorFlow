@@ -10,6 +10,8 @@ type Sponsor = {
   company: string | null
   firstName: string | null
   lastName: string | null
+  phone: string | null
+  email: string | null
 }
 
 type Donation = {
@@ -50,10 +52,11 @@ type Props = {
   show: boolean
   memberId: string | null
   groupId: string | null
+  fiscalYearId: string | null
   onHide: () => void
 }
 
-export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Props) {
+export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, onHide }: Props) {
   const t = useTranslations('reports')
   const tCommon = useTranslations('common')
   const tDonations = useTranslations('donations')
@@ -65,16 +68,17 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
     if (show && (memberId || groupId)) {
       loadDetailData()
     }
-  }, [show, memberId, groupId])
+  }, [show, memberId, groupId, fiscalYearId])
 
   const loadDetailData = async () => {
     if (!memberId && !groupId) return
 
     setLoading(true)
     try {
+      const yearQuery = fiscalYearId ? `?year=${fiscalYearId}` : ''
       const endpoint = memberId
-        ? `/api/members/${memberId}/donations`
-        : `/api/groups/${groupId}/donations`
+        ? `/api/members/${memberId}/donations${yearQuery}`
+        : `/api/groups/${groupId}/donations${yearQuery}`
 
       const response = await fetch(endpoint)
       const donations: Donation[] = await response.json()
@@ -90,8 +94,8 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
         const member = members.find((m: any) => m.id === memberId)
         if (member) {
           name = `${member.firstName} ${member.lastName}`
-          // Get target for current fiscal year
-          const targetResponse = await fetch(`/api/reports`)
+          // Get target for selected fiscal year
+          const targetResponse = await fetch(`/api/reports${yearQuery}`)
           const reportData = await targetResponse.json()
           const memberStat = reportData.memberStats.find((s: any) => s.member.id === memberId)
           if (memberStat) {
@@ -104,8 +108,8 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
         const group = groups.find((g: any) => g.id === groupId)
         if (group) {
           name = group.name
-          // Get target for current fiscal year
-          const targetResponse = await fetch(`/api/reports`)
+          // Get target for selected fiscal year
+          const targetResponse = await fetch(`/api/reports${yearQuery}`)
           const reportData = await targetResponse.json()
           const groupStat = reportData.groupStats.find((s: any) => s.group.id === groupId)
           if (groupStat) {
@@ -326,8 +330,14 @@ export function PerformanceDetailModal({ show, memberId, groupId, onHide }: Prop
                 <Alert variant="warning">
                   <div className="small">
                     {data.sponsorsWithoutDonations.map((sponsor) => (
-                      <div key={sponsor.id}>
+                      <div key={sponsor.id} className="mb-1">
                         <strong>{getSponsorDisplayName(sponsor)}</strong>
+                        {(sponsor.phone || sponsor.email) && (
+                          <span className="text-muted ms-2">
+                            {sponsor.phone && <span className="me-2">📞 {sponsor.phone}</span>}
+                            {sponsor.email && <span>✉️ {sponsor.email}</span>}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -1,15 +1,34 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get current fiscal year
-    const currentYear = await prisma.fiscalYear.findFirst({
-      where: {
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() }
-      }
+    const { searchParams } = new URL(request.url)
+    const yearParam = searchParams.get('year')
+
+    // Get selected fiscal year or fall back to current
+    let selectedYear
+    if (yearParam) {
+      selectedYear = await prisma.fiscalYear.findUnique({
+        where: { id: yearParam }
+      })
+    }
+
+    if (!selectedYear) {
+      selectedYear = await prisma.fiscalYear.findFirst({
+        where: {
+          startDate: { lte: new Date() },
+          endDate: { gte: new Date() }
+        }
+      })
+    }
+
+    // Get all fiscal years for the dropdown
+    const allYears = await prisma.fiscalYear.findMany({
+      orderBy: { startDate: 'desc' }
     })
+
+    const currentYear = selectedYear
 
     if (!currentYear) {
       return NextResponse.json({
@@ -120,7 +139,11 @@ export async function GET() {
       fiscalYear: {
         id: currentYear.id,
         name: currentYear.name
-      }
+      },
+      allYears: allYears.map(y => ({
+        id: y.id,
+        name: y.name
+      }))
     })
   } catch (error) {
     console.error('Error fetching shares:', error)

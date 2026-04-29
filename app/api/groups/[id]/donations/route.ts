@@ -14,19 +14,29 @@ export async function GET(
     }
 
     const { id: groupId } = await params
+    const { searchParams } = new URL(request.url)
+    const yearParam = searchParams.get('year')
+
+    // Build where clause
+    const whereClause: any = {
+      OR: [
+        { groupId: groupId },
+        {
+          sponsor: {
+            groupId: groupId
+          }
+        }
+      ]
+    }
+
+    // Filter by fiscal year if provided
+    if (yearParam) {
+      whereClause.fiscalYearId = yearParam
+    }
 
     // Get all donations assigned to this group (either via donation.groupId or sponsor.groupId)
     const donations = await prisma.donation.findMany({
-      where: {
-        OR: [
-          { groupId: groupId },
-          {
-            sponsor: {
-              groupId: groupId
-            }
-          }
-        ]
-      },
+      where: whereClause,
       include: {
         sponsor: true
       },

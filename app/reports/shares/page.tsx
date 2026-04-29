@@ -1,8 +1,9 @@
 'use client'
 
-import { Container, Card, Row, Col, Badge, Table } from 'react-bootstrap'
+import { Container, Card, Row, Col, Badge, Table, Form } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -19,16 +20,21 @@ type Share = {
   groupName?: string
 }
 
+type FiscalYear = {
+  id: string
+  name: string
+}
+
 type SharesData = {
   shares: Share[]
   total: number
-  fiscalYear: {
-    id: string
-    name: string
-  }
+  fiscalYear: FiscalYear
+  allYears: FiscalYear[]
 }
 
 export default function SharesReportPage() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get('year')
   const [data, setData] = useState<SharesData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedShare, setSelectedShare] = useState<string | null>(null)
@@ -39,11 +45,12 @@ export default function SharesReportPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [yearParam])
 
   async function fetchData() {
     try {
-      const response = await fetch('/api/reports/shares')
+      const url = yearParam ? `/api/reports/shares?year=${yearParam}` : '/api/reports/shares'
+      const response = await fetch(url)
       const result = await response.json()
       setData(result)
     } catch (error) {
@@ -51,6 +58,10 @@ export default function SharesReportPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleYearChange(yearId: string) {
+    window.location.href = `/reports/shares?year=${yearId}`
   }
 
   if (loading) {
@@ -153,7 +164,18 @@ export default function SharesReportPage() {
       <Container>
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h1 className="mb-0">{t('sharesReport')}</h1>
-          <span className="text-muted">{data.fiscalYear.name}</span>
+          <div className="d-flex align-items-center gap-2">
+            <span className="text-muted">{t('fiscalYear')}:</span>
+            <Form.Select
+              value={data.fiscalYear.id}
+              onChange={(e) => handleYearChange(e.target.value)}
+              style={{ width: 'auto', minWidth: '150px' }}
+            >
+              {data.allYears.map(year => (
+                <option key={year.id} value={year.id}>{year.name}</option>
+              ))}
+            </Form.Select>
+          </div>
         </div>
 
         <Row className="mb-4">

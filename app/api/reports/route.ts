@@ -1,15 +1,34 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 
-export const GET = withApiRoute(async () => {
+export const GET = withApiRoute(async (request: NextRequest) => {
+    const { searchParams } = new URL(request.url)
+    const yearParam = searchParams.get('year')
 
-    const currentYear = await prisma.fiscalYear.findFirst({
-      where: {
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() }
-      }
+    // Get selected fiscal year or fall back to current
+    let selectedYear
+    if (yearParam) {
+      selectedYear = await prisma.fiscalYear.findUnique({
+        where: { id: yearParam }
+      })
+    }
+
+    if (!selectedYear) {
+      selectedYear = await prisma.fiscalYear.findFirst({
+        where: {
+          startDate: { lte: new Date() },
+          endDate: { gte: new Date() }
+        }
+      })
+    }
+
+    // Get all fiscal years for the dropdown
+    const allYears = await prisma.fiscalYear.findMany({
+      orderBy: { startDate: 'desc' }
     })
+
+    const currentYear = selectedYear
 
     if (!currentYear) {
       return NextResponse.json({ currentYear: null })
@@ -212,6 +231,12 @@ export const GET = withApiRoute(async () => {
         startDate: currentYear.startDate,
         endDate: currentYear.endDate
       },
+      allYears: allYears.map(y => ({
+        id: y.id,
+        name: y.name,
+        startDate: y.startDate,
+        endDate: y.endDate
+      })),
       memberStats,
       groupStats,
       unassignedTotal,
