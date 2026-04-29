@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
+import { useCurrentFiscalYear } from '@/lib/useFiscalYear'
 
 type Member = {
   id: string
@@ -49,8 +50,8 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [currentFiscalYearId, setCurrentFiscalYearId] = useState<string | null>(null)
   const router = useRouter()
+  const { currentFiscalYearId } = useCurrentFiscalYear()
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
   const { formatCurrency } = useLocalizedFormatters()
@@ -68,25 +69,8 @@ export default function MembersPage() {
     }
   }
 
-  const loadCurrentFiscalYear = async () => {
-    try {
-      const response = await fetch('/api/fiscal-years')
-      const years = await response.json()
-      const now = new Date()
-      const current = years.find((y: any) =>
-        new Date(y.startDate) <= now && new Date(y.endDate) >= now
-      )
-      if (current) {
-        setCurrentFiscalYearId(current.id)
-      }
-    } catch (error) {
-      console.error('Error loading fiscal year:', error)
-    }
-  }
-
   useEffect(() => {
     loadMembers()
-    loadCurrentFiscalYear()
   }, [])
 
   const handleNewMember = () => {
