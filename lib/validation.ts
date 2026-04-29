@@ -144,12 +144,16 @@ export type UpdateSponsorInput = z.infer<typeof updateSponsorSchema>
 
 export const createMemberSchema = z.object({
   firstName: z.string().min(1),
-  lastName: z.string().min(1)
+  lastName: z.string().min(1),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().optional().nullable()
 })
 
 export const updateMemberSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().optional().nullable(),
   groupId: z.string().optional().nullable()
 })
 

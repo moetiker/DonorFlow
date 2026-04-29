@@ -45,13 +45,15 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const { firstName, lastName } = validation.data
+  const { firstName, lastName, email, phone } = validation.data
 
   // Create member
   const member = await prisma.member.create({
     data: {
       firstName,
-      lastName
+      lastName,
+      email: email || null,
+      phone: phone || null
     }
   })
 

@@ -109,6 +109,8 @@
     "searchPlaceholder": "Cerca membro (nome, gruppo)...",
     "firstName": "Nome",
     "lastName": "Cognome",
+    "email": "Email",
+    "phone": "Telefono",
     "group": "Gruppo",
     "sponsors": "Sponsor",
     "target": "Obiettivo",

@@ -8,6 +8,8 @@ type Member = {
   id: string
   firstName: string
   lastName: string
+  email?: string | null
+  phone?: string | null
 }
 
 type Props = {
@@ -25,19 +27,25 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: ''
+    lastName: '',
+    email: '',
+    phone: ''
   })
 
   useEffect(() => {
     if (member) {
       setFormData({
         firstName: member.firstName,
-        lastName: member.lastName
+        lastName: member.lastName,
+        email: member.email || '',
+        phone: member.phone || ''
       })
     } else {
       setFormData({
         firstName: '',
-        lastName: ''
+        lastName: '',
+        email: '',
+        phone: ''
       })
     }
     setError('')
@@ -55,7 +63,11 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          email: formData.email || null,
+          phone: formData.phone || null
+        })
       })
 
       if (!response.ok) {
@@ -129,6 +141,26 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               required
+              disabled={loading}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>{t('email')}</Form.Label>
+            <Form.Control
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              disabled={loading}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>{t('phone')}</Form.Label>
+            <Form.Control
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               disabled={loading}
             />
           </Form.Group>

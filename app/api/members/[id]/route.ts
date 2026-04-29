@@ -7,15 +7,17 @@ export const PUT = withApiRoute(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
-  const { firstName, lastName, groupId } = await request.json()
+  const { firstName, lastName, email, phone, groupId } = await request.json()
   const { id: memberId } = await params
 
-  // Update member with group assignment
+  // Update member with group assignment and contact info
   const updatedMember = await prisma.member.update({
     where: { id: memberId },
     data: {
       firstName,
       lastName,
+      email: email || null,
+      phone: phone || null,
       groupId: groupId || null // Empty string or null = no group
     }
   })

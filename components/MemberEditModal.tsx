@@ -16,6 +16,8 @@ type Props = {
     id: string
     firstName: string
     lastName: string
+    email?: string | null
+    phone?: string | null
     groupId?: string | null
     group?: { id: string; name: string } | null
   } | null
@@ -30,6 +32,8 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const tErrors = useTranslations('errors')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string>('')
   const [groups, setGroups] = useState<Group[]>([])
   const [saving, setSaving] = useState(false)
@@ -41,6 +45,8 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
     if (member) {
       setFirstName(member.firstName)
       setLastName(member.lastName)
+      setEmail(member.email || '')
+      setPhone(member.phone || '')
       // Get current group if member is in one
       setSelectedGroupId(member.groupId || '')
     }
@@ -77,6 +83,8 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         body: JSON.stringify({
           firstName,
           lastName,
+          email: email || null,
+          phone: phone || null,
           groupId: selectedGroupId || null
         })
       })
@@ -144,6 +152,22 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>{t('email')}</Form.Label>
+            <Form.Control
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>{t('phone')}</Form.Label>
+            <Form.Control
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
