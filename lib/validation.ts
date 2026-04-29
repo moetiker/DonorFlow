@@ -278,26 +278,3 @@ export async function validateRequestI18n<T>(
     }
   }
 }
-
-/**
- * @deprecated Use validateRequestI18n() for internationalized error messages
- *
- * Legacy validation function with hardcoded German error messages.
- * Kept for backward compatibility during migration.
- */
-export function validateRequest<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown
-): { success: true; data: T } | { success: false; error: string } {
-  try {
-    const validated = schema.parse(data)
-    return { success: true, data: validated }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      // Return the first error message
-      const firstError = error.issues[0]
-      return { success: false, error: firstError.message }
-    }
-    return { success: false, error: 'Validierung fehlgeschlagen' }
-  }
-}

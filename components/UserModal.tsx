@@ -3,6 +3,7 @@
 import { Modal, Button, Form, Alert } from 'react-bootstrap'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 
 type User = {
   id: string
@@ -123,18 +124,19 @@ export function UserModal({ show, user, onHide, onSave }: Props) {
 
       if (!response.ok) {
         setError(data.error || tErrors('deleteFailed'))
-        setSubmitting(false)
         setShowDeleteConfirm(false)
         return
       }
 
+      setShowDeleteConfirm(false)
       onSave()
       onHide()
     } catch (err) {
       console.error('Error deleting user:', err)
       setError(tErrors('deleteFailed'))
-      setSubmitting(false)
       setShowDeleteConfirm(false)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -151,30 +153,6 @@ export function UserModal({ show, user, onHide, onSave }: Props) {
           {error && (
             <Alert variant="danger" dismissible onClose={() => setError(null)}>
               {error}
-            </Alert>
-          )}
-
-          {showDeleteConfirm && (
-            <Alert variant="warning">
-              <Alert.Heading>{t('deleteConfirm')}</Alert.Heading>
-              <p>{t('deleteConfirm')}</p>
-              <div className="d-flex gap-2">
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={submitting}
-                >
-                  {tCommon('yes')}, {tCommon('delete')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  {tCommon('cancel')}
-                </Button>
-              </div>
             </Alert>
           )}
 
@@ -229,7 +207,7 @@ export function UserModal({ show, user, onHide, onSave }: Props) {
         <Modal.Footer>
           <div className="d-flex justify-content-between w-100">
             <div>
-              {user && !showDeleteConfirm && (
+              {user && (
                 <Button
                   variant="danger"
                   onClick={() => setShowDeleteConfirm(true)}
@@ -261,6 +239,15 @@ export function UserModal({ show, user, onHide, onSave }: Props) {
           </div>
         </Modal.Footer>
       </Form>
+
+      <DeleteConfirmModal
+        show={showDeleteConfirm}
+        title={t('deleteUser')}
+        message={t('deleteUserConfirm', { name: user?.username || '' })}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        deleting={submitting}
+      />
     </Modal>
   )
 }

@@ -272,6 +272,8 @@
     "hidePassword": "Passwort verbergen",
     "emptyState": "Keine Benutzer vorhanden",
     "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
+    "deleteUser": "Benutzer löschen",
+    "deleteUserConfirm": "Möchten Sie den Benutzer \"{name}\" wirklich löschen?",
     "changePassword": "Passwort ändern",
     "usernameAlreadyTaken": "Benutzername ist bereits vergeben",
     "cannotDeleteLastUser": "Der letzte Benutzer kann nicht gelöscht werden",

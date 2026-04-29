@@ -272,6 +272,8 @@
     "hidePassword": "Hide Password",
     "emptyState": "No users available",
     "deleteConfirm": "Do you really want to delete this user?",
+    "deleteUser": "Delete User",
+    "deleteUserConfirm": "Do you really want to delete the user \"{name}\"?",
     "changePassword": "Change Password",
     "usernameAlreadyTaken": "Username is already taken",
     "cannotDeleteLastUser": "Cannot delete the last user",
