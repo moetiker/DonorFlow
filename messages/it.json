@@ -195,6 +195,7 @@
   },
   "groups": {
     "title": "Gruppi",
+    "group": "Gruppo",
     "newGroup": "Nuovo gruppo",
     "editGroup": "Modifica gruppo",
     "name": "Nome",

@@ -195,6 +195,7 @@
   },
   "groups": {
     "title": "Groups",
+    "group": "Group",
     "newGroup": "New Group",
     "editGroup": "Edit Group",
     "name": "Name",
