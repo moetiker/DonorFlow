@@ -3,6 +3,7 @@
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 
 type Member = { id: string; firstName: string; lastName: string }
 type Group = { id: string; name: string }
@@ -39,6 +40,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   const tDonations = useTranslations('donations')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [addDonation, setAddDonation] = useState(false)
   const [formData, setFormData] = useState({
     company: '',
@@ -96,6 +98,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       })
     }
     setError('')
+    setShowDeleteConfirm(false)
     setAddDonation(false)
     setDonationData({
       amount: '',
@@ -176,7 +179,6 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
 
   const handleDelete = async () => {
     if (!sponsor) return
-    if (!confirm(t('deleteConfirm'))) return
 
     setLoading(true)
     setError('')
@@ -191,6 +193,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         throw new Error(data.error || tErrors('deleteFailed'))
       }
 
+      setShowDeleteConfirm(false)
       onSave()
       onHide()
     } catch (err: any) {
@@ -201,6 +204,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   }
 
   return (
+    <>
     <Modal show={show} onHide={onHide} backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>
@@ -477,7 +481,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
               {sponsor && (
                 <Button
                   variant="danger"
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   disabled={loading}
                 >
                   <i className="bi bi-trash me-2"></i>
@@ -497,5 +501,15 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         </Modal.Footer>
       </Form>
     </Modal>
+
+    <DeleteConfirmModal
+      show={showDeleteConfirm}
+      title={t('deleteSponsor')}
+      message={t('deleteSponsorConfirm', { name: formData.company || `${formData.firstName} ${formData.lastName}`.trim() || '' })}
+      onCancel={() => setShowDeleteConfirm(false)}
+      onConfirm={handleDelete}
+      deleting={loading}
+    />
+    </>
   )
 }

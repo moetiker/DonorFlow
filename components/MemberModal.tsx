@@ -3,6 +3,8 @@
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { useFormSubmit } from '@/lib/useFormSubmit'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 
 type Member = {
   id: string
@@ -23,13 +25,24 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: ''
+  })
+
+  const { loading, error, clearError, handleSubmit, handleDelete, isEdit } = useFormSubmit({
+    endpoint: '/api/members',
+    entityId: member?.id || null,
+    onSuccess: () => {
+      onSave()
+      onHide()
+    },
+    saveErrorMessage: tErrors('saveFailed'),
+    deleteErrorMessage: tErrors('deleteFailed')
   })
 
   useEffect(() => {
@@ -48,149 +61,118 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
         phone: ''
       })
     }
-    setError('')
-  }, [member, show])
+    clearError()
+    setShowDeleteConfirm(false)
+  }, [member, show, clearError])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setLoading(true)
-
-    try {
-      const url = member ? `/api/members/${member.id}` : '/api/members'
-      const method = member ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          email: formData.email || null,
-          phone: formData.phone || null
-        })
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || tErrors('saveFailed'))
-      }
-
-      onSave()
-      onHide()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    await handleSubmit({
+      ...formData,
+      email: formData.email || null,
+      phone: formData.phone || null
+    })
   }
 
-  const handleDelete = async () => {
-    if (!member) return
-    if (!confirm(t('deleteConfirm'))) return
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const response = await fetch(`/api/members/${member.id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || tErrors('deleteFailed'))
-      }
-
-      onSave()
-      onHide()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  const onConfirmDelete = async () => {
+    const success = await handleDelete()
+    if (success) {
+      setShowDeleteConfirm(false)
     }
   }
 
   return (
-    <Modal show={show} onHide={onHide} backdrop="static">
-      <Modal.Header closeButton>
-        <Modal.Title>
-          {member ? t('editMember') : t('newMember')}
-        </Modal.Title>
-      </Modal.Header>
+    <>
+      <Modal show={show} onHide={onHide} backdrop="static">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {isEdit ? t('editMember') : t('newMember')}
+          </Modal.Title>
+        </Modal.Header>
 
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
+        <Form onSubmit={onSubmit}>
+          <Modal.Body>
+            {error && <Alert variant="danger">{error}</Alert>}
 
-          <Form.Group className="mb-3">
-            <Form.Label>{t('firstName')} *</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              required
-              disabled={loading}
-              autoFocus
-            />
-          </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>{t('firstName')} *</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+                disabled={loading}
+                autoFocus
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>{t('lastName')} *</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              required
-              disabled={loading}
-            />
-          </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>{t('lastName')} *</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+                disabled={loading}
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>{t('email')}</Form.Label>
-            <Form.Control
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={loading}
-            />
-          </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>{t('email')}</Form.Label>
+              <Form.Control
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={loading}
+              />
+            </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>{t('phone')}</Form.Label>
-            <Form.Control
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              disabled={loading}
-            />
-          </Form.Group>
-        </Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>{t('phone')}</Form.Label>
+              <Form.Control
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                disabled={loading}
+              />
+            </Form.Group>
+          </Modal.Body>
 
-        <Modal.Footer>
-          <div className="d-flex justify-content-between w-100">
-            <div>
-              {member && (
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={loading}
-                >
-                  <i className="bi bi-trash me-2"></i>
-                  {tCommon('delete')}
+          <Modal.Footer>
+            <div className="d-flex justify-content-between w-100">
+              <div>
+                {isEdit && (
+                  <Button
+                    variant="danger"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-trash me-2"></i>
+                    {tCommon('delete')}
+                  </Button>
+                )}
+              </div>
+              <div className="d-flex gap-2">
+                <Button variant="secondary" onClick={onHide} disabled={loading}>
+                  {tCommon('cancel')}
                 </Button>
-              )}
+                <Button variant="primary" type="submit" disabled={loading}>
+                  {loading ? tCommon('saving') : tCommon('save')}
+                </Button>
+              </div>
             </div>
-            <div className="d-flex gap-2">
-              <Button variant="secondary" onClick={onHide} disabled={loading}>
-                {tCommon('cancel')}
-              </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
-                {loading ? tCommon('saving') : tCommon('save')}
-              </Button>
-            </div>
-          </div>
-        </Modal.Footer>
-      </Form>
-    </Modal>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+      <DeleteConfirmModal
+        show={showDeleteConfirm}
+        title={`${tCommon('delete')} ${t('member')}`}
+        message={t('deleteConfirm')}
+        onConfirm={onConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        deleting={loading}
+      />
+    </>
   )
 }

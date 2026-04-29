@@ -5,6 +5,7 @@ import { Typeahead } from 'react-bootstrap-typeahead'
 import 'react-bootstrap-typeahead/css/Typeahead.css'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 
 type Sponsor = {
   id: string
@@ -64,6 +65,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
   const tErrors = useTranslations('errors')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [formData, setFormData] = useState({
     sponsorId: '',
     type: 'MONETARY' as 'MONETARY' | 'IN_KIND',
@@ -113,6 +115,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
       setSelectedGroup([])
     }
     setError('')
+    setShowDeleteConfirm(false)
   }, [donation, show, sponsors, members, groups])
 
   // Auto-populate member/group when sponsor is selected
@@ -219,7 +222,6 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
 
   const handleDelete = async () => {
     if (!donation) return
-    if (!confirm(t('deleteConfirm'))) return
 
     setLoading(true)
     setError('')
@@ -234,6 +236,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         throw new Error(data.error || tErrors('deleteFailed'))
       }
 
+      setShowDeleteConfirm(false)
       onSave()
       onHide()
     } catch (err: any) {
@@ -243,7 +246,15 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     }
   }
 
+  // Get display name for deletion confirmation
+  const getDonationDisplayName = () => {
+    if (!donation) return ''
+    const sponsor = sponsors.find(s => s.id === donation.sponsorId)
+    return sponsor ? getSponsorDisplayName(sponsor) : ''
+  }
+
   return (
+    <>
     <Modal show={show} onHide={onHide} backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>
@@ -410,7 +421,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
               {donation && (
                 <Button
                   variant="danger"
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   disabled={loading}
                 >
                   <i className="bi bi-trash me-2"></i>
@@ -430,5 +441,15 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         </Modal.Footer>
       </Form>
     </Modal>
+
+    <DeleteConfirmModal
+      show={showDeleteConfirm}
+      title={t('deleteDonation')}
+      message={t('deleteDonationConfirm', { name: getDonationDisplayName() })}
+      onCancel={() => setShowDeleteConfirm(false)}
+      onConfirm={handleDelete}
+      deleting={loading}
+    />
+    </>
   )
 }
