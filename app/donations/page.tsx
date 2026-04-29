@@ -3,6 +3,8 @@
 import { Container, Card, Button, Table, Form, InputGroup, Badge, ButtonGroup } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { DonationModal } from '@/components/DonationModal'
+import { LoadingState } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
 import { useState, useEffect } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
@@ -62,7 +64,6 @@ export default function DonationsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'MONETARY' | 'IN_KIND'>('ALL')
   const t = useTranslations('donations')
-  const tCommon = useTranslations('common')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
 
   const loadData = async () => {
@@ -209,24 +210,15 @@ export default function DonationsPage() {
         )}
 
         {loading ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">{tCommon('loading')}</span>
-              </div>
-            </Card.Body>
-          </Card>
+          <LoadingState />
         ) : donations.length === 0 ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <i className="bi bi-cash-coin fs-1 text-muted mb-3 d-block"></i>
-              <h5>{t('emptyState')}</h5>
-              <p className="text-muted">{t('emptyStateDescription')}</p>
-              <Button variant="primary" onClick={handleNewDonation}>
-                {t('emptyStateAction')}
-              </Button>
-            </Card.Body>
-          </Card>
+          <EmptyState
+            icon="cash-coin"
+            title={t('emptyState')}
+            description={t('emptyStateDescription')}
+            actionLabel={t('emptyStateAction')}
+            onAction={handleNewDonation}
+          />
         ) : (
           <Card>
             <Card.Body>

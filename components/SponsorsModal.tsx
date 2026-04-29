@@ -2,6 +2,7 @@
 
 import { Modal, Table, Badge } from 'react-bootstrap'
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { getSponsorDisplayName } from '@/lib/utils'
 
 type Sponsor = {
@@ -22,6 +23,8 @@ type Props = {
 }
 
 export function SponsorsModal({ show, entityId, entityName, entityType, onHide }: Props) {
+  const t = useTranslations('sponsors')
+  const tCommon = useTranslations('common')
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -54,32 +57,32 @@ export function SponsorsModal({ show, entityId, entityName, entityType, onHide }
   return (
     <Modal show={show} onHide={onHide} size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Gönner: {entityName}</Modal.Title>
+        <Modal.Title>{t('title')}: {entityName}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Laden...</span>
+              <span className="visually-hidden">{tCommon('loading')}</span>
             </div>
           </div>
         ) : sponsors.length === 0 ? (
           <div className="text-center py-5 text-muted">
             <i className="bi bi-inbox fs-1 mb-3 d-block"></i>
-            <p>Keine Gönner vorhanden</p>
+            <p>{t('emptyState')}</p>
           </div>
         ) : (
           <>
             <div className="mb-3">
               <Badge bg="info" className="fs-6">
-                {sponsors.length} Gönner
+                {sponsors.length} {t('title')}
               </Badge>
             </div>
             <Table striped hover>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Ort</th>
+                  <th>{t('name')}</th>
+                  <th>{t('city')}</th>
                 </tr>
               </thead>
               <tbody>

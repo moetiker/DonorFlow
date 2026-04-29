@@ -1,9 +1,12 @@
 'use client'
 
-import { Container, Card, Button, Table, Badge, Form, InputGroup } from 'react-bootstrap'
+import { Container, Card, Button, Table, Badge } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { SponsorModal } from '@/components/SponsorModal'
 import { SponsorDonationsModal } from '@/components/SponsorDonationsModal'
+import { LoadingState } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { SearchBar } from '@/components/SearchBar'
 import { useState, useEffect } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
@@ -187,52 +190,28 @@ export default function SponsorsPage() {
         </div>
 
         {!loading && sponsors.length > 0 && (
-          <Card className="mb-3">
-            <Card.Body>
-              <InputGroup>
-                <InputGroup.Text>
-                  <i className="bi bi-search"></i>
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
-                    <i className="bi bi-x"></i>
-                  </Button>
-                )}
-              </InputGroup>
-              {searchTerm && (
-                <small className="text-muted mt-2 d-block">
-                  {filteredSponsors.length} von {sponsors.length} {t('title')}
-                </small>
-              )}
-            </Card.Body>
-          </Card>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('searchPlaceholder')}
+            resultCount={{
+              filtered: filteredSponsors.length,
+              total: sponsors.length,
+              label: t('title')
+            }}
+          />
         )}
 
         {loading ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">{tCommon('loading')}</span>
-              </div>
-            </Card.Body>
-          </Card>
+          <LoadingState />
         ) : sponsors.length === 0 ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <i className="bi bi-heart-fill fs-1 text-muted mb-3 d-block"></i>
-              <h5>{t('emptyState')}</h5>
-              <p className="text-muted">{t('emptyStateDescription')}</p>
-              <Button variant="primary" onClick={handleNewSponsor}>
-                {t('emptyStateAction')}
-              </Button>
-            </Card.Body>
-          </Card>
+          <EmptyState
+            icon="heart-fill"
+            title={t('emptyState')}
+            description={t('emptyStateDescription')}
+            actionLabel={t('emptyStateAction')}
+            onAction={handleNewSponsor}
+          />
         ) : (
           <Card>
             <Card.Body>

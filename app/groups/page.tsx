@@ -1,11 +1,14 @@
 'use client'
 
-import { Container, Card, Table, Badge, Button, Form, InputGroup } from 'react-bootstrap'
+import { Container, Card, Table, Badge, Button } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { DonationsModal } from '@/components/DonationsModal'
 import { GroupEditModal } from '@/components/GroupEditModal'
 import { GroupMembersModal } from '@/components/GroupMembersModal'
 import { SponsorsModal } from '@/components/SponsorsModal'
+import { LoadingState } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { SearchBar } from '@/components/SearchBar'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
@@ -50,7 +53,6 @@ export default function GroupsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const t = useTranslations('groups')
-  const tCommon = useTranslations('common')
   const tMembers = useTranslations('members')
   const { formatCurrency } = useLocalizedFormatters()
   const { currentFiscalYearId } = useCurrentFiscalYear()
@@ -212,51 +214,26 @@ export default function GroupsPage() {
         </div>
 
         {!loading && groups.length > 0 && (
-          <Card className="mb-3">
-            <Card.Body>
-              <InputGroup>
-                <InputGroup.Text>
-                  <i className="bi bi-search"></i>
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
-                    <i className="bi bi-x"></i>
-                  </Button>
-                )}
-              </InputGroup>
-              {searchTerm && (
-                <small className="text-muted mt-2 d-block">
-                  {filteredGroups.length} von {groups.length} {t('title')}
-                </small>
-              )}
-            </Card.Body>
-          </Card>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('searchPlaceholder')}
+            resultCount={{
+              filtered: filteredGroups.length,
+              total: groups.length,
+              label: t('title')
+            }}
+          />
         )}
 
         {loading ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">{tCommon('loading')}</span>
-              </div>
-            </Card.Body>
-          </Card>
+          <LoadingState />
         ) : groups.length === 0 ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <i className="bi bi-people-fill fs-1 text-muted mb-3 d-block"></i>
-              <h5>{t('emptyState')}</h5>
-              <p className="text-muted">
-                {t('emptyStateDescription')}
-              </p>
-            </Card.Body>
-          </Card>
+          <EmptyState
+            icon="people-fill"
+            title={t('emptyState')}
+            description={t('emptyStateDescription')}
+          />
         ) : (
           <Card>
             <Card.Body>

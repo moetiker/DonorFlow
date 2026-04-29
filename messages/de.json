@@ -104,6 +104,7 @@
   },
   "members": {
     "title": "Vereinsmitglieder",
+    "name": "Name",
     "newMember": "Neues Mitglied",
     "editMember": "Mitglied bearbeiten",
     "searchPlaceholder": "Mitglied suchen (Name, Gruppe)...",

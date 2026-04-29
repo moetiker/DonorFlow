@@ -104,6 +104,7 @@
   },
   "members": {
     "title": "Membri del club",
+    "name": "Nome",
     "newMember": "Nuovo membro",
     "editMember": "Modifica membro",
     "searchPlaceholder": "Cerca membro (nome, gruppo)...",

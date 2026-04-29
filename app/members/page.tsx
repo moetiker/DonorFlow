@@ -1,11 +1,14 @@
 'use client'
 
-import { Container, Card, Button, Table, Badge, Form, InputGroup } from 'react-bootstrap'
+import { Container, Card, Button, Table, Badge } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { MemberModal } from '@/components/MemberModal'
 import { MemberEditModal } from '@/components/MemberEditModal'
 import { SponsorsModal } from '@/components/SponsorsModal'
 import { DonationsModal } from '@/components/DonationsModal'
+import { LoadingState } from '@/components/LoadingState'
+import { EmptyState } from '@/components/EmptyState'
+import { SearchBar } from '@/components/SearchBar'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -53,7 +56,6 @@ export default function MembersPage() {
   const router = useRouter()
   const { currentFiscalYearId } = useCurrentFiscalYear()
   const t = useTranslations('members')
-  const tCommon = useTranslations('common')
   const { formatCurrency } = useLocalizedFormatters()
 
   const loadMembers = async () => {
@@ -188,61 +190,37 @@ export default function MembersPage() {
         </div>
 
         {!loading && members.length > 0 && (
-          <Card className="mb-3">
-            <Card.Body>
-              <InputGroup>
-                <InputGroup.Text>
-                  <i className="bi bi-search"></i>
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
-                    <i className="bi bi-x"></i>
-                  </Button>
-                )}
-              </InputGroup>
-              {searchTerm && (
-                <small className="text-muted mt-2 d-block">
-                  {t('sponsorCount', { count: filteredMembers.length })} von {members.length}
-                </small>
-              )}
-            </Card.Body>
-          </Card>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t('searchPlaceholder')}
+            resultCount={{
+              filtered: filteredMembers.length,
+              total: members.length,
+              label: t('title')
+            }}
+          />
         )}
 
         {loading ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">{tCommon('loading')}</span>
-              </div>
-            </Card.Body>
-          </Card>
+          <LoadingState />
         ) : members.length === 0 ? (
-          <Card>
-            <Card.Body className="text-center py-5">
-              <i className="bi bi-person-x fs-1 text-muted mb-3 d-block"></i>
-              <h5>{t('emptyState')}</h5>
-              <p className="text-muted">{t('emptyStateDescription')}</p>
-              <Button variant="primary" onClick={handleNewMember}>
-                {t('emptyStateAction')}
-              </Button>
-            </Card.Body>
-          </Card>
+          <EmptyState
+            icon="person-x"
+            title={t('emptyState')}
+            description={t('emptyStateDescription')}
+            actionLabel={t('emptyStateAction')}
+            onAction={handleNewMember}
+          />
         ) : (
           <Card>
             <Card.Body>
               <Table responsive>
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Gönner</th>
-                    <th>Status</th>
+                    <th>{t('name')}</th>
+                    <th>{t('sponsors')}</th>
+                    <th>{t('status')}</th>
                     <th className="text-center">{t('statusLink')}</th>
                   </tr>
                 </thead>
@@ -271,7 +249,7 @@ export default function MembersPage() {
                           style={{ cursor: 'pointer' }}
                           className="text-primary"
                         >
-                          <strong>{member._count.sponsors}</strong> Gönner
+                          {t('sponsorCount', { count: member._count.sponsors })}
                         </td>
                         <td
                           onClick={(e) => handleStatusClick(e, member)}
@@ -287,7 +265,7 @@ export default function MembersPage() {
                               <span className="text-muted">{formatCurrency(stats.target)}</span>
                             </>
                           ) : (
-                            <span className="text-muted">Keine Vorgabe</span>
+                            <span className="text-muted">{t('noTarget')}</span>
                           )}
                         </td>
                         <td className="text-center">
