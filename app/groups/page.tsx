@@ -48,6 +48,7 @@ export default function GroupsPage() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [currentFiscalYearId, setCurrentFiscalYearId] = useState<string | null>(null)
   const t = useTranslations('groups')
   const tCommon = useTranslations('common')
   const tMembers = useTranslations('members')
@@ -66,8 +67,25 @@ export default function GroupsPage() {
     }
   }
 
+  const loadCurrentFiscalYear = async () => {
+    try {
+      const response = await fetch('/api/fiscal-years')
+      const years = await response.json()
+      const now = new Date()
+      const current = years.find((y: any) =>
+        new Date(y.startDate) <= now && new Date(y.endDate) >= now
+      )
+      if (current) {
+        setCurrentFiscalYearId(current.id)
+      }
+    } catch (error) {
+      console.error('Error loading fiscal year:', error)
+    }
+  }
+
   useEffect(() => {
     loadGroups()
+    loadCurrentFiscalYear()
 
     // Check for highlight parameter
     const params = new URLSearchParams(window.location.search)
@@ -395,6 +413,7 @@ export default function GroupsPage() {
           entityId={selectedGroup?.id || null}
           entityName={selectedGroup?.name || ''}
           entityType="group"
+          fiscalYearId={currentFiscalYearId}
           onHide={() => {
             setShowDonationsModal(false)
             setSelectedGroup(null)
