@@ -7,52 +7,92 @@ interface CsvRow {
 }
 
 function parseCsv(content: string, delimiter: string = ';'): CsvRow[] {
-  const lines = content.split('\n')
-  if (lines.length < 2) return []
+  // Parse CSV properly handling multi-line quoted fields
+  const rows: string[][] = []
+  let currentRow: string[] = []
+  let currentField = ''
+  let inQuotes = false
 
-  // Parse header
-  const headers = parseCsvLine(lines[0], delimiter)
-  const rows: CsvRow[] = []
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i]
+    const nextChar = content[i + 1]
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
+    if (inQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          // Escaped quote
+          currentField += '"'
+          i++
+        } else {
+          // End of quoted field
+          inQuotes = false
+        }
+      } else {
+        currentField += char
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true
+      } else if (char === delimiter) {
+        currentRow.push(currentField.trim())
+        currentField = ''
+      } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+        currentRow.push(currentField.trim())
+        if (currentRow.length > 1 || currentRow[0] !== '') {
+          rows.push(currentRow)
+        }
+        currentRow = []
+        currentField = ''
+        if (char === '\r') i++ // Skip \n after \r
+      } else if (char !== '\r') {
+        currentField += char
+      }
+    }
+  }
 
-    const values = parseCsvLine(line, delimiter)
+  // Don't forget the last field/row
+  if (currentField || currentRow.length > 0) {
+    currentRow.push(currentField.trim())
+    if (currentRow.length > 1 || currentRow[0] !== '') {
+      rows.push(currentRow)
+    }
+  }
+
+  if (rows.length < 2) return []
+
+  // First row is headers
+  const headers = rows[0]
+  const result: CsvRow[] = []
+
+  for (let i = 1; i < rows.length; i++) {
+    const values = rows[i]
     const row: CsvRow = {}
 
     for (let j = 0; j < headers.length; j++) {
-      row[headers[j].trim()] = values[j]?.trim() || ''
+      row[headers[j]] = values[j] || ''
     }
 
-    rows.push(row)
+    result.push(row)
   }
 
-  return rows
-}
-
-function parseCsvLine(line: string, delimiter: string): string[] {
-  const values: string[] = []
-  let current = ''
-  let inQuotes = false
-
-  for (const char of line) {
-    if (char === '"') {
-      inQuotes = !inQuotes
-    } else if (char === delimiter && !inQuotes) {
-      values.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-  values.push(current.trim())
-
-  return values
+  return result
 }
 
 function normalizeString(str: string): string {
-  return str.toLowerCase().trim()
+  // Normalize for comparison: lowercase, trim, and normalize umlauts
+  return str
+    .toLowerCase()
+    .trim()
+    // Normalize common umlaut variations
+    .replace(/ä|ae|à|á|â/g, 'a')
+    .replace(/ö|oe|ò|ó|ô/g, 'o')
+    .replace(/ü|ue|ù|ú|û/g, 'u')
+    .replace(/ë|è|é|ê/g, 'e')
+    .replace(/ï|ì|í|î/g, 'i')
+    .replace(/ß/g, 'ss')
+    // Remove diacritics that might cause issues
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
 }
 
 async function importMembers(rows: CsvRow[]): Promise<{ created: number; updated: number }> {
@@ -78,15 +118,17 @@ async function importMembers(rows: CsvRow[]): Promise<{ created: number; updated
     )
 
     if (existing) {
-      // Update existing member
-      await prisma.member.update({
-        where: { id: existing.id },
-        data: {
-          // Only update fields if they have values in CSV
-          ...(email && { email }),
-          ...(phone && { phone })
-        }
-      })
+      // Update existing member - only update if we have new data
+      const updateData: { email?: string; phone?: string } = {}
+      if (email) updateData.email = email
+      if (phone) updateData.phone = phone
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.member.update({
+          where: { id: existing.id },
+          data: updateData
+        })
+      }
       updated++
     } else {
       // Create new member
@@ -189,8 +231,18 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Invalid import type' }, { status: 400 })
   }
 
-  // Read file content
-  const content = await file.text()
+  // Read file content - try to detect encoding
+  const buffer = await file.arrayBuffer()
+  let content: string
+
+  // Try UTF-8 first, then Latin-1 (ISO-8859-1) for Swiss/German files
+  try {
+    const utf8Content = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+    content = utf8Content
+  } catch {
+    // Fallback to Latin-1 (common for Swiss exports)
+    content = new TextDecoder('iso-8859-1').decode(buffer)
+  }
 
   // Detect delimiter (semicolon or comma)
   const firstLine = content.split('\n')[0]

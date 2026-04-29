@@ -19,6 +19,8 @@ model Member {
   id              String            @id @default(cuid())
   firstName       String
   lastName        String
+  email           String?           // E-Mail-Adresse
+  phone           String?           // Mobiltelefon
   groupId         String?           // Direkte Zuordnung zu einer Gruppe (optional)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

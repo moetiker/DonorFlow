@@ -15,6 +15,8 @@ type Member = {
   id: string
   firstName: string
   lastName: string
+  email?: string | null
+  phone?: string | null
   statusToken?: string | null
   groupId?: string | null
   group?: { id: string; name: string } | null
@@ -47,6 +49,7 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [currentFiscalYearId, setCurrentFiscalYearId] = useState<string | null>(null)
   const router = useRouter()
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
@@ -65,8 +68,25 @@ export default function MembersPage() {
     }
   }
 
+  const loadCurrentFiscalYear = async () => {
+    try {
+      const response = await fetch('/api/fiscal-years')
+      const years = await response.json()
+      const now = new Date()
+      const current = years.find((y: any) =>
+        new Date(y.startDate) <= now && new Date(y.endDate) >= now
+      )
+      if (current) {
+        setCurrentFiscalYearId(current.id)
+      }
+    } catch (error) {
+      console.error('Error loading fiscal year:', error)
+    }
+  }
+
   useEffect(() => {
     loadMembers()
+    loadCurrentFiscalYear()
   }, [])
 
   const handleNewMember = () => {
@@ -320,7 +340,7 @@ export default function MembersPage() {
 
         <MemberEditModal
           show={showEditModal}
-          member={selectedMember ? { id: selectedMember.id, firstName: selectedMember.firstName, lastName: selectedMember.lastName, groupId: selectedMember.groupId, group: selectedMember.group } : null}
+          member={selectedMember ? { id: selectedMember.id, firstName: selectedMember.firstName, lastName: selectedMember.lastName, email: selectedMember.email, phone: selectedMember.phone, groupId: selectedMember.groupId, group: selectedMember.group } : null}
           onHide={() => {
             setShowEditModal(false)
             setSelectedMember(null)
@@ -353,6 +373,7 @@ export default function MembersPage() {
           entityId={selectedMember?.id || null}
           entityName={selectedMember ? `${selectedMember.firstName} ${selectedMember.lastName}` : ''}
           entityType="member"
+          fiscalYearId={currentFiscalYearId}
           onHide={() => {
             setShowDonationsModal(false)
             setSelectedMember(null)

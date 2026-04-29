@@ -24,10 +24,11 @@ type Props = {
   entityId: string | null
   entityName: string
   entityType: 'member' | 'group'
+  fiscalYearId?: string | null
   onHide: () => void
 }
 
-export function DonationsModal({ show, entityId, entityName, entityType, onHide }: Props) {
+export function DonationsModal({ show, entityId, entityName, entityType, fiscalYearId, onHide }: Props) {
   const t = useTranslations('donations')
   const tCommon = useTranslations('common')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
@@ -38,16 +39,17 @@ export function DonationsModal({ show, entityId, entityName, entityType, onHide 
     if (show && entityId) {
       loadDonations()
     }
-  }, [show, entityId])
+  }, [show, entityId, fiscalYearId])
 
   const loadDonations = async () => {
     if (!entityId) return
 
     setLoading(true)
     try {
+      const yearQuery = fiscalYearId ? `?year=${fiscalYearId}` : ''
       const endpoint = entityType === 'member'
-        ? `/api/members/${entityId}/donations`
-        : `/api/groups/${entityId}/donations`
+        ? `/api/members/${entityId}/donations${yearQuery}`
+        : `/api/groups/${entityId}/donations${yearQuery}`
 
       const response = await fetch(endpoint)
       const data = await response.json()
