@@ -67,3 +67,10 @@ prod.db
 prisma.config.ts
 # planning directory (local only, can be regenerated)
 .planning/
+
+# local dev/deployment files
+.mise.toml
+.deployignore
+sync-db.sh
+deploy.sh
+ecosystem.config.js
