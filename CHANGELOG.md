@@ -2,6 +2,38 @@
 
 All notable changes to DonorFlow will be documented in this file.
 
+## [0.6.0] - 2026-05-11
+
+### Added
+- **CSV Import API**: New import endpoint with upsert logic for bulk data updates
+- **Member Contact Fields**: Email and phone fields added to member forms
+- **Fiscal Year Filters**: Fiscal year selector added to performance reports, shares reports, and donations modal on groups page
+- **Performance Detail Modal**: Deeper analytics view for donation performance
+- **Sponsors Without Donations**: Feature to identify sponsors who haven't donated
+
+### Changed
+- Replace browser `confirm()` dialogs with DeleteConfirmModal throughout the application
+- Extract `useCurrentFiscalYear` hook to eliminate code duplication
+- Consolidate UI components for better consistency
+- Update Next.js to 16.x and all dependencies to latest versions
+
+### Fixed
+- Build: Add dummy DATABASE_URL for Prisma generate in Docker
+- Deploy: Use prod.db as default for status token generation
+- UI: Separate in-kind donations section in status page and detail modal
+- Status: Respect donation-level assignment overrides
+- Add missing translation keys (groups.group)
+
+### Removed
+- Local development files from repository (now gitignored):
+  - `.mise.toml`, `.deployignore`, `backup-setup.sh`
+  - `sync-db.sh`, `deploy.sh`, `ecosystem.config.js`
+- `.planning/` directory from repository (now gitignored)
+
+### Technical
+- Remove dead code and improve UserModal consistency
+- Clean up repository structure for better maintainability
+
 ## [0.5.0] - 2026-01-22
 
 ### Added
