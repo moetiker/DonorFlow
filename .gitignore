@@ -65,6 +65,5 @@ CLAUDE.md
 test-*.js
 prod.db
 prisma.config.ts
-# planning - intel is local only (can be regenerated)
-.planning/intel/
-.planning/codebase/
+# planning directory (local only, can be regenerated)
+.planning/
