@@ -523,6 +523,8 @@
     "sendConfirmTitle": "Confirm sending",
     "sendConfirmMessage": "Send {count} emails now?",
     "resultTitle": "Result",
+    "sendingProgress": "{processed} of {total} processed",
+    "batchInfo": "Sent in batches of 5 every 2 minutes. You can close the page – sending continues.",
     "statusSent": "Sent",
     "statusSkipped": "Skipped",
     "statusFailed": "Failed",

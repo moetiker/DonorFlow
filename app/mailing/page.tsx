@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Form, Table, Alert, Badge, Spinner, Modal, InputGroup } from 'react-bootstrap'
+import { Container, Card, Button, Form, Table, Alert, Badge, Spinner, Modal, InputGroup, ProgressBar } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -45,6 +45,35 @@ export default function MailingPage() {
   const [sending, setSending] = useState(false)
   const [results, setResults] = useState<SendResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [jobTotal, setJobTotal] = useState(0)
+  const [processed, setProcessed] = useState(0)
+
+  useEffect(() => {
+    if (!jobId) return
+    let active = true
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/mailing/job/${jobId}`)
+        const data = await res.json()
+        if (!active) return
+        setProcessed(data.processed ?? 0)
+        setResults(data.results ?? [])
+        if (data.status === 'done') {
+          setSending(false)
+          setJobId(null)
+        }
+      } catch {
+        // keep polling; transient errors are fine
+      }
+    }
+    poll()
+    const interval = setInterval(poll, 4000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [jobId])
 
   useEffect(() => {
     Promise.all([
@@ -121,6 +150,7 @@ export default function MailingPage() {
     setSending(true)
     setResults(null)
     setError(null)
+    setProcessed(0)
     try {
       const res = await fetch('/api/mailing/send', {
         method: 'POST',
@@ -130,12 +160,13 @@ export default function MailingPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error === 'mail_not_configured' ? t('notConfigured') : data.error === 'no_letter' ? t('letterMissing') : t('sendError'))
+        setSending(false)
         return
       }
-      setResults(data.results)
+      setJobTotal(data.total ?? selected.size)
+      setJobId(data.jobId) // starts polling
     } catch {
       setError(t('sendError'))
-    } finally {
       setSending(false)
     }
   }
@@ -267,6 +298,22 @@ export default function MailingPage() {
             {sending ? <><Spinner animation="border" size="sm" className="me-2" />{t('sending')}</> : <><i className="bi bi-send me-1"></i>{t('send')}</>}
           </Button>
         </div>
+
+        {/* Progress */}
+        {sending && (
+          <Card className="mt-3">
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <strong>{t('sendingProgress', { processed, total: jobTotal })}</strong>
+                <Spinner animation="border" size="sm" />
+              </div>
+              <ProgressBar now={jobTotal ? (processed / jobTotal) * 100 : 0} />
+              <p className="text-muted small mt-2 mb-0">
+                <i className="bi bi-info-circle me-1"></i>{t('batchInfo')}
+              </p>
+            </Card.Body>
+          </Card>
+        )}
 
         {/* Results */}
         {results && (

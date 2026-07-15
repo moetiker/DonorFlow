@@ -523,6 +523,8 @@
     "sendConfirmTitle": "Versand bestätigen",
     "sendConfirmMessage": "{count} E-Mails jetzt versenden?",
     "resultTitle": "Ergebnis",
+    "sendingProgress": "{processed} von {total} verarbeitet",
+    "batchInfo": "Versand in Chargen von 5 alle 2 Minuten. Du kannst die Seite schliessen – der Versand läuft weiter.",
     "statusSent": "Gesendet",
     "statusSkipped": "Übersprungen",
     "statusFailed": "Fehler",

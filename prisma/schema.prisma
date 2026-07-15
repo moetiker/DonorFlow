@@ -159,6 +159,18 @@ model DonorLetter {
   fiscalYear      FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
 }
 
+// Hintergrund-Job für den gedrosselten Gönnerbrief-Versand
+model MailJob {
+  id              String     @id @default(cuid())
+  fiscalYearId    String
+  status          String     @default("running") // running | done
+  total           Int
+  processed       Int        @default(0)
+  results         String     @default("[]")       // JSON: {memberId,name,email,status,error}[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
 // Benutzer für Login
 model User {
   id              String    @id @default(cuid())

@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
-import { buildMemberMailData, getOrgName, mailCsvFilename } from '@/lib/mailing-data'
-import { renderStatusEmail } from '@/lib/email-template'
-import { isMailConfigured, sendMail } from '@/lib/mail'
+import { getOrgName } from '@/lib/mailing-data'
+import { isMailConfigured } from '@/lib/mail'
+import { runMailJob } from '@/lib/mailing-runner'
 
 function getBaseUrl(request: NextRequest): string {
   return process.env.NEXTAUTH_URL || request.nextUrl.origin
 }
 
-type SendResult = {
-  memberId: string
-  name?: string
-  email?: string | null
-  status: 'sent' | 'skipped' | 'failed'
-  error?: string
-}
-
 /**
- * Send the donor mailing to the selected members. One personalized email per
- * member with the fiscal year's donor letter (PDF) and the member's address
- * CSV attached. Sequential best-effort; returns a per-recipient result list.
+ * Start a throttled donor mailing. Emails are sent in the background in batches
+ * (see mailing-runner) so the request returns immediately with a job id the UI
+ * can poll. Each recipient gets a personalized email with the fiscal year's
+ * donor letter and their address CSV attached.
  */
 export const POST = withApiRoute(async (request: NextRequest) => {
   const { fiscalYearId, memberIds } = await request.json()
@@ -47,62 +40,26 @@ export const POST = withApiRoute(async (request: NextRequest) => {
 
   const orgName = await getOrgName()
   const baseUrl = getBaseUrl(request)
-  const results: SendResult[] = []
+  const ids = memberIds as string[]
 
-  for (const memberId of memberIds as string[]) {
-    const data = await buildMemberMailData(memberId, fiscalYearId)
-    if (!data) {
-      results.push({ memberId, status: 'failed', error: 'not_found' })
-      continue
-    }
-    if (!data.email) {
-      results.push({ memberId, name: data.memberName, status: 'skipped', error: 'no_email' })
-      continue
-    }
+  const job = await prisma.mailJob.create({
+    data: { fiscalYearId, status: 'running', total: ids.length, processed: 0, results: '[]' },
+    select: { id: true },
+  })
 
-    try {
-      const email = renderStatusEmail({
-        firstName: data.memberFirstName,
-        orgName,
-        fiscalYearName: fiscalYear.name,
-        statusUrl: `${baseUrl}/s/${data.statusToken}`,
-        progress: data.progress,
-        sponsors: data.sponsors,
-        previousYearName: data.previousYearName,
-        groupInfo: data.groupInfo,
-        attachmentsNote: true,
-        locale: 'de',
-      })
+  // Fire-and-forget: the batched runner keeps going after the response is sent
+  // (the app runs as a persistent Node server).
+  void runMailJob({
+    jobId: job.id,
+    fiscalYearId,
+    fiscalYearName: fiscalYear.name,
+    memberIds: ids,
+    baseUrl,
+    orgName,
+    letter: { fileName: letter.fileName, mimeType: letter.mimeType, data: Buffer.from(letter.data) },
+  }).catch(async () => {
+    await prisma.mailJob.update({ where: { id: job.id }, data: { status: 'done' } }).catch(() => {})
+  })
 
-      await sendMail({
-        to: data.email,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        attachments: [
-          { filename: letter.fileName, content: Buffer.from(letter.data), contentType: letter.mimeType },
-          { filename: mailCsvFilename(data.displayName), content: Buffer.from(data.csvContent, 'utf-8'), contentType: 'text/csv; charset=utf-8' },
-        ],
-      })
-
-      results.push({ memberId, name: data.memberName, email: data.email, status: 'sent' })
-    } catch (error) {
-      results.push({
-        memberId,
-        name: data.memberName,
-        email: data.email,
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'send_failed',
-      })
-    }
-  }
-
-  const summary = {
-    total: results.length,
-    sent: results.filter((r) => r.status === 'sent').length,
-    skipped: results.filter((r) => r.status === 'skipped').length,
-    failed: results.filter((r) => r.status === 'failed').length,
-  }
-
-  return NextResponse.json({ results, summary })
+  return NextResponse.json({ jobId: job.id, total: ids.length })
 })

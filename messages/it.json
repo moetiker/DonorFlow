@@ -523,6 +523,8 @@
     "sendConfirmTitle": "Conferma invio",
     "sendConfirmMessage": "Inviare {count} e-mail ora?",
     "resultTitle": "Risultato",
+    "sendingProgress": "{processed} di {total} elaborati",
+    "batchInfo": "Invio in lotti di 5 ogni 2 minuti. Puoi chiudere la pagina – l'invio continua.",
     "statusSent": "Inviato",
     "statusSkipped": "Saltato",
     "statusFailed": "Errore",
