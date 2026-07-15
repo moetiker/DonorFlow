@@ -108,10 +108,9 @@ h1, h2, h3, h4, h5, h6,
   --bs-btn-hover-color: #fff;
 }
 
-/* primary utility recolor */
-.bg-primary { background-color: var(--brand-orange) !important; }
+/* primary utilities follow --bs-primary-rgb (above), so .bg-primary and
+   .bg-primary.bg-opacity-10 tint correctly — no hard override here. */
 .text-primary { color: var(--brand-orange-dark) !important; }
-.badge.bg-primary { background-color: var(--brand-orange) !important; }
 .progress-bar { background-color: var(--brand-orange); }
 
 /* --- Cards --- */
