@@ -28,7 +28,7 @@ const SPONSOR_SELECT = {
   phone: true,
   email: true,
   notes: true,
-  donations: { select: { amount: true } }
+  donations: { select: { amount: true, fiscalYearId: true } }
 } as const
 
 type SponsorRow = {
@@ -42,7 +42,7 @@ type SponsorRow = {
   phone: string | null
   email: string | null
   notes: string | null
-  donations: { amount: number | null }[]
+  donations: { amount: number | null; fiscalYearId: string | null }[]
 }
 
 const CSV_HEADERS = [
@@ -57,13 +57,21 @@ const CSV_HEADERS = [
   'E-Mail',
   'Notizen',
   'Zugeordnet zu',
-  'Anzahl Spenden',
-  'Spendensumme'
+  'Anzahl Spenden (laufendes Jahr)',
+  'Spendensumme (laufendes Jahr)'
 ]
 
-function buildSponsorRow(sponsor: SponsorRow, assignedTo: string): unknown[] {
-  const donationCount = sponsor.donations.length
-  const donationSum = sponsor.donations.reduce((sum, d) => sum + (d.amount || 0), 0)
+function buildSponsorRow(
+  sponsor: SponsorRow,
+  assignedTo: string,
+  currentFiscalYearId: string | null
+): unknown[] {
+  // Only count donations of the current fiscal year, matching the status page.
+  const currentDonations = currentFiscalYearId
+    ? sponsor.donations.filter(d => d.fiscalYearId === currentFiscalYearId)
+    : []
+  const donationCount = currentDonations.length
+  const donationSum = currentDonations.reduce((sum, d) => sum + (d.amount || 0), 0)
   return [
     sponsor.company,
     sponsor.salutation,
@@ -118,6 +126,17 @@ export const GET = withPublicApiRoute(async (_request: NextRequest, { params }: 
     return notFound()
   }
 
+  // Current fiscal year - donation totals are scoped to it (matches status page)
+  const now = new Date()
+  const currentFiscalYear = await prisma.fiscalYear.findFirst({
+    where: {
+      startDate: { lte: now },
+      endDate: { gte: now }
+    },
+    select: { id: true }
+  })
+  const currentFiscalYearId = currentFiscalYear?.id ?? null
+
   // Member link: export the member's own sponsors
   const member = await prisma.member.findUnique({
     where: { statusToken: token },
@@ -130,7 +149,7 @@ export const GET = withPublicApiRoute(async (_request: NextRequest, { params }: 
 
   if (member) {
     const memberName = getMemberDisplayName(member)
-    const rows = member.sponsors.map(sponsor => buildSponsorRow(sponsor, memberName))
+    const rows = member.sponsors.map(sponsor => buildSponsorRow(sponsor, memberName, currentFiscalYearId))
     return csvResponse(memberName, rows)
   }
 
@@ -155,13 +174,13 @@ export const GET = withPublicApiRoute(async (_request: NextRequest, { params }: 
     const rows: unknown[][] = []
     // Group-level sponsors first
     for (const sponsor of group.sponsors) {
-      rows.push(buildSponsorRow(sponsor, `${group.name} (Gruppe)`))
+      rows.push(buildSponsorRow(sponsor, `${group.name} (Gruppe)`, currentFiscalYearId))
     }
     // Then each member's sponsors, labelled with the member name
     for (const groupMember of group.members) {
       const memberName = getMemberDisplayName(groupMember)
       for (const sponsor of groupMember.sponsors) {
-        rows.push(buildSponsorRow(sponsor, memberName))
+        rows.push(buildSponsorRow(sponsor, memberName, currentFiscalYearId))
       }
     }
     return csvResponse(group.name, rows)
