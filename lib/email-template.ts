@@ -31,9 +31,9 @@ const LOCALE_MAP: Record<EmailLocale, string> = {
 
 const STRINGS: Record<EmailLocale, Record<string, string>> = {
   de: {
-    subject: 'Gönnerbrief {org} – {year}',
+    subject: 'Gönner:innen-Brief {org}',
     greeting: 'Hallo {name}',
-    intro: 'Im Anhang findest du unseren Gönnerbrief für das Vereinsjahr {year}. Hier dein aktueller Spendenstand:',
+    intro: 'Im Anhang findest du unseren Gönner:innen-Brief für das aktuelle Vereinsjahr. Hier dein aktueller Spendenstand:',
     groupLine: 'Du bist in der Gruppe {group} – gemeinsam mit {members}.',
     groupLineSolo: 'Du bist in der Gruppe {group}.',
     target: 'Ziel',
@@ -41,15 +41,15 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Offen',
     ofTarget: '{pct}% des Ziels erreicht',
     button: 'Meinen Status ansehen',
-    attachments: 'Angehängt: Gönnerbrief (PDF) und deine Adressliste (CSV).',
-    sponsorsTitle: 'Deine Gönner',
-    sponsorsLastYear: 'Vorjahr {year}',
+    aperoCta: 'Bitte sende die Einladung zum Gönnerapéro deinen bisherigen Gönner:innen:',
+    sponsorsTitle: 'Deine bisherigen Gönner:innen',
+    attachments: 'Angehängt: Gönner:innen-Brief (PDF) und deine Adressliste (CSV).',
     footer: 'Diese E-Mail wurde automatisch von {org} versendet.',
   },
   en: {
-    subject: 'Donor letter {org} – {year}',
+    subject: 'Patron letter {org}',
     greeting: 'Hi {name}',
-    intro: 'Please find our donor letter for the {year} season attached. Here is your current donation status:',
+    intro: 'Please find our patron letter for the current season attached. Here is your current donation status:',
     groupLine: 'You are in the group {group} – together with {members}.',
     groupLineSolo: 'You are in the group {group}.',
     target: 'Target',
@@ -57,15 +57,15 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Open',
     ofTarget: '{pct}% of target reached',
     button: 'View my status',
-    attachments: 'Attached: the donor letter (PDF) and your address list (CSV).',
-    sponsorsTitle: 'Your patrons',
-    sponsorsLastYear: 'Prev. year {year}',
+    aperoCta: 'Please send the invitation to the patron apéro to your previous patrons:',
+    sponsorsTitle: 'Your previous patrons',
+    attachments: 'Attached: the patron letter (PDF) and your address list (CSV).',
     footer: 'This email was sent automatically by {org}.',
   },
   fr: {
-    subject: 'Lettre aux donateurs {org} – {year}',
+    subject: 'Lettre aux donateurs {org}',
     greeting: 'Salut {name}',
-    intro: 'Vous trouverez en pièce jointe notre lettre aux donateurs pour la saison {year}. Voici votre état actuel des dons :',
+    intro: 'Vous trouverez en pièce jointe notre lettre aux donateurs pour la saison en cours. Voici ton état actuel des dons :',
     groupLine: 'Tu fais partie du groupe {group} – avec {members}.',
     groupLineSolo: 'Tu fais partie du groupe {group}.',
     target: 'Objectif',
@@ -73,15 +73,15 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Restant',
     ofTarget: '{pct}% de l’objectif atteint',
     button: 'Voir mon statut',
+    aperoCta: 'Merci d’envoyer l’invitation à l’apéro des donateurs à tes anciens donateurs :',
+    sponsorsTitle: 'Tes anciens donateurs',
     attachments: 'En pièce jointe : la lettre aux donateurs (PDF) et ta liste d’adresses (CSV).',
-    sponsorsTitle: 'Tes donateurs',
-    sponsorsLastYear: 'Année préc. {year}',
     footer: 'Cet e-mail a été envoyé automatiquement par {org}.',
   },
   it: {
-    subject: 'Lettera ai donatori {org} – {year}',
+    subject: 'Lettera ai donatori {org}',
     greeting: 'Ciao {name}',
-    intro: 'In allegato trovi la nostra lettera ai donatori per la stagione {year}. Ecco lo stato attuale delle donazioni:',
+    intro: 'In allegato trovi la nostra lettera ai donatori per la stagione in corso. Ecco lo stato attuale delle donazioni:',
     groupLine: 'Fai parte del gruppo {group} – insieme a {members}.',
     groupLineSolo: 'Fai parte del gruppo {group}.',
     target: 'Obiettivo',
@@ -89,9 +89,9 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Aperto',
     ofTarget: '{pct}% dell’obiettivo raggiunto',
     button: 'Vedi il mio stato',
+    aperoCta: 'Ti preghiamo di inviare l’invito all’aperitivo dei donatori ai tuoi donatori precedenti:',
+    sponsorsTitle: 'I tuoi donatori precedenti',
     attachments: 'In allegato: la lettera ai donatori (PDF) e il tuo elenco indirizzi (CSV).',
-    sponsorsTitle: 'I tuoi donatori',
-    sponsorsLastYear: 'Anno prec. {year}',
     footer: 'Questa e-mail è stata inviata automaticamente da {org}.',
   },
 }
@@ -124,7 +124,7 @@ export function renderStatusEmail(data: StatusEmailData): {
       maximumFractionDigits: 0,
     }).format(n)
 
-  const vars = { org: data.orgName, year: data.fiscalYearName, name: data.firstName, pct: data.progress.percentage }
+  const vars = { org: data.orgName, name: data.firstName, pct: data.progress.percentage }
   const subject = fill(s.subject, vars)
   const pct = Math.min(100, Math.max(0, data.progress.percentage))
 
@@ -140,7 +140,7 @@ export function renderStatusEmail(data: StatusEmailData): {
        </p>`
     : ''
 
-  // Optional sponsor list with previous-year amounts
+  // Patron list with previous-year amounts, introduced by the apéro call-to-action
   const sponsorRows = data.sponsors
     .map(
       (sp) => `<tr>
@@ -149,13 +149,11 @@ export function renderStatusEmail(data: StatusEmailData): {
       </tr>`
     )
     .join('')
-  const sponsorsHeading = data.previousYearName
-    ? `${s.sponsorsTitle} · ${fill(s.sponsorsLastYear, { year: data.previousYearName })}`
-    : s.sponsorsTitle
   const sponsorsHtml =
     data.sponsors.length > 0
-      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:26px 0 0;">
-           <tr><td style="padding-bottom:8px;font-size:14px;font-weight:700;color:#16202c;">${escapeHtml(sponsorsHeading)}</td></tr>
+      ? `<p style="margin:26px 0 10px;font-size:14px;line-height:1.5;color:#414d5b;">${escapeHtml(s.aperoCta)}</p>
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           <tr><td style="padding-bottom:8px;font-size:14px;font-weight:700;color:#16202c;">${escapeHtml(s.sponsorsTitle)}</td></tr>
          </table>
          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${sponsorRows}</table>`
       : ''
@@ -248,14 +246,8 @@ export function renderStatusEmail(data: StatusEmailData): {
 </body>
 </html>`
 
-  const textLines = [
-    fill(s.greeting, vars),
-    '',
-    fill(s.intro, vars),
-  ]
-  if (groupText) {
-    textLines.push('', groupText)
-  }
+  const textLines = [fill(s.greeting, vars), '', fill(s.intro, vars)]
+  if (groupText) textLines.push('', groupText)
   textLines.push(
     '',
     `${s.target}: ${money(data.progress.target)}`,
@@ -266,7 +258,7 @@ export function renderStatusEmail(data: StatusEmailData): {
     `${s.button}: ${data.statusUrl}`
   )
   if (data.sponsors.length > 0) {
-    textLines.push('', sponsorsHeading)
+    textLines.push('', s.aperoCta, '', s.sponsorsTitle)
     for (const sp of data.sponsors) {
       textLines.push(`  ${sp.name}: ${sp.lastYearAmount > 0 ? money(sp.lastYearAmount) : '–'}`)
     }
