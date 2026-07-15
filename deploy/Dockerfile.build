@@ -25,18 +25,32 @@ RUN DATABASE_URL="file:./dummy.db" npx prisma generate
 # Copy source files
 COPY . .
 
-# Build Next.js application
+# Build Next.js application (emits a self-contained server in .next/standalone
+# containing only the traced runtime dependencies — see output: 'standalone')
 RUN npm run build
 
-# Remove devDependencies to reduce size
-RUN npm prune --omit=dev
+# Assemble a minimal, self-contained deployable in /app/deploy-out.
+# This ships only what the standalone server needs plus the Prisma schema for
+# the remote `prisma db push` — a fraction of the full node_modules tree.
+RUN set -eux; \
+    OUT=/app/deploy-out; \
+    mkdir -p "$OUT"; \
+    cp -a .next/standalone/. "$OUT/"; \
+    mkdir -p "$OUT/.next/static"; \
+    cp -a .next/static/. "$OUT/.next/static/"; \
+    if [ -d public ]; then cp -a public "$OUT/public"; fi; \
+    cp -a prisma "$OUT/prisma"; \
+    cp -a package.json "$OUT/package.json"; \
+    if [ -f .env.example ]; then cp -a .env.example "$OUT/.env.example"; fi; \
+    mkdir -p "$OUT/deploy"; \
+    cp -a deploy/donorflow.service.example "$OUT/deploy/"; \
+    rm -f "$OUT"/prisma/*.db "$OUT"/prisma/*.db-journal "$OUT"/prisma/*.db-shm "$OUT"/prisma/*.db-wal
 
-# Re-generate Prisma client after pruning (in case it was removed)
-RUN DATABASE_URL="file:./dummy.db" npx prisma generate
-
-# The built application is now in /app with:
-# - .next/ (Next.js build output)
-# - node_modules/ (production dependencies with Linux binaries)
-# - prisma/ (schema and scripts)
+# The deployable is now in /app/deploy-out with:
+# - server.js (standalone Next.js server entrypoint)
+# - .next/ (standalone build output + static assets)
+# - node_modules/ (only traced runtime dependencies, Linux-native binaries)
+# - prisma/ (schema, for `prisma db push` on the server)
 # - public/ (static assets)
-# - package.json, ecosystem.config.js, etc.
+# - deploy/donorflow.service.example (systemd unit, applied on each deploy)
+# - package.json

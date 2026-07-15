@@ -17,11 +17,13 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/donorflow/current
-ExecStart=%h/.local/share/mise/shims/node node_modules/.bin/next start -p 7526 -H 0.0.0.0
+# Standalone Next.js server (see output: 'standalone'); reads PORT and HOSTNAME
+ExecStart=%h/.local/share/mise/shims/node server.js
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=7526
+Environment=HOSTNAME=0.0.0.0
 
 # Logging
 StandardOutput=append:%h/donorflow/current/logs/out.log
