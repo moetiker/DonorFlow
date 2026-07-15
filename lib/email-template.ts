@@ -41,7 +41,7 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Offen',
     ofTarget: '{pct}% des Ziels erreicht',
     button: 'Meinen Status ansehen',
-    aperoCta: 'Bitte sende die Einladung zum Gönnerapéro deinen bisherigen Gönner:innen. Gerne darfst du sie auch an potenzielle neue Gönner:innen abgeben.',
+    aperoCta: 'Bitte sende die Einladung zum Apéro deinen bisherigen Gönner:innen. Gerne darfst du sie auch an potenzielle neue Gönner:innen abgeben.',
     sponsorsTitle: 'Deine bisherigen Gönner:innen',
     attachments: 'Angehängt: Gönner:innen-Brief (PDF) und deine Adressliste (CSV).',
     contact: 'Bei Fragen kannst du dich gerne bei Doris melden.',
