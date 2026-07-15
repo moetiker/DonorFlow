@@ -45,8 +45,8 @@ logs/
 *.log
 
 # deployment (keep examples, ignore environment-specific configs)
-deploy-config.*.sh
-!deploy-config.example.sh
+deploy/deploy-config.*.sh
+!deploy/deploy-config.example.sh
 deploy-temp/
 migrate-to-current.sh
 backup-setup.sh

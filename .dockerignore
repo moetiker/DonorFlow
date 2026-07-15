@@ -29,8 +29,9 @@ logs
 .idea
 .claude
 
-# Deployment
-deploy-config.*.sh
+# Deployment: keep the secret configs out of the image (the example templates
+# ship so first-time server setup can reference them)
+deploy/deploy-config.*.sh
 deploy-temp
 
 # Misc
