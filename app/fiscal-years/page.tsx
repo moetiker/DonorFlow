@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Table, Badge, Spinner, Alert } from 'react-bootstrap'
+import { Container, Card, Button, Table, Badge, Spinner, Alert, Modal, Form } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 import Link from 'next/link'
@@ -41,6 +41,10 @@ export default function FiscalYearsPage() {
   const [error, setError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<FiscalYear | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [editTarget, setEditTarget] = useState<FiscalYear | null>(null)
+  const [editName, setEditName] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
   const t = useTranslations('fiscalYears')
   const tCommon = useTranslations('common')
   const tTargets = useTranslations('targets')
@@ -96,6 +100,38 @@ export default function FiscalYearsPage() {
       setError(t('letterUploadError'))
     } finally {
       setDeleting(false)
+    }
+  }
+
+  function openEdit(year: FiscalYear) {
+    setEditTarget(year)
+    setEditName(year.name)
+    setEditError(null)
+  }
+
+  async function handleSaveEdit() {
+    if (!editTarget) return
+    const name = editName.trim()
+    if (!name) return
+    setSavingEdit(true)
+    setEditError(null)
+    try {
+      const res = await fetch(`/api/fiscal-years/${editTarget.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setEditError(body.error === 'nameExists' ? t('nameExists') : t('editError'))
+        return
+      }
+      setEditTarget(null)
+      await loadFiscalYears()
+    } catch {
+      setEditError(t('editError'))
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -225,6 +261,15 @@ export default function FiscalYearsPage() {
                           )}
                         </td>
                         <td>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="me-2"
+                            title={t('edit')}
+                            onClick={() => openEdit(year)}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Button>
                           <Link href={`/targets?year=${year.id}`} className="btn btn-sm btn-outline-primary me-2">
                             <i className="bi bi-clipboard-check"></i> {tTargets('title')}
                           </Link>
@@ -246,6 +291,34 @@ export default function FiscalYearsPage() {
           onCancel={() => setDeleteTarget(null)}
           deleting={deleting}
         />
+
+        <Modal show={editTarget !== null} onHide={() => setEditTarget(null)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title className="h6">{t('edit')}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {editError && <Alert variant="danger">{editError}</Alert>}
+            <Form.Group>
+              <Form.Label>{t('name')}</Form.Label>
+              <Form.Control
+                type="text"
+                value={editName}
+                autoFocus
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit() }}
+                disabled={savingEdit}
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setEditTarget(null)} disabled={savingEdit}>
+              {tCommon('cancel')}
+            </Button>
+            <Button variant="primary" onClick={handleSaveEdit} disabled={savingEdit || !editName.trim()}>
+              {savingEdit ? tCommon('saving') : tCommon('save')}
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </Container>
     </>
   )

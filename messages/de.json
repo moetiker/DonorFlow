@@ -257,6 +257,8 @@
     "letterRemoveTitle": "Gönnerbrief entfernen",
     "letterRemoveMessage": "Gönnerbrief für {year} wirklich entfernen?",
     "letterUploadError": "Upload fehlgeschlagen. Nur PDF, max. 5 MB.",
+    "nameExists": "Ein Vereinsjahr mit diesem Namen existiert bereits.",
+    "editError": "Speichern fehlgeschlagen.",
     "emptyState": "Keine Vereinsjahre vorhanden",
     "emptyStateDescription": "Erstellen Sie Ihr erstes Vereinsjahr, um zu beginnen.",
     "emptyStateAction": "Vereinsjahr erstellen",

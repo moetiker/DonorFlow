@@ -257,6 +257,8 @@
     "letterRemoveTitle": "Supprimer la lettre",
     "letterRemoveMessage": "Supprimer vraiment la lettre aux donateurs pour {year} ?",
     "letterUploadError": "Échec du téléversement. PDF uniquement, max 5 Mo.",
+    "nameExists": "Un exercice fiscal avec ce nom existe déjà.",
+    "editError": "Échec de l'enregistrement.",
     "emptyState": "Aucun exercice fiscal disponible",
     "emptyStateDescription": "Créez votre premier exercice fiscal pour commencer.",
     "emptyStateAction": "Créer un exercice fiscal",

@@ -257,6 +257,8 @@
     "letterRemoveTitle": "Remove donor letter",
     "letterRemoveMessage": "Really remove the donor letter for {year}?",
     "letterUploadError": "Upload failed. PDF only, max 5 MB.",
+    "nameExists": "A fiscal year with this name already exists.",
+    "editError": "Saving failed.",
     "emptyState": "No fiscal years available",
     "emptyStateDescription": "Create your first fiscal year to get started.",
     "emptyStateAction": "Create Fiscal Year",
