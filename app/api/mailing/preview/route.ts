@@ -34,11 +34,14 @@ export const POST = withApiRoute(async (request: NextRequest) => {
   })
 
   const email = renderStatusEmail({
-    memberName: data.memberName,
+    firstName: data.memberFirstName,
     orgName: await getOrgName(),
     fiscalYearName: fiscalYear.name,
     statusUrl: `${getBaseUrl(request)}/s/${data.statusToken}`,
     progress: data.progress,
+    sponsors: data.sponsors,
+    previousYearName: data.previousYearName,
+    groupInfo: data.groupInfo,
     attachmentsNote: Boolean(letter),
     locale: 'de',
   })

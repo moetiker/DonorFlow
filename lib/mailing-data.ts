@@ -1,6 +1,6 @@
 import { prisma } from './db'
-import { getMemberDisplayName } from './utils'
-import { SPONSOR_CSV_SELECT, buildSponsorCsv, type SponsorCsvRow } from './sponsor-csv'
+import { getMemberDisplayName, getSponsorDisplayName } from './utils'
+import { SPONSOR_CSV_SELECT, buildSponsorAddressCsv, type SponsorCsvRow } from './sponsor-csv'
 import { generateStatusToken } from './tokens'
 
 /**
@@ -12,12 +12,18 @@ import { generateStatusToken } from './tokens'
 export type MemberMailData = {
   memberId: string
   memberName: string
+  memberFirstName: string
   email: string | null
   entityType: 'member' | 'group'
   displayName: string
   statusToken: string
   progress: { target: number; collected: number; remaining: number; percentage: number }
   csvContent: string
+  // Sponsors of the entity with the amount they gave in the previous fiscal year
+  sponsors: { name: string; lastYearAmount: number }[]
+  previousYearName: string | null
+  // Set when the member belongs to a group: the group name and its members
+  groupInfo: { name: string; memberNames: string[] } | null
 }
 
 async function sumMonetary(where: object): Promise<number> {
@@ -56,6 +62,33 @@ export async function buildMemberMailData(
   if (!member) return null
   const memberName = getMemberDisplayName(member)
 
+  // Previous fiscal year (relative to the selected one) for last-year amounts
+  const selectedFy = await prisma.fiscalYear.findUnique({
+    where: { id: fiscalYearId },
+    select: { startDate: true },
+  })
+  // Immediately preceding fiscal year by start date (robust to overlapping
+  // year boundaries, where the previous year's endDate can spill past the next
+  // year's startDate).
+  const previousFy = selectedFy
+    ? await prisma.fiscalYear.findFirst({
+        where: { startDate: { lt: selectedFy.startDate } },
+        orderBy: { startDate: 'desc' },
+        select: { id: true, name: true },
+      })
+    : null
+  const prevFyId = previousFy?.id ?? null
+
+  const buildSponsorList = (sponsors: SponsorCsvRow[]) =>
+    sponsors
+      .map((s) => ({
+        name: getSponsorDisplayName(s),
+        lastYearAmount: prevFyId
+          ? s.donations.filter((d) => d.fiscalYearId === prevFyId).reduce((a, d) => a + (d.amount || 0), 0)
+          : 0,
+      }))
+      .sort((a, b) => b.lastYearAmount - a.lastYearAmount || a.name.localeCompare(b.name))
+
   // --- Grouped member: report on the group ---
   if (member.groupId && member.group) {
     const groupId = member.group.id
@@ -93,22 +126,25 @@ export async function buildMemberMailData(
       })
     }
 
-    const entries: { sponsor: SponsorCsvRow; assignedTo: string }[] = []
-    for (const s of groupSponsors) entries.push({ sponsor: s, assignedTo: `${member.group.name} (Gruppe)` })
-    for (const m of groupMembers) {
-      const mName = getMemberDisplayName(m)
-      for (const s of m.sponsors) entries.push({ sponsor: s, assignedTo: mName })
-    }
+    const entitySponsors: SponsorCsvRow[] = [...groupSponsors, ...groupMembers.flatMap((m) => m.sponsors)]
 
     return {
       memberId: member.id,
       memberName,
+      memberFirstName: member.firstName,
       email: member.email,
       entityType: 'group',
       displayName: member.group.name,
       statusToken: token,
       progress: toProgress(target, collected),
-      csvContent: buildSponsorCsv(entries, fiscalYearId),
+      csvContent: buildSponsorAddressCsv(entitySponsors),
+      sponsors: buildSponsorList(entitySponsors),
+      previousYearName: previousFy?.name ?? null,
+      // Other group members, first names only (exclude the recipient)
+      groupInfo: {
+        name: member.group.name,
+        memberNames: groupMembers.filter((m) => m.id !== member.id).map((m) => m.firstName),
+      },
     }
   }
 
@@ -134,17 +170,19 @@ export async function buildMemberMailData(
     OR: [{ memberId: member.id }, { memberId: null, sponsor: { memberId: member.id } }],
   })
 
-  const entries = sponsors.map((s: SponsorCsvRow) => ({ sponsor: s, assignedTo: memberName }))
-
   return {
     memberId: member.id,
     memberName,
+    memberFirstName: member.firstName,
     email: member.email,
     entityType: 'member',
     displayName: memberName,
     statusToken: token,
     progress: toProgress(target, collected),
-    csvContent: buildSponsorCsv(entries, fiscalYearId),
+    csvContent: buildSponsorAddressCsv(sponsors),
+    sponsors: buildSponsorList(sponsors),
+    previousYearName: previousFy?.name ?? null,
+    groupInfo: null,
   }
 }
 

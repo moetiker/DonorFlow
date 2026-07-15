@@ -56,6 +56,35 @@ export const SPONSOR_CSV_HEADERS = [
  * the "assigned to" label (member name or "<group> (Gruppe)"). Donation count
  * and sum count only the current fiscal year, matching the status page.
  */
+// Address-only variant (used for the donor mailing): no notes, assignment, or
+// donation-summary columns.
+export const SPONSOR_ADDRESS_HEADERS = [
+  'Firma',
+  'Anrede',
+  'Vorname',
+  'Nachname',
+  'Strasse',
+  'PLZ',
+  'Ort',
+  'Telefon',
+  'E-Mail',
+]
+
+export function buildSponsorAddressCsv(sponsors: SponsorCsvRow[]): string {
+  const rows = sponsors.map((s) => [
+    s.company,
+    s.salutation,
+    s.firstName,
+    s.lastName,
+    s.street,
+    s.postalCode,
+    s.city,
+    s.phone,
+    s.email,
+  ])
+  return buildCSV(SPONSOR_ADDRESS_HEADERS, rows)
+}
+
 export function buildSponsorCsv(
   entries: { sponsor: SponsorCsvRow; assignedTo: string }[],
   currentFiscalYearId: string | null
