@@ -79,3 +79,6 @@ dev.sh
 
 # local browser-check artifacts
 .mcp-perf-check.png
+
+# docs (local only)
+docs/
