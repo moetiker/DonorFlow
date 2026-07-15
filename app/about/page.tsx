@@ -11,6 +11,7 @@ const features = [
   { icon: 'bi-bullseye', title: 'Targets', desc: 'per fiscal year, auto-carried' },
   { icon: 'bi-graph-up', title: 'Reports', desc: 'dashboards with PDF export' },
   { icon: 'bi-link-45deg', title: 'Status links', desc: 'public progress pages' },
+  { icon: 'bi-envelope-paper', title: 'Donor mailing', desc: 'personalized emails with letter & CSV' },
   { icon: 'bi-translate', title: '4 languages', desc: 'DE / EN / FR / IT' },
   { icon: 'bi-filetype-csv', title: 'CSV', desc: 'bulk import & export' },
 ]
