@@ -15,13 +15,14 @@ export function Navbar() {
   if (!session) return null
 
   return (
-    <BSNavbar bg="dark" variant="dark" expand="lg" className="mb-4">
+    <BSNavbar variant="dark" expand="lg" className="mb-4 app-navbar">
       <Container fluid>
-        <BSNavbar.Brand as={Link} href="/">
-          <i className="bi bi-piggy-bank me-2"></i>
-          <div className="d-inline-block">
-            <div>{organizationName}</div>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '-2px' }}>{t('poweredBy')}</div>
+        <BSNavbar.Brand as={Link} href="/" className="d-flex align-items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="" width={32} height={32} className="me-2 app-brand-logo" />
+          <div className="d-inline-block lh-1">
+            <div className="app-brand-name">{organizationName}</div>
+            <div className="app-brand-sub">{t('poweredBy')}</div>
           </div>
         </BSNavbar.Brand>
         <BSNavbar.Toggle aria-controls="navbar-nav" />

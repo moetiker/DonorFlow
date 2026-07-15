@@ -24,6 +24,10 @@ Clubs — a Guggenmusig, a sports team, a music society — live on their **Gön
 
 ## Screenshots
 
+<div align="center">
+<img src="screenshots/login.png" width="620" alt="DonorFlow sign-in" />
+</div>
+
 |  |  |
 |:--:|:--:|
 | **Live dashboard** — the whole season at a glance | **Performance report** — per member & group, with PDF export |

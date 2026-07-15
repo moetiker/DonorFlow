@@ -48,18 +48,27 @@ export default function LoginPage() {
       className="d-flex align-items-center justify-content-center"
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background:
+          'radial-gradient(1100px 560px at 50% -12%, rgba(255,206,106,0.18), transparent 60%), linear-gradient(135deg, #16233d 0%, #21407a 100%)'
       }}
     >
-      <Card style={{ width: '100%', maxWidth: '400px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: 'none' }}>
+      <Card style={{ width: '100%', maxWidth: '400px', boxShadow: '0 24px 60px -20px rgba(0,0,0,0.55)', border: 'none', borderRadius: '1rem' }}>
         <Card.Body className="p-4">
-          <div className="text-center mb-4">
-            <i className="bi bi-piggy-bank" style={{ fontSize: '4rem', color: '#667eea' }}></i>
+          <div className="text-center mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icon.svg"
+              alt="DonorFlow"
+              width={76}
+              height={76}
+              style={{ borderRadius: 18, boxShadow: '0 8px 24px rgba(16,35,61,0.35)' }}
+            />
           </div>
           <h1 className="text-center mb-2" style={{
-            fontSize: '2.5rem',
-            fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            fontSize: '2.4rem',
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(120deg, #16233d 0%, #ea7600 130%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
@@ -96,15 +105,10 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              variant="primary"
               className="w-100"
               disabled={loading}
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
-                padding: '12px',
-                fontSize: '1.1rem',
-                fontWeight: '500'
-              }}
+              style={{ padding: '12px', fontSize: '1.05rem' }}
             >
               {loading ? t('loggingIn') : t('login')}
             </Button>
