@@ -470,6 +470,8 @@
     "inKindDonations": "Sachspenden",
     "description": "Beschreibung",
     "from": "Von",
-    "groupDirect": "Gruppe direkt"
+    "groupDirect": "Gruppe direkt",
+    "donationHistory": "Spendenverlauf",
+    "csvDownload": "Adressliste (CSV)"
   }
 }

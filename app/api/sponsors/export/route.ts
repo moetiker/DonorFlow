@@ -2,17 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-
-// Helper function to escape CSV fields
-function escapeCSV(value: any): string {
-  if (value === null || value === undefined) return ''
-  const str = String(value)
-  // If contains comma, quote, or newline, wrap in quotes and escape quotes
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`
-  }
-  return str
-}
+import { buildCSV } from '@/lib/csv'
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,28 +57,25 @@ export async function GET(request: NextRequest) {
       const donationSum = sponsor.donations.reduce((sum, d) => sum + (d.amount || 0), 0)
 
       return [
-        escapeCSV(sponsor.company),
-        escapeCSV(sponsor.salutation),
-        escapeCSV(sponsor.firstName),
-        escapeCSV(sponsor.lastName),
-        escapeCSV(sponsor.street),
-        escapeCSV(sponsor.postalCode),
-        escapeCSV(sponsor.city),
-        escapeCSV(sponsor.phone),
-        escapeCSV(sponsor.email),
-        escapeCSV(sponsor.notes),
-        escapeCSV(assignedType),
-        escapeCSV(assignedName),
-        escapeCSV(donationCount),
-        escapeCSV(donationSum.toFixed(2))
+        sponsor.company,
+        sponsor.salutation,
+        sponsor.firstName,
+        sponsor.lastName,
+        sponsor.street,
+        sponsor.postalCode,
+        sponsor.city,
+        sponsor.phone,
+        sponsor.email,
+        sponsor.notes,
+        assignedType,
+        assignedName,
+        donationCount,
+        donationSum.toFixed(2)
       ]
     })
 
     // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n')
+    const csvContent = buildCSV(headers, rows)
 
     // Generate filename with current date
     const today = new Date()

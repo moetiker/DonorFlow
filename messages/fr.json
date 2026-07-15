@@ -470,6 +470,8 @@
     "inKindDonations": "Dons en nature",
     "description": "Description",
     "from": "De",
-    "groupDirect": "Groupe direct"
+    "groupDirect": "Groupe direct",
+    "donationHistory": "Historique des dons",
+    "csvDownload": "Liste d'adresses (CSV)"
   }
 }

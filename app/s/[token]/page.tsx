@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, Fragment } from 'react'
 import { Container, Card, ProgressBar, Table, Alert, Badge, Spinner, Accordion } from 'react-bootstrap'
 import { NextIntlClientProvider } from 'next-intl'
 import { useTranslations } from 'next-intl'
@@ -12,6 +12,14 @@ interface InKindDonation {
   date: string
 }
 
+interface DonationHistoryEntry {
+  date: string
+  type: 'MONETARY' | 'IN_KIND'
+  amount: number | null
+  description: string | null
+  fiscalYearName: string
+}
+
 interface SponsorData {
   name: string
   donated: boolean
@@ -20,6 +28,7 @@ interface SponsorData {
   totalAmount: number
   lastDonation: string | null
   inKindDonations: InKindDonation[]
+  history: DonationHistoryEntry[]
 }
 
 interface MemberData {
@@ -62,6 +71,19 @@ function StatusPageContent({ token }: { token: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [locale, setLocale] = useState<Locale>('de')
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+
+  const toggleHistory = (key: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     // Detect browser locale
@@ -211,8 +233,46 @@ function StatusPageContent({ token }: { token: string }) {
     return 'danger'
   }
 
+  // Render the expandable donation-history detail row for a sponsor
+  const renderHistoryRow = (sponsor: SponsorData, rowKey: string, colSpan: number) => {
+    if (!expandedRows.has(rowKey) || sponsor.history.length === 0) return null
+    return (
+      <tr>
+        <td colSpan={colSpan} className="p-0 border-0">
+          <div className="px-3 py-2 bg-light">
+            <div className="small fw-bold text-muted mb-1">{t('donationHistory')}</div>
+            <Table size="sm" borderless className="mb-0">
+              <thead>
+                <tr className="small text-muted">
+                  <th>{t('date')}</th>
+                  <th className="text-end">{t('amount')}</th>
+                  <th className="text-end">{t('fiscalYear')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sponsor.history.map((h, i) => (
+                  <tr key={i}>
+                    <td className="align-middle">{formatDate(h.date)}</td>
+                    <td className="text-end align-middle">
+                      {h.type === 'IN_KIND'
+                        ? <>🎁 {h.description || '-'}</>
+                        : formatCurrency(h.amount ?? 0)}
+                    </td>
+                    <td className="text-end align-middle text-muted small">
+                      {h.fiscalYearName || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
   // Render sponsor tables for a member (in-kind donations are shown in top-level section)
-  const renderSponsorTables = (sponsors: SponsorData[]) => {
+  const renderSponsorTables = (sponsors: SponsorData[], keyPrefix: string) => {
     const donatedSponsors = sponsors.filter(s => s.donated)
     const notDonatedSponsors = sponsors.filter(s => !s.donated)
 
@@ -239,15 +299,31 @@ function StatusPageContent({ token }: { token: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {donatedSponsors.map((sponsor, index) => (
-                      <tr key={index}>
-                        <td className="align-middle">{sponsor.name}</td>
-                        <td className="text-end align-middle">{formatCurrency(sponsor.totalAmount)}</td>
-                        <td className="text-end align-middle d-none d-sm-table-cell">
-                          {sponsor.lastDonation ? formatDate(sponsor.lastDonation) : '-'}
-                        </td>
-                      </tr>
-                    ))}
+                    {donatedSponsors.map((sponsor, index) => {
+                      const rowKey = `${keyPrefix}-d-${index}`
+                      const hasHistory = sponsor.history.length > 0
+                      const isOpen = expandedRows.has(rowKey)
+                      return (
+                        <Fragment key={index}>
+                          <tr
+                            onClick={hasHistory ? () => toggleHistory(rowKey) : undefined}
+                            style={hasHistory ? { cursor: 'pointer' } : undefined}
+                          >
+                            <td className="align-middle">
+                              {hasHistory && (
+                                <i className={`bi bi-chevron-${isOpen ? 'down' : 'right'} me-1 small`} />
+                              )}
+                              {sponsor.name}
+                            </td>
+                            <td className="text-end align-middle">{formatCurrency(sponsor.totalAmount)}</td>
+                            <td className="text-end align-middle d-none d-sm-table-cell">
+                              {sponsor.lastDonation ? formatDate(sponsor.lastDonation) : '-'}
+                            </td>
+                          </tr>
+                          {renderHistoryRow(sponsor, rowKey, 3)}
+                        </Fragment>
+                      )
+                    })}
                   </tbody>
                 </Table>
               </div>
@@ -275,23 +351,38 @@ function StatusPageContent({ token }: { token: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {notDonatedSponsors.map((sponsor, index) => (
-                      <tr key={index} className={sponsor.isLYBUNT ? 'table-warning' : ''}>
-                        <td className="align-middle">
-                          {sponsor.name}
-                          {sponsor.isLYBUNT && (
-                            <Badge bg="warning" text="dark" className="ms-2 lybunt-badge">
-                              {t('lybunt')}
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="text-end align-middle">
-                          {sponsor.isLYBUNT && (
-                            <span className="text-warning d-sm-none">!</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {notDonatedSponsors.map((sponsor, index) => {
+                      const rowKey = `${keyPrefix}-n-${index}`
+                      const hasHistory = sponsor.history.length > 0
+                      const isOpen = expandedRows.has(rowKey)
+                      return (
+                        <Fragment key={index}>
+                          <tr
+                            className={sponsor.isLYBUNT ? 'table-warning' : ''}
+                            onClick={hasHistory ? () => toggleHistory(rowKey) : undefined}
+                            style={hasHistory ? { cursor: 'pointer' } : undefined}
+                          >
+                            <td className="align-middle">
+                              {hasHistory && (
+                                <i className={`bi bi-chevron-${isOpen ? 'down' : 'right'} me-1 small`} />
+                              )}
+                              {sponsor.name}
+                              {sponsor.isLYBUNT && (
+                                <Badge bg="warning" text="dark" className="ms-2 lybunt-badge">
+                                  {t('lybunt')}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="text-end align-middle">
+                              {sponsor.isLYBUNT && (
+                                <span className="text-warning d-sm-none">!</span>
+                              )}
+                            </td>
+                          </tr>
+                          {renderHistoryRow(sponsor, rowKey, 2)}
+                        </Fragment>
+                      )
+                    })}
                   </tbody>
                 </Table>
               </div>
@@ -306,11 +397,20 @@ function StatusPageContent({ token }: { token: string }) {
     <Container className="py-3 status-page">
       {/* Header */}
       <Card className="mb-3 border-0 bg-primary text-white">
-        <Card.Body className="py-3">
-          <h1 className="h4 mb-1">{data.name}</h1>
-          <small className="opacity-75">
-            {t('fiscalYear')}: {data.fiscalYear.name}
-          </small>
+        <Card.Body className="py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h1 className="h4 mb-1">{data.name}</h1>
+            <small className="opacity-75">
+              {t('fiscalYear')}: {data.fiscalYear.name}
+            </small>
+          </div>
+          <a
+            href={`/api/public/status/${token}/export`}
+            className="btn btn-light btn-sm text-nowrap"
+          >
+            <i className="bi bi-download me-1" />
+            {t('csvDownload')}
+          </a>
         </Card.Body>
       </Card>
 
@@ -394,7 +494,7 @@ function StatusPageContent({ token }: { token: string }) {
           {data.groupSponsors && data.groupSponsors.length > 0 && (
             <>
               <h3 className="h5 mt-4 mb-3">{t('groupSponsors')}</h3>
-              {renderSponsorTables(data.groupSponsors)}
+              {renderSponsorTables(data.groupSponsors, 'group')}
             </>
           )}
 
@@ -418,7 +518,7 @@ function StatusPageContent({ token }: { token: string }) {
                     {member.sponsors.length === 0 ? (
                       <p className="text-muted text-center py-3 mb-0">{t('noSponsors')}</p>
                     ) : (
-                      renderSponsorTables(member.sponsors)
+                      renderSponsorTables(member.sponsors, `member-${member.id}`)
                     )}
                   </Accordion.Body>
                 </Accordion.Item>
@@ -429,7 +529,7 @@ function StatusPageContent({ token }: { token: string }) {
       ) : (
         <>
           {/* Member view - show sponsors directly */}
-          {data.sponsors && renderSponsorTables(data.sponsors)}
+          {data.sponsors && renderSponsorTables(data.sponsors, 'member')}
         </>
       )}
 

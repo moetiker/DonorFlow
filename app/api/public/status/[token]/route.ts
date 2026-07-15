@@ -68,11 +68,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
       })
     : null
 
-  const fiscalYearIds = [
-    currentFiscalYear?.id,
-    previousFiscalYear?.id
-  ].filter((id): id is string => id !== undefined && id !== null)
-
   // Try to find member by statusToken first
   const member = await prisma.member.findUnique({
     where: { statusToken: token },
@@ -101,7 +96,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     // Or: donation.memberId IS NULL AND sponsor.memberId = member.id (sponsor's assignment)
     const donations = await prisma.donation.findMany({
       where: {
-        fiscalYearId: { in: fiscalYearIds },
         OR: [
           // Explicit override to this member
           { memberId: member.id },
@@ -119,6 +113,7 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
         description: true,
         donationDate: true,
         fiscalYearId: true,
+        fiscalYear: { select: { name: true } },
         sponsor: {
           select: {
             id: true,
@@ -183,7 +178,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     // Or: donation.groupId IS NULL AND sponsor.groupId = group.id (sponsor's assignment)
     const groupDonations = await prisma.donation.findMany({
       where: {
-        fiscalYearId: { in: fiscalYearIds },
         OR: [
           // Explicit override to this group
           { groupId: group.id },
@@ -202,6 +196,7 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
         description: true,
         donationDate: true,
         fiscalYearId: true,
+        fiscalYear: { select: { name: true } },
         sponsor: {
           select: {
             id: true,
@@ -220,7 +215,6 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     for (const member of group.members) {
       const memberDonations = await prisma.donation.findMany({
         where: {
-          fiscalYearId: { in: fiscalYearIds },
           OR: [
             // Explicit override to this member
             { memberId: member.id },
@@ -239,6 +233,7 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           description: true,
           donationDate: true,
           fiscalYearId: true,
+          fiscalYear: { select: { name: true } },
           sponsor: {
             select: {
               id: true,
@@ -297,6 +292,7 @@ interface DonationWithSponsor {
   description: string | null
   donationDate: Date
   fiscalYearId: string | null
+  fiscalYear: { name: string } | null
   sponsor: SponsorBasic
 }
 
@@ -475,6 +471,17 @@ function calculateSponsorsProgressFromDonations(
       date: d.donationDate
     }))
 
+    // Build full donation history across all fiscal years (most recent first)
+    const history = sponsorDonations
+      .map(d => ({
+        date: d.donationDate,
+        type: d.type,
+        amount: d.amount ?? null,
+        description: d.description ?? null,
+        fiscalYearName: d.fiscalYear?.name ?? ''
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
     return {
       name: getSponsorDisplayName(sponsor),
       donated: donatedThisYear,
@@ -482,7 +489,8 @@ function calculateSponsorsProgressFromDonations(
       isLYBUNT,
       totalAmount,
       lastDonation,
-      inKindDonations: inKindList
+      inKindDonations: inKindList,
+      history
     }
   })
 
