@@ -2,6 +2,21 @@
   "name": "donorflow",
   "version": "0.6.1",
   "description": "Modern donation management system for clubs and organizations",
+  "keywords": [
+    "donation-management",
+    "fundraising",
+    "nonprofit",
+    "clubs",
+    "associations",
+    "nextjs",
+    "typescript",
+    "prisma",
+    "sqlite",
+    "react",
+    "nextauth",
+    "i18n",
+    "self-hosted"
+  ],
   "author": "Manuel Oetiker <manuel@oetiker.ch>",
   "license": "MIT",
   "repository": {
