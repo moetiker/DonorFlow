@@ -1,101 +1,108 @@
 'use client'
 
-import { Container, Card } from 'react-bootstrap'
+import { Container } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
+import packageJson from '@/package.json'
+
+const features = [
+  { icon: 'bi-people', title: 'Members & groups', desc: 'organise and auto-group' },
+  { icon: 'bi-heart', title: 'Patrons', desc: 'assign to member or group' },
+  { icon: 'bi-cash-coin', title: 'Donations', desc: 'monetary & in-kind' },
+  { icon: 'bi-bullseye', title: 'Targets', desc: 'per fiscal year, auto-carried' },
+  { icon: 'bi-graph-up', title: 'Reports', desc: 'dashboards with PDF export' },
+  { icon: 'bi-link-45deg', title: 'Status links', desc: 'public progress pages' },
+  { icon: 'bi-translate', title: '4 languages', desc: 'DE / EN / FR / IT' },
+  { icon: 'bi-filetype-csv', title: 'CSV', desc: 'bulk import & export' },
+]
 
 export default function AboutPage() {
   return (
     <>
       <Navbar />
-      <Container>
-        <h1 className="mb-4">About DonorFlow</h1>
-
-        <Card className="mb-4">
-          <Card.Body>
-            <h5 className="mb-3">
-              <i className="bi bi-info-circle me-2"></i>
-              About
-            </h5>
-            <p className="mb-2">
-              <strong>DonorFlow</strong> - Modern donation management system for clubs and organizations
-            </p>
-            <p className="mb-2">Version 0.1.0</p>
-            <p className="mb-0">
-              <a
-                href="https://github.com/moetiker/DonorFlow"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-decoration-none"
-              >
-                <i className="bi bi-github me-2"></i>
-                GitHub Repository
-              </a>
-            </p>
-          </Card.Body>
-        </Card>
-
-        <Card className="mb-4">
-          <Card.Body>
-            <h5 className="mb-3">
-              <i className="bi bi-person-badge me-2"></i>
-              Creator
-            </h5>
-            <p className="mb-2">
-              <strong>Manuel Oetiker</strong>
-            </p>
-            <p className="mb-0">
-              <a
-                href="mailto:manuel@oetiker.ch"
-                className="text-decoration-none"
-              >
-                <i className="bi bi-envelope me-2"></i>
-                manuel@oetiker.ch
-              </a>
-            </p>
-          </Card.Body>
-        </Card>
-
-        <Card className="mb-4">
-          <Card.Body>
-            <h5 className="mb-3">
-              <i className="bi bi-stack me-2"></i>
-              Technology
-            </h5>
-            <p className="mb-2">Built with modern web technologies:</p>
-            <ul className="mb-0">
-              <li>Next.js 15 - React Framework</li>
-              <li>TypeScript - Type-safe Programming</li>
-              <li>Prisma - Database ORM</li>
-              <li>NextAuth.js - Authentication</li>
-              <li>React Bootstrap - UI Components</li>
-              <li>SQLite - Database</li>
+      <Container className="about-page py-4">
+        <div className="about-shell">
+          {/* Identity rail */}
+          <aside className="about-rail">
+            <span className="about-mark">
+              <i className="bi bi-piggy-bank"></i>
+            </span>
+            <h1 className="about-name">DonorFlow</h1>
+            <p className="about-de">Gönnerverwaltung für Vereine</p>
+            <span className="about-ver">Version {packageJson.version}</span>
+            <ul className="about-links">
+              <li>
+                <a
+                  href="https://github.com/moetiker/DonorFlow"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="bi bi-github"></i>
+                  GitHub repository
+                </a>
+              </li>
+              <li>
+                <a href="mailto:manuel@oetiker.ch">
+                  <i className="bi bi-envelope"></i>
+                  manuel@oetiker.ch
+                </a>
+              </li>
             </ul>
-          </Card.Body>
-        </Card>
+          </aside>
 
-        <Card className="mb-4">
-          <Card.Body>
-            <h5 className="mb-3">
-              <i className="bi bi-shield-check me-2"></i>
-              License
-            </h5>
-            <div className="bg-light p-3 rounded">
-              <p className="mb-2"><strong>MIT License</strong></p>
-              <p className="mb-0">
-                Copyright (c) {new Date().getFullYear()} Manuel Oetiker
-                <br />
-                <br />
-                Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-                and associated documentation files (the "Software"), to deal in the Software without restriction,
-                including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-                and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
-                <br />
-                <br />
-                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+          {/* Content */}
+          <div className="about-body">
+            <section className="about-sec">
+              <h2 className="about-h">About</h2>
+              <p className="about-lead">
+                DonorFlow is a modern donation-management system for clubs and organizations —
+                one place to track members, patrons, gifts, and fiscal-year targets, with
+                shareable progress pages and reports.
               </p>
-            </div>
-          </Card.Body>
-        </Card>
+            </section>
+
+            <section className="about-sec">
+              <h2 className="about-h">What it does</h2>
+              <ul className="about-feats">
+                {features.map((f) => (
+                  <li key={f.title}>
+                    <i className={`bi ${f.icon}`}></i>
+                    <span>
+                      <b>{f.title}</b> — {f.desc}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="about-sec">
+              <h2 className="about-h">Built with</h2>
+              <dl className="about-def">
+                <dt>Framework</dt>
+                <dd>Next.js 16 <span>· App Router</span></dd>
+                <dt>Language</dt>
+                <dd>TypeScript <span>· strict</span></dd>
+                <dt>Data</dt>
+                <dd>Prisma <span>· SQLite</span></dd>
+                <dt>Auth</dt>
+                <dd>NextAuth.js</dd>
+                <dt>UI</dt>
+                <dd>React-Bootstrap</dd>
+              </dl>
+            </section>
+
+            <section className="about-sec">
+              <h2 className="about-h">Creator &amp; license</h2>
+              <p className="about-lead">
+                <b style={{ color: '#16202c' }}>Manuel Oetiker</b> — built and maintained in Switzerland.
+              </p>
+              <div className="about-mit">
+                <b>MIT License</b> · Copyright © {new Date().getFullYear()} Manuel Oetiker.
+                Free to use, copy, modify, and distribute; provided &ldquo;as is&rdquo;, without
+                warranty of any kind.
+              </div>
+            </section>
+          </div>
+        </div>
       </Container>
     </>
   )

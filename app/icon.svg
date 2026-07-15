@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e4a8a"/>
+      <stop offset="1" stop-color="#2f6fe0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  
+  <g>
+    <!-- coin dropping into the slot -->
+    <circle cx="248" cy="126" r="30" fill="#ffe7ad"/>
+    <rect x="240" y="118" width="16" height="16" rx="2" fill="#e9b44a"/>
+    <!-- ear -->
+    <path d="M300 176 q10 -46 52 -40 q-6 40 -34 58 z" fill="#ffd98a"/>
+    <!-- body -->
+    <ellipse cx="250" cy="300" rx="152" ry="120" fill="#ffd98a"/>
+    <!-- snout -->
+    <ellipse cx="392" cy="304" rx="52" ry="44" fill="#ffcf74"/>
+    <!-- legs -->
+    <rect x="178" y="398" width="36" height="58" rx="17" fill="#ffd98a"/>
+    <rect x="300" y="398" width="36" height="58" rx="17" fill="#ffd98a"/>
+    <!-- tail -->
+    <path d="M104 286 q-30 6 -22 34 q10 20 30 8" fill="none" stroke="#ffd98a" stroke-width="14" stroke-linecap="round"/>
+    <!-- coin slot on the back -->
+    <rect x="196" y="196" width="88" height="16" rx="8" transform="rotate(-9 240 204)" fill="#1c3f7a"/>
+    <!-- eye -->
+    <circle cx="322" cy="272" r="12" fill="#1c3f7a"/>
+    <!-- nostrils -->
+    <circle cx="384" cy="300" r="7" fill="#7a4a12"/>
+    <circle cx="408" cy="300" r="7" fill="#7a4a12"/>
+  </g>
+</svg>
