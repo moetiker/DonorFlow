@@ -74,3 +74,6 @@ prisma.config.ts
 sync-db.sh
 deploy.sh
 ecosystem.config.js
+
+# local browser-check artifacts
+.mcp-perf-check.png

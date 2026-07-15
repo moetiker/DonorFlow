@@ -23,7 +23,7 @@
     "seed": "tsx prisma/seed-real.ts"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "bcryptjs": "^3.0.3",
@@ -31,32 +31,32 @@
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.0.0",
-    "jspdf-autotable": "^5.0.7",
-    "next": "^16.1.4",
+    "jspdf-autotable": "^5.0.8",
+    "next": "^16.2.10",
     "next-auth": "^4.24.13",
-    "next-intl": "^4.7.0",
-    "papaparse": "^5.5.3",
-    "react": "^19.2.3",
+    "next-intl": "^4.13.2",
+    "papaparse": "^5.5.4",
+    "react": "^19.2.7",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-typeahead": "^6.4.1",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.3",
-    "react-hook-form": "^7.71.1",
-    "zod": "^4.3.5"
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.81.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
-    "@types/node": "^25.0.9",
+    "@eslint/eslintrc": "^3.3.6",
+    "@types/node": "^24.13.3",
     "@types/papaparse": "^5.5.2",
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "eslint": "^9.39.2",
-    "eslint-config-next": "^16.1.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
     "prisma": "^7.2.0",
-    "tsx": "^4.21.0",
-    "typescript": "5.9.3"
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
   }
 }
