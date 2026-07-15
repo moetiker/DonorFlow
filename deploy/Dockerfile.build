@@ -12,22 +12,25 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy package files first (for better layer caching)
+# Dependencies layer: only invalidated when the package files change. The npm
+# cache mount persists downloads across builds, so even a cache-busting install
+# (changed dependency) avoids re-downloading unchanged packages.
 COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# Prisma client. The schema is copied *after* npm ci so schema edits do not
+# invalidate the (slow) dependency layer above.
 COPY prisma ./prisma/
-
-# Install ALL dependencies (including devDependencies for build)
-RUN npm ci
-
-# Generate Prisma client (dummy DATABASE_URL for build)
 RUN DATABASE_URL="file:./dummy.db" npx prisma generate
 
 # Copy source files
 COPY . .
 
 # Build Next.js application (emits a self-contained server in .next/standalone
-# containing only the traced runtime dependencies — see output: 'standalone')
-RUN npm run build
+# containing only the traced runtime dependencies — see output: 'standalone').
+# The .next/cache mount persists webpack's incremental build cache across builds,
+# so subsequent builds only recompile what actually changed.
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # Assemble a minimal, self-contained deployable in /app/deploy-out.
 # This ships only what the standalone server needs plus the Prisma schema for
