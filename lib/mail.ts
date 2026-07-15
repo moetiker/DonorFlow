@@ -61,7 +61,17 @@ export async function isMailConfigured(): Promise<boolean> {
   return (await getMailConfig()) !== null
 }
 
-function createTransport(cfg: MailConfig) {
+// Default throttle if unset/invalid: emails per minute
+export const DEFAULT_MAIL_RATE_PER_MINUTE = 20
+
+/** Configurable sending rate (emails per minute), stored in settings. */
+export async function getMailRatePerMinute(): Promise<number> {
+  const s = await prisma.setting.findUnique({ where: { key: 'mailRatePerMinute' }, select: { value: true } })
+  const n = parseInt(s?.value ?? '', 10)
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAIL_RATE_PER_MINUTE
+}
+
+function createTransport(cfg: MailConfig, opts?: { pool?: boolean }) {
   // Port 465 → implicit TLS; 587 (and others) → STARTTLS
   const secure = cfg.port === 465
   return nodemailer.createTransport({
@@ -70,11 +80,44 @@ function createTransport(cfg: MailConfig) {
     secure,
     requireTLS: !secure,
     auth: { user: cfg.user, pass: cfg.password },
+    // Pooled: reuse a single SMTP connection across a batch mailing
+    ...(opts?.pool ? { pool: true, maxConnections: 1 } : {}),
   })
 }
 
 function formatFrom(cfg: MailConfig): string {
   return cfg.fromName ? `"${cfg.fromName}" <${cfg.from}>` : cfg.from
+}
+
+/**
+ * A reusable sender for a batch mailing: one pooled SMTP connection plus the
+ * resolved from/reply-to. Call {@link MailSender.send} per message and
+ * {@link MailSender.close} when the batch is done. Returns null if unconfigured.
+ */
+export type MailSender = {
+  send: (opts: { to: string; subject: string; html: string; text?: string; attachments?: MailAttachment[] }) => Promise<void>
+  close: () => void
+}
+
+export async function getMailSender(): Promise<MailSender | null> {
+  const cfg = await getMailConfig()
+  if (!cfg) return null
+  const transport = createTransport(cfg, { pool: true })
+  const from = formatFrom(cfg)
+  return {
+    send: async (opts) => {
+      await transport.sendMail({
+        from,
+        to: opts.to,
+        replyTo: cfg.replyTo,
+        subject: opts.subject,
+        html: opts.html,
+        text: opts.text,
+        attachments: opts.attachments,
+      })
+    },
+    close: () => transport.close(),
+  }
 }
 
 /** Verifies the SMTP connection/credentials without sending anything. */

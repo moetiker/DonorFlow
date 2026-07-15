@@ -312,6 +312,8 @@
     "mailFrom": "Sender address",
     "mailFromName": "Sender name",
     "mailReplyTo": "Reply-to (optional)",
+    "mailRate": "Emails per minute",
+    "mailRateHelp": "Sending speed. Lower = slower, easier on the mail server.",
     "testConnection": "Test connection",
     "testOk": "Connection successful",
     "testFailed": "Connection failed"
@@ -524,7 +526,8 @@
     "sendConfirmMessage": "Send {count} emails now?",
     "resultTitle": "Result",
     "sendingProgress": "{processed} of {total} processed",
-    "batchInfo": "Sent in batches of 5 every 2 minutes. You can close the page – sending continues.",
+    "batchInfo": "Sending is throttled (speed in Settings). You can close the page – sending continues.",
+    "jobRunning": "A mailing is already running. Please wait until it finishes.",
     "statusSent": "Sent",
     "statusSkipped": "Skipped",
     "statusFailed": "Failed",

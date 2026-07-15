@@ -312,6 +312,8 @@
     "mailFrom": "Adresse d'expéditeur",
     "mailFromName": "Nom d'expéditeur",
     "mailReplyTo": "Répondre à (facultatif)",
+    "mailRate": "E-mails par minute",
+    "mailRateHelp": "Vitesse d'envoi. Plus bas = plus lent, ménage le serveur.",
     "testConnection": "Tester la connexion",
     "testOk": "Connexion réussie",
     "testFailed": "Échec de la connexion"
@@ -524,7 +526,8 @@
     "sendConfirmMessage": "Envoyer {count} e-mails maintenant ?",
     "resultTitle": "Résultat",
     "sendingProgress": "{processed} sur {total} traités",
-    "batchInfo": "Envoi par lots de 5 toutes les 2 minutes. Tu peux fermer la page – l'envoi continue.",
+    "batchInfo": "L'envoi est limité (vitesse dans les paramètres). Tu peux fermer la page – l'envoi continue.",
+    "jobRunning": "Un envoi est déjà en cours. Merci d'attendre qu'il se termine.",
     "statusSent": "Envoyé",
     "statusSkipped": "Ignoré",
     "statusFailed": "Échec",

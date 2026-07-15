@@ -163,12 +163,16 @@ model DonorLetter {
 model MailJob {
   id              String     @id @default(cuid())
   fiscalYearId    String
-  status          String     @default("running") // running | done
+  status          String     @default("running") // running | done | failed
   total           Int
   processed       Int        @default(0)
+  memberIds       String     @default("[]")       // JSON: ordered recipient member ids (for resume)
+  baseUrl         String     @default("")         // link base for the status URL (for resume)
   results         String     @default("[]")       // JSON: {memberId,name,email,status,error}[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  @@index([status])
 }
 
 // Benutzer für Login

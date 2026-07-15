@@ -59,9 +59,10 @@ export default function MailingPage() {
         if (!active) return
         setProcessed(data.processed ?? 0)
         setResults(data.results ?? [])
-        if (data.status === 'done') {
+        if (data.status === 'done' || data.status === 'failed') {
           setSending(false)
           setJobId(null)
+          if (data.status === 'failed') setError(t('sendError'))
         }
       } catch {
         // keep polling; transient errors are fine
@@ -159,7 +160,15 @@ export default function MailingPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error === 'mail_not_configured' ? t('notConfigured') : data.error === 'no_letter' ? t('letterMissing') : t('sendError'))
+        setError(
+          data.error === 'mail_not_configured'
+            ? t('notConfigured')
+            : data.error === 'no_letter'
+              ? t('letterMissing')
+              : data.error === 'job_running'
+                ? t('jobRunning')
+                : t('sendError')
+        )
         setSending(false)
         return
       }

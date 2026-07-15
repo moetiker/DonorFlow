@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
-import { getOrgName } from '@/lib/mailing-data'
 import { isMailConfigured } from '@/lib/mail'
 import { runMailJob } from '@/lib/mailing-runner'
 
@@ -12,8 +11,8 @@ function getBaseUrl(request: NextRequest): string {
 /**
  * Start a throttled donor mailing. Emails are sent in the background in batches
  * (see mailing-runner) so the request returns immediately with a job id the UI
- * can poll. Each recipient gets a personalized email with the fiscal year's
- * donor letter and their address CSV attached.
+ * can poll. Only one mailing job may run at a time (guards against duplicate
+ * sends from double submits or reloads).
  */
 export const POST = withApiRoute(async (request: NextRequest) => {
   const { fiscalYearId, memberIds } = await request.json()
@@ -25,6 +24,12 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: 'mail_not_configured' }, { status: 400 })
   }
 
+  // Only one mailing at a time — prevents duplicate emails from a second submit.
+  const running = await prisma.mailJob.findFirst({ where: { status: 'running' }, select: { id: true } })
+  if (running) {
+    return NextResponse.json({ error: 'job_running', jobId: running.id }, { status: 409 })
+  }
+
   const fiscalYear = await prisma.fiscalYear.findUnique({
     where: { id: fiscalYearId },
     select: { name: true },
@@ -33,32 +38,29 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Fiscal year not found' }, { status: 404 })
   }
 
-  const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId } })
+  const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId }, select: { id: true } })
   if (!letter) {
     return NextResponse.json({ error: 'no_letter' }, { status: 400 })
   }
 
-  const orgName = await getOrgName()
-  const baseUrl = getBaseUrl(request)
-  const ids = memberIds as string[]
-
+  const ids = memberIds.map((id: unknown) => String(id))
   const job = await prisma.mailJob.create({
-    data: { fiscalYearId, status: 'running', total: ids.length, processed: 0, results: '[]' },
+    data: {
+      fiscalYearId,
+      status: 'running',
+      total: ids.length,
+      processed: 0,
+      memberIds: JSON.stringify(ids),
+      baseUrl: getBaseUrl(request),
+      results: '[]',
+    },
     select: { id: true },
   })
 
   // Fire-and-forget: the batched runner keeps going after the response is sent
-  // (the app runs as a persistent Node server).
-  void runMailJob({
-    jobId: job.id,
-    fiscalYearId,
-    fiscalYearName: fiscalYear.name,
-    memberIds: ids,
-    baseUrl,
-    orgName,
-    letter: { fileName: letter.fileName, mimeType: letter.mimeType, data: Buffer.from(letter.data) },
-  }).catch(async () => {
-    await prisma.mailJob.update({ where: { id: job.id }, data: { status: 'done' } }).catch(() => {})
+  // (the app runs as a persistent Node server); it is also resumable on restart.
+  void runMailJob(job.id).catch(async () => {
+    await prisma.mailJob.update({ where: { id: job.id }, data: { status: 'failed' } }).catch(() => {})
   })
 
   return NextResponse.json({ jobId: job.id, total: ids.length })

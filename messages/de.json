@@ -312,6 +312,8 @@
     "mailFrom": "Absender-Adresse",
     "mailFromName": "Absender-Name",
     "mailReplyTo": "Antwort-an (optional)",
+    "mailRate": "E-Mails pro Minute",
+    "mailRateHelp": "Versandtempo. Kleiner = langsamer, schont den Mailserver.",
     "testConnection": "Verbindung testen",
     "testOk": "Verbindung erfolgreich",
     "testFailed": "Verbindung fehlgeschlagen"
@@ -524,7 +526,8 @@
     "sendConfirmMessage": "{count} E-Mails jetzt versenden?",
     "resultTitle": "Ergebnis",
     "sendingProgress": "{processed} von {total} verarbeitet",
-    "batchInfo": "Versand in Chargen von 5 alle 2 Minuten. Du kannst die Seite schliessen – der Versand läuft weiter.",
+    "batchInfo": "Der Versand ist gedrosselt (Tempo in den Einstellungen). Du kannst die Seite schliessen – der Versand läuft weiter.",
+    "jobRunning": "Es läuft bereits ein Versand. Bitte warte, bis er abgeschlossen ist.",
     "statusSent": "Gesendet",
     "statusSkipped": "Übersprungen",
     "statusFailed": "Fehler",

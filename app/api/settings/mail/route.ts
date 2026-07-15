@@ -11,6 +11,7 @@ const PUBLIC_MAIL_KEYS = [
   'mailFrom',
   'mailFromName',
   'mailReplyTo',
+  'mailRatePerMinute',
 ] as const
 
 /**

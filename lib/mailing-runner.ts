@@ -1,12 +1,7 @@
 import { prisma } from './db'
-import { buildMemberMailData, mailCsvFilename } from './mailing-data'
+import { buildMemberMailData, getOrgName, mailCsvFilename } from './mailing-data'
 import { renderStatusEmail } from './email-template'
-import { sendMail } from './mail'
-
-// Throttling: send in batches with a pause between batches so the mail server
-// is not hit too hard.
-export const MAIL_BATCH_SIZE = 5
-export const MAIL_BATCH_DELAY_MS = 2 * 60 * 1000 // 2 minutes
+import { getMailSender, getMailRatePerMinute, type MailSender } from './mail'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -18,51 +13,92 @@ export type MailJobResult = {
   error?: string
 }
 
-type LetterAttachment = { fileName: string; mimeType: string; data: Buffer }
-
 /**
- * Runs a mail job in the background: sends one personalized email per member,
- * MAIL_BATCH_SIZE at a time, pausing MAIL_BATCH_DELAY_MS between batches.
- * Progress is written to the MailJob row so the UI can poll it. Intended to be
- * called fire-and-forget from the send route (the Node server stays alive).
+ * Runs (or resumes) a mail job in the background. Loads all context from the
+ * MailJob row, so it can be called both when the job is created and again on
+ * server startup to resume an interrupted job — it continues from `processed`,
+ * so already-sent recipients are never emailed twice.
+ *
+ * Throttled to the configured rate (emails per minute) over a single pooled
+ * SMTP connection. Progress is written to the row after each recipient.
+ * Fire-and-forget; the Node server stays alive.
  */
-export async function runMailJob(opts: {
-  jobId: string
-  fiscalYearId: string
-  fiscalYearName: string
-  memberIds: string[]
-  baseUrl: string
-  orgName: string
-  letter: LetterAttachment
-}): Promise<void> {
-  const { jobId, fiscalYearId, fiscalYearName, memberIds, baseUrl, orgName, letter } = opts
-  const results: MailJobResult[] = []
+export async function runMailJob(jobId: string): Promise<void> {
+  const job = await prisma.mailJob.findUnique({ where: { id: jobId } })
+  if (!job || job.status !== 'running') return
 
-  for (let i = 0; i < memberIds.length; i++) {
-    results.push(await sendToMember(memberIds[i], { fiscalYearId, fiscalYearName, baseUrl, orgName, letter }))
+  const memberIds = safeParse<string[]>(job.memberIds, [])
+  const results = safeParse<MailJobResult[]>(job.results, [])
+  const startIndex = results.length // = processed; resume point
 
-    await prisma.mailJob.update({
-      where: { id: jobId },
-      data: { processed: results.length, results: JSON.stringify(results) },
-    }).catch(() => {})
+  const fiscalYear = await prisma.fiscalYear.findUnique({
+    where: { id: job.fiscalYearId },
+    select: { name: true },
+  })
+  const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId: job.fiscalYearId } })
+  const sender = await getMailSender()
 
-    // Pause after a full batch, unless there is nothing left to send
-    const isBatchBoundary = (i + 1) % MAIL_BATCH_SIZE === 0
-    if (isBatchBoundary && i + 1 < memberIds.length) {
-      await sleep(MAIL_BATCH_DELAY_MS)
-    }
+  if (!fiscalYear || !letter || !sender) {
+    await setStatus(jobId, 'failed', results)
+    sender?.close()
+    return
   }
 
-  await prisma.mailJob.update({
-    where: { id: jobId },
-    data: { status: 'done', processed: results.length, results: JSON.stringify(results) },
-  }).catch(() => {})
+  const ctx = {
+    fiscalYearId: job.fiscalYearId,
+    fiscalYearName: fiscalYear.name,
+    baseUrl: job.baseUrl || process.env.NEXTAUTH_URL || '',
+    orgName: await getOrgName(),
+    letter: { fileName: letter.fileName, mimeType: letter.mimeType, data: Buffer.from(letter.data) },
+  }
+
+  // Throttle: pause 60s / rate between consecutive emails
+  const ratePerMinute = await getMailRatePerMinute()
+  const delayMs = Math.max(0, Math.round(60_000 / ratePerMinute))
+
+  try {
+    for (let i = startIndex; i < memberIds.length; i++) {
+      results.push(await sendToMember(sender, memberIds[i], ctx))
+      await prisma.mailJob
+        .update({ where: { id: jobId }, data: { processed: results.length, results: JSON.stringify(results) } })
+        .catch(() => {})
+
+      if (i + 1 < memberIds.length) {
+        await sleep(delayMs)
+      }
+    }
+    await setStatus(jobId, 'done', results)
+  } catch {
+    // Unexpected error (DB, transport) — mark failed, keep partial results
+    await setStatus(jobId, 'failed', results)
+  } finally {
+    sender.close()
+  }
 }
 
-async function sendToMember(
-  memberId: string,
-  ctx: { fiscalYearId: string; fiscalYearName: string; baseUrl: string; orgName: string; letter: LetterAttachment }
-): Promise<MailJobResult> {
+function safeParse<T>(json: string, fallback: T): T {
+  try {
+    return JSON.parse(json) as T
+  } catch {
+    return fallback
+  }
+}
+
+async function setStatus(jobId: string, status: 'done' | 'failed', results: MailJobResult[]): Promise<void> {
+  await prisma.mailJob
+    .update({ where: { id: jobId }, data: { status, processed: results.length, results: JSON.stringify(results) } })
+    .catch(() => {})
+}
+
+type SendCtx = {
+  fiscalYearId: string
+  fiscalYearName: string
+  baseUrl: string
+  orgName: string
+  letter: { fileName: string; mimeType: string; data: Buffer }
+}
+
+async function sendToMember(sender: MailSender, memberId: string, ctx: SendCtx): Promise<MailJobResult> {
   const data = await buildMemberMailData(memberId, ctx.fiscalYearId)
   if (!data) return { memberId, status: 'failed', error: 'not_found' }
   if (!data.email) return { memberId, name: data.memberName, status: 'skipped', error: 'no_email' }
@@ -81,7 +117,7 @@ async function sendToMember(
       locale: 'de',
     })
 
-    await sendMail({
+    await sender.send({
       to: data.email,
       subject: email.subject,
       html: email.html,
@@ -100,5 +136,13 @@ async function sendToMember(
       status: 'failed',
       error: error instanceof Error ? error.message : 'send_failed',
     }
+  }
+}
+
+/** Resume any job left in the "running" state (e.g. after a restart). */
+export async function resumeRunningMailJobs(): Promise<void> {
+  const running = await prisma.mailJob.findMany({ where: { status: 'running' }, select: { id: true } })
+  for (const job of running) {
+    void runMailJob(job.id).catch(() => {})
   }
 }

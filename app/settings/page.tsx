@@ -13,6 +13,7 @@ type MailSettings = {
   mailFrom: string
   mailFromName: string
   mailReplyTo: string
+  mailRatePerMinute: string
 }
 
 const EMPTY_MAIL: MailSettings = {
@@ -23,6 +24,7 @@ const EMPTY_MAIL: MailSettings = {
   mailFrom: '',
   mailFromName: '',
   mailReplyTo: '',
+  mailRatePerMinute: '20',
 }
 
 export default function SettingsPage() {
@@ -70,6 +72,7 @@ export default function SettingsPage() {
           mailFrom: data.mailFrom || '',
           mailFromName: data.mailFromName || '',
           mailReplyTo: data.mailReplyTo || '',
+          mailRatePerMinute: data.mailRatePerMinute || '20',
         })
         setMailPasswordSet(Boolean(data.passwordSet))
         setMailConfigured(Boolean(data.configured))
@@ -335,6 +338,19 @@ export default function SettingsPage() {
                   />
                 </Form.Group>
               </div>
+
+              <Form.Group className="mt-3" style={{ maxWidth: 220 }}>
+                <Form.Label>{t('mailRate')}</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  max="600"
+                  value={mail.mailRatePerMinute}
+                  onChange={(e) => setMail({ ...mail, mailRatePerMinute: e.target.value })}
+                  disabled={mailSaving}
+                />
+                <Form.Text className="text-muted">{t('mailRateHelp')}</Form.Text>
+              </Form.Group>
 
               <div className="d-flex gap-2 mt-4">
                 <Button variant="primary" type="submit" disabled={mailSaving}>
