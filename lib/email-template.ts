@@ -41,9 +41,10 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Offen',
     ofTarget: '{pct}% des Ziels erreicht',
     button: 'Meinen Status ansehen',
-    aperoCta: 'Bitte sende die Einladung zum Gönnerapéro deinen bisherigen Gönner:innen.',
+    aperoCta: 'Bitte sende die Einladung zum Gönnerapéro deinen bisherigen Gönner:innen. Gerne darfst du sie auch an potenzielle neue Gönner:innen abgeben.',
     sponsorsTitle: 'Deine bisherigen Gönner:innen',
     attachments: 'Angehängt: Gönner:innen-Brief (PDF) und deine Adressliste (CSV).',
+    contact: 'Bei Fragen kannst du dich gerne bei Doris melden.',
     footer: 'Diese E-Mail wurde automatisch von {org} versendet.',
   },
   en: {
@@ -57,9 +58,10 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Open',
     ofTarget: '{pct}% of target reached',
     button: 'View my status',
-    aperoCta: 'Please send the invitation to the patron apéro to your previous patrons.',
+    aperoCta: 'Please send the invitation to the patron apéro to your previous patrons. Feel free to pass it on to potential new patrons as well.',
     sponsorsTitle: 'Your previous patrons',
     attachments: 'Attached: the patron letter (PDF) and your address list (CSV).',
+    contact: 'If you have any questions, feel free to contact Doris.',
     footer: 'This email was sent automatically by {org}.',
   },
   fr: {
@@ -73,9 +75,10 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Restant',
     ofTarget: '{pct}% de l’objectif atteint',
     button: 'Voir mon statut',
-    aperoCta: 'Merci d’envoyer l’invitation à l’apéro des donateurs à tes anciens donateurs.',
+    aperoCta: 'Merci d’envoyer l’invitation à l’apéro des donateurs à tes anciens donateurs. Tu peux aussi la transmettre à de potentiels nouveaux donateurs.',
     sponsorsTitle: 'Tes anciens donateurs',
     attachments: 'En pièce jointe : la lettre aux donateurs (PDF) et ta liste d’adresses (CSV).',
+    contact: 'Pour toute question, n’hésite pas à contacter Doris.',
     footer: 'Cet e-mail a été envoyé automatiquement par {org}.',
   },
   it: {
@@ -89,9 +92,10 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
     remaining: 'Aperto',
     ofTarget: '{pct}% dell’obiettivo raggiunto',
     button: 'Vedi il mio stato',
-    aperoCta: 'Ti preghiamo di inviare l’invito all’aperitivo dei donatori ai tuoi donatori precedenti.',
+    aperoCta: 'Ti preghiamo di inviare l’invito all’aperitivo dei donatori ai tuoi donatori precedenti. Puoi anche darlo a potenziali nuovi donatori.',
     sponsorsTitle: 'I tuoi donatori precedenti',
     attachments: 'In allegato: la lettera ai donatori (PDF) e il tuo elenco indirizzi (CSV).',
+    contact: 'Per domande, non esitare a contattare Doris.',
     footer: 'Questa e-mail è stata inviata automaticamente da {org}.',
   },
 }
@@ -230,7 +234,9 @@ export function renderStatusEmail(data: StatusEmailData): {
 
             ${sponsorsHtml}
 
-            ${data.attachmentsNote ? `<p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#77828f;">📎 ${escapeHtml(s.attachments)}</p>` : ''}
+            <p style="margin:24px 0 0;font-size:15px;line-height:1.55;color:#414d5b;">${escapeHtml(s.contact)}</p>
+
+            ${data.attachmentsNote ? `<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#77828f;">📎 ${escapeHtml(s.attachments)}</p>` : ''}
           </td>
         </tr>
         <!-- footer -->
@@ -263,6 +269,7 @@ export function renderStatusEmail(data: StatusEmailData): {
       textLines.push(`  ${sp.name}: ${sp.lastYearAmount > 0 ? money(sp.lastYearAmount) : '–'}`)
     }
   }
+  textLines.push('', s.contact)
   if (data.attachmentsNote) textLines.push('', s.attachments)
   textLines.push('', fill(s.footer, vars))
 
