@@ -40,7 +40,9 @@ RUN set -eux; \
     cp -a .next/static/. "$OUT/.next/static/"; \
     if [ -d public ]; then cp -a public "$OUT/public"; fi; \
     cp -a prisma "$OUT/prisma"; \
+    cp -a prisma.config.ts "$OUT/prisma.config.ts"; \
     cp -a package.json "$OUT/package.json"; \
+    cp -a .mise.toml "$OUT/.mise.toml"; \
     if [ -f .env.example ]; then cp -a .env.example "$OUT/.env.example"; fi; \
     mkdir -p "$OUT/deploy"; \
     cp -a deploy/donorflow.service.example "$OUT/deploy/"; \
