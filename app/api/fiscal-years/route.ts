@@ -9,6 +9,10 @@ export const GET = withApiRoute(async () => {
     include: {
       _count: {
         select: { memberTargets: true }
+      },
+      // Letter metadata only — never the stored bytes
+      donorLetter: {
+        select: { fileName: true, size: true, uploadedAt: true }
       }
     }
   })

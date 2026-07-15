@@ -72,6 +72,10 @@ export function Navbar() {
                 <i className="bi bi-clipboard-check me-2"></i>
                 {t('targets')}
               </NavDropdown.Item>
+              <NavDropdown.Item as={Link} href="/mailing">
+                <i className="bi bi-envelope-paper me-2"></i>
+                {t('mailing')}
+              </NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item as={Link} href="/users">
                 <i className="bi bi-people me-2"></i>

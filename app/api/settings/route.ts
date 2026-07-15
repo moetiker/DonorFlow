@@ -17,6 +17,9 @@ export async function GET() {
       settingsObj[s.key] = s.value
     })
 
+    // Never expose the SMTP password through the generic settings endpoint
+    delete settingsObj.mailSmtpPassword
+
     return NextResponse.json(settingsObj)
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

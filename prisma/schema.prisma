@@ -140,8 +140,23 @@ model FiscalYear {
 
   memberTargets   MemberTarget[]
   donations       Donation[]
+  donorLetter     DonorLetter?
 
   @@index([startDate])
+}
+
+// Gönnerbrief pro Vereinsjahr (als PDF in der DB gespeichert)
+model DonorLetter {
+  id              String     @id @default(cuid())
+  fiscalYearId    String     @unique
+  fileName        String
+  mimeType        String
+  size            Int
+  data            Bytes
+  uploadedAt      DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  fiscalYear      FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
 }
 
 // Benutzer für Login
