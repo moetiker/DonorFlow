@@ -396,7 +396,7 @@ function StatusPageContent({ token }: { token: string }) {
   return (
     <Container className="py-3 status-page">
       {/* Header */}
-      <Card className="mb-3 border-0 bg-primary text-white">
+      <Card className="mb-3 border-0 text-white" style={{ backgroundColor: '#EA7600' }}>
         <Card.Body className="py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div>
             <h1 className="h4 mb-1">{data.name}</h1>
@@ -507,12 +507,7 @@ function StatusPageContent({ token }: { token: string }) {
               {data.members.map((member) => (
                 <Accordion.Item key={member.id} eventKey={member.id}>
                   <Accordion.Header>
-                    <div className="d-flex justify-content-between align-items-center w-100 me-2">
-                      <strong>{member.name}</strong>
-                      <span className="text-muted small">
-                        {formatCurrency(member.progress.actual)} / {formatCurrency(member.progress.target)}
-                      </span>
-                    </div>
+                    <strong>{member.name}</strong>
                   </Accordion.Header>
                   <Accordion.Body>
                     {member.sponsors.length === 0 ? (
