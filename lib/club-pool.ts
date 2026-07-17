@@ -20,6 +20,14 @@ export class NoClubPoolError extends Error {
   }
 }
 
+/** Thrown when the club pool group itself is being deleted. */
+export class ClubPoolLockedError extends Error {
+  constructor() {
+    super('The club pool group cannot be deleted while it carries the flag')
+    this.name = 'ClubPoolLockedError'
+  }
+}
+
 /** Returns the group that receives ownerless sponsors. Throws if none is marked. */
 export async function getClubPool(tx: PrismaClientOrTx) {
   const pool = await tx.group.findFirst({

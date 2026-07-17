@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
 import { updateGroupSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
+import { reassignToClubPool, getClubPool, NoClubPoolError, ClubPoolLockedError } from '@/lib/club-pool'
 
 export const PUT = withApiRoute(async (
   request: NextRequest,
@@ -36,12 +37,31 @@ export const DELETE = withApiRoute(async (
 ) => {
   const { id: groupId } = await params
 
-  // Delete group - SetNull will handle:
-  // - Members (onDelete: SetNull - will set groupId to null)
-  // - Sponsors (onDelete: SetNull - will set groupId to null)
-  await prisma.group.delete({
-    where: { id: groupId }
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      const pool = await getClubPool(tx)
+
+      // The pool is the fallback for every other deletion; deleting it would
+      // leave that fallback pointing at nothing. Move the flag first.
+      if (pool.id === groupId) {
+        throw new ClubPoolLockedError()
+      }
+
+      await reassignToClubPool(tx, { groupId })
+
+      // Members lose their group via onDelete: SetNull, which is intended —
+      // a member without a group keeps their own sponsors.
+      await tx.group.delete({ where: { id: groupId } })
+    })
+  } catch (error) {
+    if (error instanceof NoClubPoolError) {
+      return NextResponse.json({ error: 'noClubPool' }, { status: 400 })
+    }
+    if (error instanceof ClubPoolLockedError) {
+      return NextResponse.json({ error: 'clubPoolLocked' }, { status: 400 })
+    }
+    throw error
+  }
 
   return NextResponse.json({ success: true })
 })
