@@ -1,6 +1,16 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma } from '@prisma/client'
+import type { prisma } from '@/lib/db'
 
 export type PrismaTx = Prisma.TransactionClient
+
+/** The interactive-transaction client the extended singleton's `$transaction()` callback receives. */
+type ExtendedPrismaTx = Parameters<typeof prisma.$transaction> extends [infer Fn, ...unknown[]]
+  ? Fn extends (client: infer C) => unknown
+    ? C
+    : never
+  : never
+
+export type PrismaClientOrTx = PrismaTx | typeof prisma | ExtendedPrismaTx
 
 /** Identifies the entity whose sponsors and donations are being handed over. */
 export type OwnerRef = { memberId: string } | { groupId: string }
@@ -14,7 +24,7 @@ export class NoClubPoolError extends Error {
 }
 
 /** Returns the group that receives ownerless sponsors. Throws if none is marked. */
-export async function getClubPool(tx: PrismaTx | PrismaClient) {
+export async function getClubPool(tx: PrismaClientOrTx) {
   const pool = await tx.group.findFirst({
     where: { isClubPool: true },
     select: { id: true, name: true }
@@ -25,7 +35,7 @@ export async function getClubPool(tx: PrismaTx | PrismaClient) {
 
 /** Counts what would move if this owner were deleted. */
 export async function countOwnedRecords(
-  tx: PrismaTx | PrismaClient,
+  tx: PrismaClientOrTx,
   owner: OwnerRef
 ) {
   const [sponsors, donations] = await Promise.all([
