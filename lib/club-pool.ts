@@ -1,5 +1,4 @@
-import { Prisma } from '@prisma/client'
-import { prisma } from '@/lib/db'
+import { Prisma, PrismaClient } from '@prisma/client'
 
 export type PrismaTx = Prisma.TransactionClient
 
@@ -15,7 +14,7 @@ export class NoClubPoolError extends Error {
 }
 
 /** Returns the group that receives ownerless sponsors. Throws if none is marked. */
-export async function getClubPool(tx: PrismaTx | typeof prisma = prisma) {
+export async function getClubPool(tx: PrismaTx | PrismaClient) {
   const pool = await tx.group.findFirst({
     where: { isClubPool: true },
     select: { id: true, name: true }
@@ -26,7 +25,7 @@ export async function getClubPool(tx: PrismaTx | typeof prisma = prisma) {
 
 /** Counts what would move if this owner were deleted. */
 export async function countOwnedRecords(
-  tx: PrismaTx | typeof prisma = prisma,
+  tx: PrismaTx | PrismaClient,
   owner: OwnerRef
 ) {
   const [sponsors, donations] = await Promise.all([
