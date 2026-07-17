@@ -34,9 +34,11 @@ export const DELETE = withApiRoute(async (
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Sponsors and donations belong to the club, not to the member who looked
-      // after them. Hand them over before deleting, otherwise SetNull orphans
-      // them and they vanish from every status page and every total.
+      // Sponsors belong to the club, not to the member who looked after them.
+      // Hand them over before deleting, otherwise SetNull orphans them and
+      // they vanish from every status page and every total. Donations are not
+      // touched: they are optional overrides and follow their sponsor's new
+      // owner automatically via SetNull (see lib/club-pool.ts).
       await reassignToClubPool(tx, { memberId })
 
       // MemberTargets are removed by onDelete: Cascade.

@@ -38,41 +38,41 @@ export async function getClubPool(tx: PrismaClientOrTx) {
   return pool
 }
 
-/** Counts what would move if this owner were deleted. */
+/** Counts what would move if this owner were deleted. Donations never move (see reassignToClubPool). */
 export async function countOwnedRecords(
   tx: PrismaClientOrTx,
   owner: OwnerRef
 ) {
-  const [sponsors, donations] = await Promise.all([
-    tx.sponsor.count({ where: owner }),
-    tx.donation.count({ where: owner })
-  ])
-  return { sponsors, donations }
+  const sponsors = await tx.sponsor.count({ where: owner })
+  return { sponsors }
 }
 
 /**
- * Hands an owner's sponsors and donations to the club pool.
+ * Hands an owner's sponsors to the club pool.
  *
- * Donations carry their own memberId/groupId and the totals are computed from
- * those fields, so they must move together with the sponsor — otherwise the
- * sponsor lands in the pool and the money counts towards no target at all.
+ * Donations are never touched here. `Donation.memberId`/`groupId` are optional
+ * overrides, not a copy of the sponsor's assignment — NULL is the normal case
+ * and means "credit this donation to whoever currently owns the sponsor" (see
+ * the crediting logic in app/api/public/status/[token]/route.ts). The FK's
+ * `onDelete: SetNull` already does the right thing: when the owner is deleted,
+ * any override pointing at it is cleared, and the donation falls back to
+ * inheriting its sponsor's owner — which, for sponsors reassigned here, is now
+ * the pool. Re-assigning donations explicitly would be wrong: a donation whose
+ * override pointed at the deleted owner while its sponsor belongs to someone
+ * else would be yanked out of that owner's totals and forced into the pool.
  */
 export async function reassignToClubPool(tx: PrismaTx, owner: OwnerRef) {
   const pool = await getClubPool(tx)
 
   // Never re-assign the pool's own records to itself.
   if ('groupId' in owner && owner.groupId === pool.id) {
-    throw new Error('Cannot re-assign the club pool to itself')
+    throw new ClubPoolLockedError()
   }
 
   const sponsors = await tx.sponsor.updateMany({
     where: owner,
     data: { memberId: null, groupId: pool.id }
   })
-  const donations = await tx.donation.updateMany({
-    where: owner,
-    data: { memberId: null, groupId: pool.id }
-  })
 
-  return { sponsors: sponsors.count, donations: donations.count }
+  return { sponsors: sponsors.count }
 }
