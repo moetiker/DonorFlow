@@ -220,7 +220,11 @@
     "status": "Status",
     "statusLink": "Status Link",
     "copyStatusLink": "Copy status link",
-    "linkCopied": "Link copied!"
+    "linkCopied": "Link copied!",
+    "clubPool": "Club pool",
+    "clubPoolHint": "Sponsors of deleted members end up here",
+    "noClubPool": "No group is marked as the club pool. Please mark one first.",
+    "clubPoolLocked": "The club pool cannot be deleted. Mark another group first."
   },
   "targets": {
     "title": "Targets",

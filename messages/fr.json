@@ -220,7 +220,11 @@
     "status": "Statut",
     "statusLink": "Lien de statut",
     "copyStatusLink": "Copier le lien de statut",
-    "linkCopied": "Lien copie!"
+    "linkCopied": "Lien copie!",
+    "clubPool": "Fonds de l'association",
+    "clubPoolHint": "Les donateurs des membres supprimés arrivent ici",
+    "noClubPool": "Aucun groupe n'est marqué comme fonds de l'association. Veuillez en marquer un.",
+    "clubPoolLocked": "Le fonds de l'association ne peut pas être supprimé. Marquez d'abord un autre groupe."
   },
   "targets": {
     "title": "Objectifs",

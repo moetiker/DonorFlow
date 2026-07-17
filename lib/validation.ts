@@ -169,7 +169,8 @@ export const createGroupSchema = z.object({
 })
 
 export const updateGroupSchema = z.object({
-  name: z.string().min(1)
+  name: z.string().min(1),
+  isClubPool: z.boolean().optional()
 })
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>

@@ -220,7 +220,11 @@
     "status": "Stato",
     "statusLink": "Link stato",
     "copyStatusLink": "Copia link stato",
-    "linkCopied": "Link copiato!"
+    "linkCopied": "Link copiato!",
+    "clubPool": "Fondo della società",
+    "clubPoolHint": "I donatori dei membri eliminati finiscono qui",
+    "noClubPool": "Nessun gruppo è contrassegnato come fondo della società. Contrassegnane uno.",
+    "clubPoolLocked": "Il fondo della società non può essere eliminato. Contrassegna prima un altro gruppo."
   },
   "targets": {
     "title": "Obiettivi",

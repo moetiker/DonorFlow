@@ -21,11 +21,22 @@ export const PUT = withApiRoute(async (
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const { name } = validation.data
+  const { name, isClubPool } = validation.data
 
-  const updatedGroup = await prisma.group.update({
-    where: { id: groupId },
-    data: { name }
+  const updatedGroup = await prisma.$transaction(async (tx) => {
+    // Exactly one group may be the pool. SQLite has no partial unique index, so
+    // the invariant lives here: claiming the flag takes it from everyone else.
+    if (isClubPool === true) {
+      await tx.group.updateMany({
+        where: { isClubPool: true, id: { not: groupId } },
+        data: { isClubPool: false }
+      })
+    }
+
+    return tx.group.update({
+      where: { id: groupId },
+      data: { name, ...(isClubPool === undefined ? {} : { isClubPool }) }
+    })
   })
 
   return NextResponse.json(serializeDates(updatedGroup))
