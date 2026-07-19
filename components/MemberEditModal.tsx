@@ -40,6 +40,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
 
   useEffect(() => {
     if (member) {
@@ -67,6 +68,20 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
     } catch (error) {
       console.error('Error loading groups:', error)
       setGroups([])
+    }
+  }
+
+  const loadDeleteImpact = async () => {
+    if (!member) return
+
+    setDeleteImpact(null)
+    try {
+      const response = await fetch(`/api/members/${member.id}/impact`)
+      if (response.ok) {
+        setDeleteImpact(await response.json())
+      }
+    } catch (error) {
+      console.error('Error loading delete impact:', error)
     }
   }
 
@@ -187,7 +202,14 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         </Modal.Body>
         <Modal.Footer>
           <div className="me-auto">
-            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)} disabled={saving}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setShowDeleteConfirm(true)
+                loadDeleteImpact()
+              }}
+              disabled={saving}
+            >
               {tCommon('delete')}
             </Button>
           </div>
@@ -204,6 +226,11 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         show={showDeleteConfirm}
         title={`${tCommon('delete')} ${tCommon('member')}`}
         message={t('deleteConfirm')}
+        detail={
+          deleteImpact && deleteImpact.sponsors > 0
+            ? tCommon('deleteHandover', { sponsors: deleteImpact.sponsors, poolName: deleteImpact.poolName })
+            : null
+        }
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         deleting={deleting}

@@ -6,6 +6,7 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "deleting": "Suppression...",
+    "deleteHandover": "{sponsors} donateurs seront transférés vers «{poolName}». Leurs dons y seront toujours comptés.",
     "edit": "Modifier",
     "close": "Fermer",
     "add": "Ajouter",

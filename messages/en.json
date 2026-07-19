@@ -6,6 +6,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "deleteHandover": "{sponsors} sponsors will move to \"{poolName}\". Their donations keep counting there.",
     "edit": "Edit",
     "close": "Close",
     "add": "Add",

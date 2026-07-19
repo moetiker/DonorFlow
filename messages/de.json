@@ -6,6 +6,7 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "deleting": "Lösche...",
+    "deleteHandover": "{sponsors} Gönner gehen an «{poolName}». Ihre Spenden zählen dort weiter.",
     "edit": "Bearbeiten",
     "close": "Schliessen",
     "add": "Hinzufügen",
