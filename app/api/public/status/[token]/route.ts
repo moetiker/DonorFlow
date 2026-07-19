@@ -53,14 +53,17 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
     }
   })
 
-  // Get previous fiscal year (most recent one BEFORE current fiscal year)
+  // Get previous fiscal year: the one with the greatest startDate before the
+  // current year's start. Comparing on startDate (not endDate) is robust when
+  // adjacent fiscal years touch or overlap by a day at the boundary, which would
+  // otherwise leave previousFiscalYear null and make LYBUNT detection impossible.
   const previousFiscalYear = currentFiscalYear
     ? await prisma.fiscalYear.findFirst({
         where: {
-          endDate: { lt: currentFiscalYear.startDate }
+          startDate: { lt: currentFiscalYear.startDate }
         },
         orderBy: {
-          endDate: 'desc'
+          startDate: 'desc'
         },
         select: {
           id: true
@@ -83,6 +86,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
         select: {
           id: true,
           company: true,
+          phone: true,
+          email: true,
           firstName: true,
           lastName: true
         }
@@ -118,6 +123,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           select: {
             id: true,
             company: true,
+            phone: true,
+            email: true,
             firstName: true,
             lastName: true
           }
@@ -155,6 +162,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
             select: {
               id: true,
               company: true,
+              phone: true,
+              email: true,
               firstName: true,
               lastName: true
             }
@@ -165,6 +174,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
         select: {
           id: true,
           company: true,
+          phone: true,
+          email: true,
           firstName: true,
           lastName: true
         }
@@ -201,6 +212,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
           select: {
             id: true,
             company: true,
+            phone: true,
+            email: true,
             firstName: true,
             lastName: true
           }
@@ -238,6 +251,8 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
             select: {
               id: true,
               company: true,
+              phone: true,
+              email: true,
               firstName: true,
               lastName: true
             }
@@ -281,6 +296,8 @@ interface MemberBasic {
 interface SponsorBasic {
   id: string
   company: string | null
+  phone: string | null
+  email: string | null
   firstName: string | null
   lastName: string | null
 }
@@ -484,6 +501,8 @@ function calculateSponsorsProgressFromDonations(
 
     return {
       name: getSponsorDisplayName(sponsor),
+      phone: sponsor.phone,
+      email: sponsor.email,
       donated: donatedThisYear,
       donatedLastYear,
       isLYBUNT,

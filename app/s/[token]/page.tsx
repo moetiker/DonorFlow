@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, use, Fragment } from 'react'
-import { Container, Card, ProgressBar, Table, Alert, Badge, Spinner, Accordion } from 'react-bootstrap'
+import { Container, Card, ProgressBar, Table, Alert, Spinner, Accordion } from 'react-bootstrap'
 import { NextIntlClientProvider } from 'next-intl'
 import { useTranslations } from 'next-intl'
 import { detectBrowserLocale } from '@/lib/i18n/utils'
@@ -22,6 +22,8 @@ interface DonationHistoryEntry {
 
 interface SponsorData {
   name: string
+  phone: string | null
+  email: string | null
   donated: boolean
   donatedLastYear: boolean
   isLYBUNT: boolean
@@ -271,10 +273,52 @@ function StatusPageContent({ token }: { token: string }) {
     )
   }
 
+  // Render one "not yet donated" sponsor as a mobile row: name + last-donation
+  // hint on the left, a touch-sized call/email button on the right. No expanding.
+  const renderNotDonatedRow = (sponsor: SponsorData, rowKey: string) => {
+    const lastMonetary = sponsor.history.find(h => h.type === 'MONETARY' && h.amount != null)
+    const meta = lastMonetary
+      ? t('lastDonated', {
+          amount: formatCurrency(lastMonetary.amount ?? 0),
+          year: lastMonetary.fiscalYearName || '—'
+        })
+      : t('neverDonated')
+    const tel = sponsor.phone?.replace(/\s+/g, '')
+
+    return (
+      <div key={rowKey} className="d-flex align-items-center gap-2 px-3 border-top not-donated-row">
+        <div className="flex-grow-1 min-w-0">
+          <div className="fw-semibold text-truncate">{sponsor.name}</div>
+          <div className="small text-muted">{meta}</div>
+        </div>
+        {tel ? (
+          <a
+            href={`tel:${tel}`}
+            className="btn btn-outline-secondary rounded-circle contact-btn flex-shrink-0"
+            aria-label={t('callSponsor', { name: sponsor.name })}
+          >
+            <i className="bi bi-telephone" />
+          </a>
+        ) : sponsor.email ? (
+          <a
+            href={`mailto:${sponsor.email}`}
+            className="btn btn-outline-secondary rounded-circle contact-btn flex-shrink-0"
+            aria-label={t('emailSponsor', { name: sponsor.name })}
+          >
+            <i className="bi bi-envelope" />
+          </a>
+        ) : null}
+      </div>
+    )
+  }
+
   // Render sponsor tables for a member (in-kind donations are shown in top-level section)
   const renderSponsorTables = (sponsors: SponsorData[], keyPrefix: string) => {
     const donatedSponsors = sponsors.filter(s => s.donated)
     const notDonatedSponsors = sponsors.filter(s => !s.donated)
+    // Variant B: "follow up" (donated last year) first, then everyone else.
+    const followUpSponsors = notDonatedSponsors.filter(s => s.isLYBUNT)
+    const otherSponsors = notDonatedSponsors.filter(s => !s.isLYBUNT)
 
     return (
       <>
@@ -331,7 +375,7 @@ function StatusPageContent({ token }: { token: string }) {
           </Card.Body>
         </Card>
 
-        {/* Not Yet Donated Sponsors */}
+        {/* Not Yet Donated Sponsors — Variant B: grouped by urgency, no expanding */}
         <Card className="mb-3">
           <Card.Header className="bg-secondary text-white py-2">
             <h2 className="h6 mb-0">
@@ -342,50 +386,28 @@ function StatusPageContent({ token }: { token: string }) {
             {notDonatedSponsors.length === 0 ? (
               <p className="text-success text-center py-3 mb-0 fw-bold">{t('allDonated')}</p>
             ) : (
-              <div className="table-responsive">
-                <Table className="mb-0" size="sm">
-                  <thead>
-                    <tr>
-                      <th>{t('name')}</th>
-                      <th className="text-end"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {notDonatedSponsors.map((sponsor, index) => {
-                      const rowKey = `${keyPrefix}-n-${index}`
-                      const hasHistory = sponsor.history.length > 0
-                      const isOpen = expandedRows.has(rowKey)
-                      return (
-                        <Fragment key={index}>
-                          <tr
-                            className={sponsor.isLYBUNT ? 'table-warning' : ''}
-                            onClick={hasHistory ? () => toggleHistory(rowKey) : undefined}
-                            style={hasHistory ? { cursor: 'pointer' } : undefined}
-                          >
-                            <td className="align-middle">
-                              {hasHistory && (
-                                <i className={`bi bi-chevron-${isOpen ? 'down' : 'right'} me-1 small`} />
-                              )}
-                              {sponsor.name}
-                              {sponsor.isLYBUNT && (
-                                <Badge bg="warning" text="dark" className="ms-2 lybunt-badge">
-                                  {t('lybunt')}
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="text-end align-middle">
-                              {sponsor.isLYBUNT && (
-                                <span className="text-warning d-sm-none">!</span>
-                              )}
-                            </td>
-                          </tr>
-                          {renderHistoryRow(sponsor, rowKey, 2)}
-                        </Fragment>
-                      )
-                    })}
-                  </tbody>
-                </Table>
-              </div>
+              <>
+                {followUpSponsors.length > 0 && (
+                  <>
+                    <div className="px-3 py-1 small fw-bold text-uppercase bg-warning-subtle text-warning-emphasis">
+                      {t('followUp')} ({followUpSponsors.length})
+                    </div>
+                    {followUpSponsors.map((sponsor, index) =>
+                      renderNotDonatedRow(sponsor, `${keyPrefix}-fu-${index}`)
+                    )}
+                  </>
+                )}
+                {otherSponsors.length > 0 && (
+                  <>
+                    <div className="px-3 py-1 small fw-bold text-uppercase bg-light text-muted">
+                      {t('others')} ({otherSponsors.length})
+                    </div>
+                    {otherSponsors.map((sponsor, index) =>
+                      renderNotDonatedRow(sponsor, `${keyPrefix}-ot-${index}`)
+                    )}
+                  </>
+                )}
+              </>
             )}
           </Card.Body>
         </Card>
