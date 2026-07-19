@@ -30,6 +30,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
+  const tGroups = useTranslations('groups')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -122,6 +123,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const handleDelete = async () => {
     if (!member) return
 
+    setError(null)
     setDeleting(true)
     try {
       const response = await fetch(`/api/members/${member.id}`, {
@@ -136,9 +138,17 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         } else {
           onSave() // Fallback to refresh
         }
+      } else {
+        const data = await response.json()
+        if (data.error === 'noClubPool' || data.error === 'clubPoolLocked') {
+          setError(tGroups(data.error))
+        } else {
+          setError(tErrors('deleteFailed'))
+        }
       }
     } catch (error) {
       console.error('Error deleting member:', error)
+      setError(tErrors('deleteFailed'))
     } finally {
       setDeleting(false)
     }
@@ -205,6 +215,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
             <Button
               variant="danger"
               onClick={() => {
+                setError(null)
                 setShowDeleteConfirm(true)
                 loadDeleteImpact()
               }}
@@ -231,6 +242,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
             ? tCommon('deleteHandover', { sponsors: deleteImpact.sponsors, poolName: deleteImpact.poolName })
             : null
         }
+        error={error}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         deleting={deleting}

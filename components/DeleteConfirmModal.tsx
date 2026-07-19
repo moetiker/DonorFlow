@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal, Button } from 'react-bootstrap'
+import { Modal, Button, Alert } from 'react-bootstrap'
 import { useTranslations } from 'next-intl'
 
 type Props = {
@@ -8,12 +8,13 @@ type Props = {
   title: string
   message: string
   detail?: string | null
+  error?: string | null
   onConfirm: () => void
   onCancel: () => void
   deleting?: boolean
 }
 
-export function DeleteConfirmModal({ show, title, message, detail, onConfirm, onCancel, deleting = false }: Props) {
+export function DeleteConfirmModal({ show, title, message, detail, error, onConfirm, onCancel, deleting = false }: Props) {
   const tCommon = useTranslations('common')
 
   return (
@@ -22,6 +23,7 @@ export function DeleteConfirmModal({ show, title, message, detail, onConfirm, on
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {error && <Alert variant="danger">{error}</Alert>}
         <p>{message}</p>
         {detail && <p className="text-muted mb-0">{detail}</p>}
       </Modal.Body>

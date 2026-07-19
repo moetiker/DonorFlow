@@ -16,10 +16,12 @@ type Props = {
 export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props) {
   const t = useTranslations('groups')
   const tCommon = useTranslations('common')
+  const tErrors = useTranslations('errors')
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
   const handleDelete = async () => {
     if (!group) return
 
+    setError(null)
     setDeleting(true)
     try {
       const response = await fetch(`/api/groups/${group.id}`, {
@@ -89,9 +92,17 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
         } else {
           onSave() // Fallback to refresh
         }
+      } else {
+        const data = await response.json()
+        if (data.error === 'noClubPool' || data.error === 'clubPoolLocked') {
+          setError(t(data.error))
+        } else {
+          setError(tErrors('deleteFailed'))
+        }
       }
     } catch (error) {
       console.error('Error deleting group:', error)
+      setError(tErrors('deleteFailed'))
     } finally {
       setDeleting(false)
     }
@@ -122,6 +133,7 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
               <Button
                 variant="danger"
                 onClick={() => {
+                  setError(null)
                   setShowDeleteConfirm(true)
                   loadDeleteImpact()
                 }}
@@ -149,6 +161,7 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
             ? tCommon('deleteHandover', { sponsors: deleteImpact.sponsors, poolName: deleteImpact.poolName })
             : null
         }
+        error={error}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         deleting={deleting}
