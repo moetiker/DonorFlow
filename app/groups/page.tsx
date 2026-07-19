@@ -18,6 +18,7 @@ type Group = {
   id: string
   name: string
   statusToken?: string | null
+  isClubPool?: boolean
   members?: Array<{
     id: string
     firstName: string
@@ -260,6 +261,11 @@ export default function GroupsPage() {
                           className="text-primary"
                         >
                           <strong>{group.name}</strong>
+                          {group.isClubPool && (
+                            <Badge bg="info" className="ms-2">
+                              {t('clubPool')}
+                            </Badge>
+                          )}
                         </td>
                         <td
                           onClick={(e) => handleMembersClick(e, group)}

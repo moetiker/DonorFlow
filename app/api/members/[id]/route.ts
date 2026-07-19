@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import { reassignToClubPool, NoClubPoolError } from '@/lib/club-pool'
 
 export const PUT = withApiRoute(async (
   request: NextRequest,
@@ -31,12 +32,24 @@ export const DELETE = withApiRoute(async (
 ) => {
   const { id: memberId } = await params
 
-  // Delete member - cascading deletes will handle:
-  // - Sponsors (onDelete: SetNull - will set memberId to null)
-  // - MemberTargets (onDelete: Cascade)
-  await prisma.member.delete({
-    where: { id: memberId }
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Sponsors belong to the club, not to the member who looked after them.
+      // Hand them over before deleting, otherwise SetNull orphans them and
+      // they vanish from every status page and every total. Donations are not
+      // touched: they are optional overrides and follow their sponsor's new
+      // owner automatically via SetNull (see lib/club-pool.ts).
+      await reassignToClubPool(tx, { memberId })
+
+      // MemberTargets are removed by onDelete: Cascade.
+      await tx.member.delete({ where: { id: memberId } })
+    })
+  } catch (error) {
+    if (error instanceof NoClubPoolError) {
+      return NextResponse.json({ error: 'noClubPool' }, { status: 400 })
+    }
+    throw error
+  }
 
   return NextResponse.json({ success: true })
 })

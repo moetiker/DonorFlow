@@ -6,6 +6,7 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "deleting": "Lösche...",
+    "deleteHandover": "{sponsors} Gönner gehen an «{poolName}». Ihre Spenden zählen dort weiter.",
     "edit": "Bearbeiten",
     "close": "Schliessen",
     "add": "Hinzufügen",
@@ -220,7 +221,11 @@
     "status": "Status",
     "statusLink": "Status-Link",
     "copyStatusLink": "Status-Link kopieren",
-    "linkCopied": "Link kopiert!"
+    "linkCopied": "Link kopiert!",
+    "clubPool": "Vereinstopf",
+    "clubPoolHint": "Gönner von gelöschten Mitgliedern landen hier",
+    "noClubPool": "Keine Gruppe ist als Vereinstopf markiert. Bitte zuerst eine Gruppe markieren.",
+    "clubPoolLocked": "Der Vereinstopf kann nicht gelöscht werden. Markiere zuerst eine andere Gruppe."
   },
   "targets": {
     "title": "Vorgaben",

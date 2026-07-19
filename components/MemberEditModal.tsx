@@ -30,6 +30,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
+  const tGroups = useTranslations('groups')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -40,6 +41,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
 
   useEffect(() => {
     if (member) {
@@ -67,6 +69,20 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
     } catch (error) {
       console.error('Error loading groups:', error)
       setGroups([])
+    }
+  }
+
+  const loadDeleteImpact = async () => {
+    if (!member) return
+
+    setDeleteImpact(null)
+    try {
+      const response = await fetch(`/api/members/${member.id}/impact`)
+      if (response.ok) {
+        setDeleteImpact(await response.json())
+      }
+    } catch (error) {
+      console.error('Error loading delete impact:', error)
     }
   }
 
@@ -107,6 +123,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const handleDelete = async () => {
     if (!member) return
 
+    setError(null)
     setDeleting(true)
     try {
       const response = await fetch(`/api/members/${member.id}`, {
@@ -121,9 +138,17 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         } else {
           onSave() // Fallback to refresh
         }
+      } else {
+        const data = await response.json()
+        if (data.error === 'noClubPool' || data.error === 'clubPoolLocked') {
+          setError(tGroups(data.error))
+        } else {
+          setError(tErrors('deleteFailed'))
+        }
       }
     } catch (error) {
       console.error('Error deleting member:', error)
+      setError(tErrors('deleteFailed'))
     } finally {
       setDeleting(false)
     }
@@ -187,7 +212,15 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         </Modal.Body>
         <Modal.Footer>
           <div className="me-auto">
-            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)} disabled={saving}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setError(null)
+                setShowDeleteConfirm(true)
+                loadDeleteImpact()
+              }}
+              disabled={saving}
+            >
               {tCommon('delete')}
             </Button>
           </div>
@@ -204,6 +237,12 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         show={showDeleteConfirm}
         title={`${tCommon('delete')} ${tCommon('member')}`}
         message={t('deleteConfirm')}
+        detail={
+          deleteImpact && deleteImpact.sponsors > 0
+            ? tCommon('deleteHandover', { sponsors: deleteImpact.sponsors, poolName: deleteImpact.poolName })
+            : null
+        }
+        error={error}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         deleting={deleting}
