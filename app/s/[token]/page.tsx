@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, use, Fragment } from 'react'
-import { Container, Card, ProgressBar, Table, Alert, Spinner, Accordion } from 'react-bootstrap'
+import { Container, Card, ProgressBar, Table, Alert, Spinner } from 'react-bootstrap'
 import { NextIntlClientProvider } from 'next-intl'
 import { useTranslations } from 'next-intl'
 import { detectBrowserLocale } from '@/lib/i18n/utils'
@@ -512,35 +512,10 @@ function StatusPageContent({ token }: { token: string }) {
       {/* Member or Group View */}
       {data.type === 'group' ? (
         <>
-          {/* Group-level sponsors section */}
+          {/* Group-level sponsors section. Sponsors always belong to the group,
+              not to individual members, so there is no per-member breakdown. */}
           {data.groupSponsors && data.groupSponsors.length > 0 && (
-            <>
-              <h3 className="h5 mt-4 mb-3">{t('groupSponsors')}</h3>
-              {renderSponsorTables(data.groupSponsors, 'group')}
-            </>
-          )}
-
-          {/* Members section */}
-          <h3 className="h5 mt-4 mb-3">{t('groupMembers')}</h3>
-          {!data.members || data.members.length === 0 ? (
-            <Alert variant="info">{t('noMembers')}</Alert>
-          ) : (
-            <Accordion alwaysOpen>
-              {data.members.map((member) => (
-                <Accordion.Item key={member.id} eventKey={member.id}>
-                  <Accordion.Header>
-                    <strong>{member.name}</strong>
-                  </Accordion.Header>
-                  <Accordion.Body>
-                    {member.sponsors.length === 0 ? (
-                      <p className="text-muted text-center py-3 mb-0">{t('noSponsors')}</p>
-                    ) : (
-                      renderSponsorTables(member.sponsors, `member-${member.id}`)
-                    )}
-                  </Accordion.Body>
-                </Accordion.Item>
-              ))}
-            </Accordion>
+            renderSponsorTables(data.groupSponsors, 'group')
           )}
         </>
       ) : (
