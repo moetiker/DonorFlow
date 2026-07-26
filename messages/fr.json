@@ -510,7 +510,10 @@
     "from": "De",
     "groupDirect": "Groupe direct",
     "donationHistory": "Historique des dons",
-    "csvDownload": "Liste d'adresses (CSV)"
+    "exportLabel": "Liste d'adresses",
+    "formatCsv": "CSV",
+    "formatExcel": "Excel",
+    "formatPdf": "PDF"
   },
   "mailing": {
     "title": "Envoi aux donateurs",

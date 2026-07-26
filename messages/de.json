@@ -510,7 +510,10 @@
     "from": "Von",
     "groupDirect": "Gruppe direkt",
     "donationHistory": "Spendenverlauf",
-    "csvDownload": "Adressliste (CSV)"
+    "exportLabel": "Adressliste",
+    "formatCsv": "CSV",
+    "formatExcel": "Excel",
+    "formatPdf": "PDF"
   },
   "mailing": {
     "title": "Gönner:innen-Brief-Versand",

@@ -510,7 +510,10 @@
     "from": "From",
     "groupDirect": "Group direct",
     "donationHistory": "Donation History",
-    "csvDownload": "Address list (CSV)"
+    "exportLabel": "Address list",
+    "formatCsv": "CSV",
+    "formatExcel": "Excel",
+    "formatPdf": "PDF"
   },
   "mailing": {
     "title": "Donor mailing",

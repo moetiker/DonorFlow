@@ -426,13 +426,32 @@ function StatusPageContent({ token }: { token: string }) {
               {t('fiscalYear')}: {data.fiscalYear.name}
             </small>
           </div>
-          <a
-            href={`/api/public/status/${token}/export`}
-            className="btn btn-light btn-sm text-nowrap"
-          >
-            <i className="bi bi-download me-1" />
-            {t('csvDownload')}
-          </a>
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <small className="opacity-75">{t('exportLabel')}:</small>
+            <a
+              href={`/api/public/status/${token}/export?format=csv`}
+              className="btn btn-light btn-sm text-nowrap"
+            >
+              <i className="bi bi-filetype-csv me-1" />
+              {t('formatCsv')}
+            </a>
+            <a
+              href={`/api/public/status/${token}/export?format=xlsx`}
+              className="btn btn-light btn-sm text-nowrap"
+            >
+              <i className="bi bi-file-earmark-excel me-1" />
+              {t('formatExcel')}
+            </a>
+            <a
+              href={`/api/public/status/${token}/export?format=pdf`}
+              target="_blank"
+              rel="noopener"
+              className="btn btn-light btn-sm text-nowrap"
+            >
+              <i className="bi bi-file-earmark-pdf me-1" />
+              {t('formatPdf')}
+            </a>
+          </div>
         </Card.Body>
       </Card>
 
