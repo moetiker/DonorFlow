@@ -9,6 +9,14 @@ import type { StatusExportEntry } from './status-export'
  * salutation and notes are omitted.
  */
 
+// Page margins in mm. The column widths in columnStyles below are sized to the
+// resulting usable width (297 - 2 * 12 = 273 mm), so changing this means
+// resizing them too.
+const MARGIN = 12
+
+// Baseline distance between two wrapped title lines at font size 14, in mm.
+const TITLE_LINE_HEIGHT = 6
+
 const HEADERS = [
   'Firma / Name',
   'Adresse',
@@ -47,11 +55,17 @@ export function buildSponsorPdf(
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
 
+  // The title is a member or group name and can be arbitrarily long, so wrap it
+  // to the usable width instead of letting it run off the page. Everything below
+  // shifts down by however many lines it takes.
   doc.setFontSize(14)
-  doc.text(title, 12, 14)
+  const titleLines: string[] = doc.splitTextToSize(title, pageWidth - MARGIN * 2)
+  doc.text(titleLines, MARGIN, 14)
+
+  const subtitleY = 14 + titleLines.length * TITLE_LINE_HEIGHT
   doc.setFontSize(10)
   const subtitleParts = [fiscalYearName, formatDate(new Date())].filter(Boolean)
-  doc.text(subtitleParts.join(' • '), 12, 20)
+  doc.text(subtitleParts.join(' • '), MARGIN, subtitleY)
 
   const body = entries.map(({ sponsor, assignedTo }) => {
     const { count, sum } = summarizeCurrentDonations(sponsor, currentFiscalYearId)
@@ -69,8 +83,8 @@ export function buildSponsorPdf(
   autoTable(doc, {
     head: [HEADERS],
     body,
-    startY: 25,
-    margin: { left: 12, right: 12, bottom: 16 },
+    startY: subtitleY + 5,
+    margin: { left: MARGIN, right: MARGIN, bottom: 16 },
     styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
     headStyles: { fillColor: [234, 118, 0], textColor: 255, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [245, 245, 245] },
@@ -90,7 +104,7 @@ export function buildSponsorPdf(
   doc.setFontSize(8)
   for (let page = 1; page <= pageCount; page++) {
     doc.setPage(page)
-    doc.text(`Seite ${page} von ${pageCount}`, pageWidth - 12, pageHeight - 8, { align: 'right' })
+    doc.text(`Seite ${page} von ${pageCount}`, pageWidth - MARGIN, pageHeight - 8, { align: 'right' })
   }
 
   return new Uint8Array(doc.output('arraybuffer'))
