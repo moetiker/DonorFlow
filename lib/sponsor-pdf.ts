@@ -78,8 +78,8 @@ export function buildSponsorPdf(
       0: { cellWidth: 52 },
       1: { cellWidth: 48 },
       2: { cellWidth: 28 },
-      3: { cellWidth: 56 },
-      4: { cellWidth: 44 },
+      3: { cellWidth: 60 },
+      4: { cellWidth: 47 },
       5: { cellWidth: 16, halign: 'right' },
       6: { cellWidth: 22, halign: 'right' }
     }
