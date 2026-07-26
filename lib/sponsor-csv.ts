@@ -85,16 +85,30 @@ export function buildSponsorAddressCsv(sponsors: SponsorCsvRow[]): string {
   return buildCSV(SPONSOR_ADDRESS_HEADERS, rows)
 }
 
+/**
+ * Counts a sponsor's donations in the given fiscal year and sums their amounts.
+ * Shared by every export format so the CSV, Excel and PDF summaries cannot
+ * drift apart. A null fiscal year yields zeros - nothing is in scope.
+ */
+export function summarizeCurrentDonations(
+  sponsor: SponsorCsvRow,
+  currentFiscalYearId: string | null
+): { count: number; sum: number } {
+  const current = currentFiscalYearId
+    ? sponsor.donations.filter((d) => d.fiscalYearId === currentFiscalYearId)
+    : []
+  return {
+    count: current.length,
+    sum: current.reduce((acc, d) => acc + (d.amount || 0), 0)
+  }
+}
+
 export function buildSponsorCsv(
   entries: { sponsor: SponsorCsvRow; assignedTo: string }[],
   currentFiscalYearId: string | null
 ): string {
   const rows = entries.map(({ sponsor, assignedTo }) => {
-    const current = currentFiscalYearId
-      ? sponsor.donations.filter((d) => d.fiscalYearId === currentFiscalYearId)
-      : []
-    const count = current.length
-    const sum = current.reduce((acc, d) => acc + (d.amount || 0), 0)
+    const { count, sum } = summarizeCurrentDonations(sponsor, currentFiscalYearId)
     return [
       sponsor.company,
       sponsor.salutation,

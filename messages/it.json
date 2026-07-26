@@ -1,5 +1,8 @@
 {
   "common": {
+    "downloadExcel": "Scarica l'elenco indirizzi in Excel",
+    "downloadCsv": "Scarica l'elenco indirizzi in CSV",
+    "downloadPdf": "Mostra l'elenco indirizzi in PDF",
     "loading": "Caricamento...",
     "save": "Salva",
     "saving": "Salvataggio...",
@@ -510,7 +513,10 @@
     "from": "Da",
     "groupDirect": "Gruppo diretto",
     "donationHistory": "Storico donazioni",
-    "csvDownload": "Elenco indirizzi (CSV)"
+    "exportLabel": "Elenco indirizzi",
+    "formatCsv": "CSV",
+    "formatExcel": "Excel",
+    "formatPdf": "PDF"
   },
   "mailing": {
     "title": "Invio ai donatori",

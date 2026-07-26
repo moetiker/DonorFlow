@@ -1,5 +1,8 @@
 {
   "common": {
+    "downloadCsv": "Télécharger la liste d'adresses en CSV",
+    "downloadExcel": "Télécharger la liste d'adresses en Excel",
+    "downloadPdf": "Afficher la liste d'adresses en PDF",
     "loading": "Chargement...",
     "save": "Enregistrer",
     "saving": "Enregistrement...",
@@ -510,7 +513,10 @@
     "from": "De",
     "groupDirect": "Groupe direct",
     "donationHistory": "Historique des dons",
-    "csvDownload": "Liste d'adresses (CSV)"
+    "exportLabel": "Liste d'adresses",
+    "formatCsv": "CSV",
+    "formatExcel": "Excel",
+    "formatPdf": "PDF"
   },
   "mailing": {
     "title": "Envoi aux donateurs",
