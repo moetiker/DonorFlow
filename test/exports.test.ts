@@ -113,6 +113,34 @@ test('the CSV doubles an embedded double quote and quotes an embedded newline', 
   assert.equal(body, '"Restaurant ""Sonne""",,,,,,,,,"Zeile 1\nZeile 2",Müller Hans,0,0.00')
 })
 
+test('the CSV neutralizes spreadsheet formulas without touching numbers', () => {
+  const entries: StatusExportEntry[] = [
+    {
+      assignedTo: 'Müller Hans',
+      sponsor: sponsor({
+        company: '=cmd|\' /C calc\'!A1',
+        firstName: '+41 79 555 12 34',
+        lastName: '@SUM(A1:A9)',
+        street: '-5',
+        city: 'Zürich'
+      })
+    }
+  ]
+  const cells = buildSponsorCsv(entries, CURRENT_FY).split('\n')[1].split(',')
+
+  assert.equal(cells[0], "'=cmd|' /C calc'!A1", 'a formula is prefixed with an apostrophe')
+  assert.equal(cells[2], "'+41 79 555 12 34", 'a leading + is neutralized, so Excel keeps it as text')
+  assert.equal(cells[3], "'@SUM(A1:A9)", 'a leading @ is neutralized')
+  assert.equal(cells[4], '-5', 'a negative number stays a number')
+  assert.equal(cells[6], 'Zürich', 'ordinary text is untouched')
+})
+
+test('the CSV leaves the donation sum numeric', () => {
+  const csv = buildSponsorCsv(ENTRIES, CURRENT_FY).split('\n')
+  assert.ok(csv[1].endsWith(',2,150.50'), 'count and sum are unquoted numbers')
+  assert.ok(csv[2].endsWith(',0,0.00'), 'a zero sum is unquoted')
+})
+
 test('the Excel workbook is a well-formed container', async () => {
   const buffer = await buildSponsorWorkbook(ENTRIES, CURRENT_FY)
   assert.ok(Buffer.isBuffer(buffer))
