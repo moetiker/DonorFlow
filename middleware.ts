@@ -18,6 +18,10 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/public|s/|login|_next/static|_next/image|favicon.ico|icon.svg|icon.png|apple-icon.png).*)'
+    // api/organization is deliberately public: the login page renders the club
+    // name before anyone is signed in. Without it here the request is redirected
+    // to the sign-in page, the fetch fails, and the name silently falls back to
+    // the generic default for every visitor who is not already logged in.
+    '/((?!api/auth|api/public|api/organization|s/|login|_next/static|_next/image|favicon.ico|icon.svg|icon.png|apple-icon.png).*)'
   ]
 }
