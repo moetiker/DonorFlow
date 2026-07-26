@@ -1,5 +1,8 @@
 {
   "common": {
+    "downloadExcel": "Scarica l'elenco indirizzi in Excel",
+    "downloadCsv": "Scarica l'elenco indirizzi in CSV",
+    "downloadPdf": "Mostra l'elenco indirizzi in PDF",
     "loading": "Caricamento...",
     "save": "Salva",
     "saving": "Salvataggio...",

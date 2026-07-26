@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Table, Badge } from 'react-bootstrap'
+import { Container, Card, Button, ButtonGroup, Table, Badge } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { MemberModal } from '@/components/MemberModal'
 import { MemberEditModal } from '@/components/MemberEditModal'
@@ -56,6 +56,7 @@ export default function MembersPage() {
   const router = useRouter()
   const { currentFiscalYearId } = useCurrentFiscalYear()
   const t = useTranslations('members')
+  const tCommon = useTranslations('common')
   const { formatCurrency } = useLocalizedFormatters()
 
   const loadMembers = async () => {
@@ -270,14 +271,47 @@ export default function MembersPage() {
                         </td>
                         <td className="text-center">
                           {!member.groupId && member.statusToken ? (
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              onClick={(e) => handleCopyStatusLink(e, member.id, member.statusToken!)}
-                              title={t('copyStatusLink')}
-                            >
-                              <i className={`bi ${copiedId === member.id ? 'bi-clipboard-check-fill text-success' : 'bi-copy'}`}></i>
-                            </Button>
+                            <ButtonGroup size="sm">
+                              <Button
+                                variant="outline-secondary"
+                                onClick={(e) => handleCopyStatusLink(e, member.id, member.statusToken!)}
+                                title={t('copyStatusLink')}
+                              >
+                                <i className={`bi ${copiedId === member.id ? 'bi-clipboard-check-fill text-success' : 'bi-copy'}`}></i>
+                              </Button>
+                              <Button
+                                as="a"
+                                variant="outline-secondary"
+                                href={`/api/public/status/${member.statusToken}/export?format=csv`}
+                                onClick={(e) => e.stopPropagation()}
+                                title={tCommon('downloadCsv')}
+                                aria-label={tCommon('downloadCsv')}
+                              >
+                                <i className="bi bi-filetype-csv"></i>
+                              </Button>
+                              <Button
+                                as="a"
+                                variant="outline-secondary"
+                                href={`/api/public/status/${member.statusToken}/export?format=xlsx`}
+                                onClick={(e) => e.stopPropagation()}
+                                title={tCommon('downloadExcel')}
+                                aria-label={tCommon('downloadExcel')}
+                              >
+                                <i className="bi bi-file-earmark-excel"></i>
+                              </Button>
+                              <Button
+                                as="a"
+                                variant="outline-secondary"
+                                href={`/api/public/status/${member.statusToken}/export?format=pdf`}
+                                target="_blank"
+                                rel="noopener"
+                                onClick={(e) => e.stopPropagation()}
+                                title={tCommon('downloadPdf')}
+                                aria-label={tCommon('downloadPdf')}
+                              >
+                                <i className="bi bi-file-earmark-pdf"></i>
+                              </Button>
+                            </ButtonGroup>
                           ) : member.group ? (
                             <span className="text-muted small">{t('useGroupLink')}</span>
                           ) : (

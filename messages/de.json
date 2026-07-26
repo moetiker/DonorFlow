@@ -1,5 +1,8 @@
 {
   "common": {
+    "downloadCsv": "Adressliste als CSV herunterladen",
+    "downloadExcel": "Adressliste als Excel herunterladen",
+    "downloadPdf": "Adressliste als PDF anzeigen",
     "loading": "Laden...",
     "save": "Speichern",
     "saving": "Speichere...",

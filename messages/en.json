@@ -1,5 +1,8 @@
 {
   "common": {
+    "downloadCsv": "Download address list as CSV",
+    "downloadExcel": "Download address list as Excel",
+    "downloadPdf": "Show address list as PDF",
     "loading": "Loading...",
     "save": "Save",
     "saving": "Saving...",
