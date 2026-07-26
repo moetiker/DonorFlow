@@ -75,7 +75,7 @@ test('summarizeCurrentDonations treats a null fiscal year as nothing in scope', 
   assert.deepEqual(summarizeCurrentDonations(ENTRIES[0].sponsor, null), { count: 0, sum: 0 })
 })
 
-test('summarizeCurrentDonations skips donations with a null amount', () => {
+test('a donation with a null amount is counted but contributes zero to the sum', () => {
   const s = sponsor({
     donations: [
       { amount: null, fiscalYearId: CURRENT_FY },
@@ -100,6 +100,17 @@ test('the CSV body is byte-for-byte stable, including quoting and the sum format
     ',,Ida,Zwicky,,,,,,,Turnverein (Gruppe),0,0.00'
   ].join('\n')
   assert.equal(buildSponsorCsv(ENTRIES, CURRENT_FY), expected)
+})
+
+test('the CSV doubles an embedded double quote and quotes an embedded newline', () => {
+  const entries: StatusExportEntry[] = [
+    {
+      assignedTo: 'Müller Hans',
+      sponsor: sponsor({ company: 'Restaurant "Sonne"', notes: 'Zeile 1\nZeile 2' })
+    }
+  ]
+  const body = buildSponsorCsv(entries, CURRENT_FY).split('\n').slice(1).join('\n')
+  assert.equal(body, '"Restaurant ""Sonne""",,,,,,,,,"Zeile 1\nZeile 2",Müller Hans,0,0.00')
 })
 
 test('the Excel workbook is a well-formed container', async () => {
