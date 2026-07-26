@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { SPONSOR_CSV_HEADERS } from './sponsor-csv'
+import { SPONSOR_CSV_HEADERS, summarizeCurrentDonations } from './sponsor-csv'
 import type { StatusExportEntry } from './status-export'
 
 /**
@@ -29,10 +29,7 @@ export async function buildSponsorWorkbook(
   sheet.views = [{ state: 'frozen', ySplit: 1 }]
 
   for (const { sponsor, assignedTo } of entries) {
-    const current = currentFiscalYearId
-      ? sponsor.donations.filter((d) => d.fiscalYearId === currentFiscalYearId)
-      : []
-    const sum = current.reduce((acc, d) => acc + (d.amount || 0), 0)
+    const { count, sum } = summarizeCurrentDonations(sponsor, currentFiscalYearId)
 
     const row = sheet.addRow([
       sponsor.company,
@@ -46,7 +43,7 @@ export async function buildSponsorWorkbook(
       sponsor.email,
       sponsor.notes,
       assignedTo,
-      current.length,
+      count,
       sum
     ])
     row.getCell(13).numFmt = MONEY_FORMAT
