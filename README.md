@@ -8,7 +8,7 @@
 
 Track your patrons, set fiscal-year goals, watch the money come in live, and email every member a personalized donor letter in one click. Self-hosted, four languages.
 
-`Next.js 16` · `TypeScript` · `Prisma + SQLite` · `NextAuth` · `MIT`
+`Next.js 16` · `TypeScript` · `Prisma + SQLite` · `NextAuth` · `React-Bootstrap` · `next-intl`
 
 <img src="screenshots/login.png" width="560" alt="Sign in" />
 
@@ -22,6 +22,8 @@ Track your patrons, set fiscal-year goals, watch the money come in live, and ema
 | ![Dashboard](screenshots/dashboard.png) | ![Reports](screenshots/reports.png) |
 | **Public status link** (mobile, no login) | **Donor mailing** |
 | ![Status link](screenshots/status-link.png) | ![Mailing](screenshots/mailing.png) |
+| **Groups** — copy the status link, export the address list as CSV, Excel or PDF | **Members** |
+| ![Groups](screenshots/groups.png) | ![Members](screenshots/members.png) |
 
 The personalized email each member receives:
 
@@ -73,10 +75,9 @@ erDiagram
     Member ||--o{ Donation : "credited to"
     Group ||--o{ Donation : "credited to"
     FiscalYear ||--o| DonorLetter : "letter"
-    FiscalYear ||--o{ MailJob : "mailing"
 ```
 
-A sponsor belongs to a member **or** a group (exclusive) · targets are per member per fiscal year · one donor letter per fiscal year. `User` and `Setting` stand alone.
+A sponsor belongs to a member **or** a group (exclusive) · targets are per member per fiscal year · one donor letter per fiscal year · one group may be flagged `isClubPool`, which is where sponsors are re-assigned when their member or group is deleted. `User`, `Setting` and `MailJob` stand alone — `MailJob` records a fiscal year id, but as a plain column, not a foreign key.
 
 ---
 
