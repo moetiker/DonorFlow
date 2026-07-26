@@ -426,7 +426,7 @@ function StatusPageContent({ token }: { token: string }) {
               {t('fiscalYear')}: {data.fiscalYear.name}
             </small>
           </div>
-          <div className="d-flex flex-wrap align-items-center gap-2">
+          <div className="d-flex flex-wrap align-items-center gap-2" role="group" aria-label={t('exportLabel')}>
             <small className="opacity-75">{t('exportLabel')}:</small>
             <a
               href={`/api/public/status/${token}/export?format=csv`}

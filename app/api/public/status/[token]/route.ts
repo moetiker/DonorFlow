@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withPublicApiRoute } from '@/lib/api-helpers'
 import { serializeDates, getSponsorDisplayName, getMemberDisplayName, getGroupDisplayName } from '@/lib/utils'
-
-// Token format: 32 characters (base64url, 192 bits entropy)
-const TOKEN_LENGTH = 32
+import { STATUS_TOKEN_LENGTH } from '@/lib/status-export'
 
 interface RouteParams {
   params: Promise<{ token: string }>
@@ -25,7 +23,7 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
   const { token } = await params
 
   // Validate token format (must be exactly 32 characters)
-  if (!token || token.length !== TOKEN_LENGTH) {
+  if (!token || token.length !== STATUS_TOKEN_LENGTH) {
     return NextResponse.json(
       { error: 'Not found' },
       {

@@ -15,7 +15,8 @@ interface RouteParams {
 // Security headers shared by all responses from this public endpoint
 const SECURITY_HEADERS = {
   'Referrer-Policy': 'no-referrer',
-  'Cache-Control': 'private, no-cache'
+  'Cache-Control': 'private, no-cache',
+  'X-Content-Type-Options': 'nosniff'
 }
 
 const SUPPORTED_FORMATS = ['csv', 'xlsx', 'pdf'] as const
