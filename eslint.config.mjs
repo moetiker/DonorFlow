@@ -1,16 +1,18 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
+// eslint-config-next 16 ships flat configs directly. The previous setup piped it
+// through @eslint/eslintrc's FlatCompat, which crashes on ESLint 9 while
+// validating the legacy schema ("Converting circular structure to JSON").
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  {
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "app/generated/**",
+    ],
+  },
+  ...nextCoreWebVitals,
 ];
 
 export default eslintConfig;
