@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'
+import writeExcelFile from 'write-excel-file/node'
 import { SPONSOR_CSV_HEADERS, summarizeCurrentDonations } from './sponsor-csv'
 import type { StatusExportEntry } from './status-export'
 
@@ -17,38 +17,36 @@ export async function buildSponsorWorkbook(
   entries: StatusExportEntry[],
   currentFiscalYearId: string | null
 ): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook()
-  const sheet = workbook.addWorksheet('Goenner')
-
-  sheet.columns = SPONSOR_CSV_HEADERS.map((header, index) => ({
-    header,
-    width: COLUMN_WIDTHS[index] ?? 18
+  const headerRow = SPONSOR_CSV_HEADERS.map((header) => ({
+    value: header,
+    fontWeight: 'bold' as const
   }))
 
-  sheet.getRow(1).font = { bold: true }
-  sheet.views = [{ state: 'frozen', ySplit: 1 }]
-
-  for (const { sponsor, assignedTo } of entries) {
+  const rows = entries.map(({ sponsor, assignedTo }) => {
     const { count, sum } = summarizeCurrentDonations(sponsor, currentFiscalYearId)
+    return [
+      // Nullable address fields are coerced to `undefined`, not `''` — an empty
+      // string and an empty cell are different things in a spreadsheet, and the
+      // library only renders a truly empty cell for `undefined`/`null`.
+      { value: sponsor.company ?? undefined },
+      { value: sponsor.salutation ?? undefined },
+      { value: sponsor.firstName ?? undefined },
+      { value: sponsor.lastName ?? undefined },
+      { value: sponsor.street ?? undefined },
+      { value: sponsor.postalCode ?? undefined },
+      { value: sponsor.city ?? undefined },
+      { value: sponsor.phone ?? undefined },
+      { value: sponsor.email ?? undefined },
+      { value: sponsor.notes ?? undefined },
+      { value: assignedTo },
+      { value: count, type: Number },
+      { value: sum, type: Number, format: MONEY_FORMAT }
+    ]
+  })
 
-    const row = sheet.addRow([
-      sponsor.company,
-      sponsor.salutation,
-      sponsor.firstName,
-      sponsor.lastName,
-      sponsor.street,
-      sponsor.postalCode,
-      sponsor.city,
-      sponsor.phone,
-      sponsor.email,
-      sponsor.notes,
-      assignedTo,
-      count,
-      sum
-    ])
-    row.getCell(13).numFmt = MONEY_FORMAT
-  }
-
-  const buffer = await workbook.xlsx.writeBuffer()
-  return Buffer.from(buffer)
+  return writeExcelFile([headerRow, ...rows], {
+    sheet: 'Goenner',
+    stickyRowsCount: 1,
+    columns: COLUMN_WIDTHS.map((width) => ({ width }))
+  }).toBuffer()
 }
