@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withPublicApiRoute } from '@/lib/api-helpers'
 import { buildSponsorCsv } from '@/lib/sponsor-csv'
+import { buildSponsorWorkbook } from '@/lib/sponsor-xlsx'
 import { loadStatusExportData, STATUS_TOKEN_LENGTH } from '@/lib/status-export'
 
 // exceljs and jspdf need Node APIs - keep this handler off the edge runtime
@@ -16,7 +17,7 @@ const SECURITY_HEADERS = {
   'Cache-Control': 'private, no-cache'
 }
 
-const SUPPORTED_FORMATS = ['csv'] as const
+const SUPPORTED_FORMATS = ['csv', 'xlsx'] as const
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number]
 
 function notFound(): NextResponse {
@@ -57,6 +58,18 @@ export const GET = withPublicApiRoute(async (request: NextRequest, { params }: R
   const data = await loadStatusExportData(token)
   if (!data) {
     return notFound()
+  }
+
+  if (requestedFormat === 'xlsx') {
+    const workbook = await buildSponsorWorkbook(data.entries, data.currentFiscalYearId)
+    return new NextResponse(new Uint8Array(workbook), {
+      status: 200,
+      headers: {
+        ...SECURITY_HEADERS,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${exportFilename(data.name, 'xlsx')}"`
+      }
+    })
   }
 
   return new NextResponse(buildSponsorCsv(data.entries, data.currentFiscalYearId), {
