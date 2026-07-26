@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
 import { withPublicApiRoute } from '@/lib/api-helpers'
-import { getMemberDisplayName } from '@/lib/utils'
-import { SPONSOR_CSV_SELECT, buildSponsorCsv, type SponsorCsvRow } from '@/lib/sponsor-csv'
+import { buildSponsorCsv } from '@/lib/sponsor-csv'
+import { loadStatusExportData, STATUS_TOKEN_LENGTH } from '@/lib/status-export'
 
-// Token format: 32 characters (base64url, 192 bits entropy)
-const TOKEN_LENGTH = 32
+// exceljs and jspdf need Node APIs - keep this handler off the edge runtime
+export const runtime = 'nodejs'
 
 interface RouteParams {
   params: Promise<{ token: string }>
@@ -17,97 +16,55 @@ const SECURITY_HEADERS = {
   'Cache-Control': 'private, no-cache'
 }
 
+const SUPPORTED_FORMATS = ['csv'] as const
+type ExportFormat = (typeof SUPPORTED_FORMATS)[number]
+
 function notFound(): NextResponse {
   return NextResponse.json({ error: 'Not found' }, { status: 404, headers: SECURITY_HEADERS })
 }
 
-function csvFilename(name: string): string {
+function badRequest(message: string): NextResponse {
+  return NextResponse.json({ error: message }, { status: 400, headers: SECURITY_HEADERS })
+}
+
+/** Builds "Goenner_<Name>_<YYYY-MM-DD>.<ext>" with a filesystem-safe name part. */
+function exportFilename(name: string, extension: string): string {
   const today = new Date()
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const safeName = name.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '') || 'Export'
-  return `Goenner_${safeName}_${dateStr}.csv`
+  return `Goenner_${safeName}_${dateStr}.${extension}`
 }
 
-function csvResponse(name: string, csvContent: string): NextResponse {
-  return new NextResponse(csvContent, {
+/**
+ * Public export of the sponsor address list behind a status link.
+ * No authentication - access is granted via the unguessable capability token
+ * only. The format defaults to CSV so pre-existing links keep working.
+ *
+ * GET /api/public/status/[token]/export?format=csv
+ */
+export const GET = withPublicApiRoute(async (request: NextRequest, { params }: RouteParams) => {
+  const { token } = await params
+
+  if (!token || token.length !== STATUS_TOKEN_LENGTH) {
+    return notFound()
+  }
+
+  const requestedFormat = request.nextUrl.searchParams.get('format') ?? 'csv'
+  if (!SUPPORTED_FORMATS.includes(requestedFormat as ExportFormat)) {
+    return badRequest(`Unsupported format: ${requestedFormat}`)
+  }
+
+  const data = await loadStatusExportData(token)
+  if (!data) {
+    return notFound()
+  }
+
+  return new NextResponse(buildSponsorCsv(data.entries, data.currentFiscalYearId), {
     status: 200,
     headers: {
       ...SECURITY_HEADERS,
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${csvFilename(name)}"`
+      'Content-Disposition': `attachment; filename="${exportFilename(data.name, 'csv')}"`
     }
   })
-}
-
-/**
- * Public CSV export for a status link.
- * Returns the address list of the sponsors shown on the status page for the
- * given member or group token. No authentication - access is granted via the
- * unguessable capability token only.
- *
- * GET /api/public/status/[token]/export
- */
-export const GET = withPublicApiRoute(async (_request: NextRequest, { params }: RouteParams) => {
-  const { token } = await params
-
-  if (!token || token.length !== TOKEN_LENGTH) {
-    return notFound()
-  }
-
-  // Current fiscal year - donation totals are scoped to it (matches status page)
-  const now = new Date()
-  const currentFiscalYear = await prisma.fiscalYear.findFirst({
-    where: { startDate: { lte: now }, endDate: { gte: now } },
-    select: { id: true }
-  })
-  const currentFiscalYearId = currentFiscalYear?.id ?? null
-
-  // Member link: export the member's own sponsors
-  const member = await prisma.member.findUnique({
-    where: { statusToken: token },
-    select: {
-      firstName: true,
-      lastName: true,
-      sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT }
-    }
-  })
-
-  if (member) {
-    const memberName = getMemberDisplayName(member)
-    const entries = member.sponsors.map((sponsor: SponsorCsvRow) => ({ sponsor, assignedTo: memberName }))
-    return csvResponse(memberName, buildSponsorCsv(entries, currentFiscalYearId))
-  }
-
-  // Group link: export group-level sponsors + every member's sponsors
-  const group = await prisma.group.findUnique({
-    where: { statusToken: token },
-    select: {
-      name: true,
-      sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT },
-      members: {
-        orderBy: { lastName: 'asc' },
-        select: {
-          firstName: true,
-          lastName: true,
-          sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT }
-        }
-      }
-    }
-  })
-
-  if (group) {
-    const entries: { sponsor: SponsorCsvRow; assignedTo: string }[] = []
-    for (const sponsor of group.sponsors) {
-      entries.push({ sponsor, assignedTo: `${group.name} (Gruppe)` })
-    }
-    for (const groupMember of group.members) {
-      const memberName = getMemberDisplayName(groupMember)
-      for (const sponsor of groupMember.sponsors) {
-        entries.push({ sponsor, assignedTo: memberName })
-      }
-    }
-    return csvResponse(group.name, buildSponsorCsv(entries, currentFiscalYearId))
-  }
-
-  return notFound()
 })
