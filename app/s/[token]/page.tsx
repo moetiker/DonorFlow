@@ -432,14 +432,14 @@ function StatusPageContent({ token }: { token: string }) {
               href={`/api/public/status/${token}/export?format=csv`}
               className="btn btn-light btn-sm text-nowrap"
             >
-              <i className="bi bi-filetype-csv me-1" />
+              <i className="bi bi-filetype-csv me-1 text-primary" />
               {t('formatCsv')}
             </a>
             <a
               href={`/api/public/status/${token}/export?format=xlsx`}
               className="btn btn-light btn-sm text-nowrap"
             >
-              <i className="bi bi-file-earmark-excel me-1" />
+              <i className="bi bi-file-earmark-excel me-1 text-success" />
               {t('formatExcel')}
             </a>
             <a
@@ -448,7 +448,7 @@ function StatusPageContent({ token }: { token: string }) {
               rel="noopener"
               className="btn btn-light btn-sm text-nowrap"
             >
-              <i className="bi bi-file-earmark-pdf me-1" />
+              <i className="bi bi-file-earmark-pdf me-1 text-danger" />
               {t('formatPdf')}
             </a>
           </div>

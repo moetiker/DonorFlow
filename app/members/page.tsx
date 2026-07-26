@@ -287,7 +287,7 @@ export default function MembersPage() {
                                 title={tCommon('downloadCsv')}
                                 aria-label={tCommon('downloadCsv')}
                               >
-                                <i className="bi bi-filetype-csv"></i>
+                                <i className="bi bi-filetype-csv fs-6 text-primary"></i>
                               </Button>
                               <Button
                                 as="a"
@@ -297,7 +297,7 @@ export default function MembersPage() {
                                 title={tCommon('downloadExcel')}
                                 aria-label={tCommon('downloadExcel')}
                               >
-                                <i className="bi bi-file-earmark-excel"></i>
+                                <i className="bi bi-file-earmark-excel fs-6 text-success"></i>
                               </Button>
                               <Button
                                 as="a"
@@ -309,7 +309,7 @@ export default function MembersPage() {
                                 title={tCommon('downloadPdf')}
                                 aria-label={tCommon('downloadPdf')}
                               >
-                                <i className="bi bi-file-earmark-pdf"></i>
+                                <i className="bi bi-file-earmark-pdf fs-6 text-danger"></i>
                               </Button>
                             </ButtonGroup>
                           ) : member.group ? (
