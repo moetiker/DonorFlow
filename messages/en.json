@@ -59,7 +59,7 @@
     "performance": "Performance",
     "shares": "Shares",
     "administration": "Administration",
-    "mailing": "Donor mailing",
+    "mailing": "Inform members",
     "fiscalYears": "Fiscal Years",
     "targets": "Targets",
     "users": "User Management",
@@ -519,8 +519,12 @@
     "formatPdf": "PDF"
   },
   "mailing": {
-    "title": "Donor mailing",
-    "subtitle": "Send the donor letter for a fiscal year to selected members – with status link and address list.",
+    "title": "Inform members",
+    "subtitle": "Send the donor letter or a current standing per fiscal year to selected members – including the status link.",
+    "modeLetter": "Donor letter",
+    "modeReminder": "Reminder",
+    "modeLetterHint": "Sends the stored donor letter (PDF) and the personal address list (CSV).",
+    "modeReminderHint": "Sends only the current standing with the status link – no attachments, no letter required.",
     "fiscalYear": "Fiscal year",
     "letterPresent": "Donor letter uploaded",
     "letterMissing": "No donor letter has been uploaded for this fiscal year.",
@@ -540,7 +544,6 @@
     "send": "Send",
     "sending": "Sending…",
     "sendConfirmTitle": "Confirm sending",
-    "sendConfirmMessage": "Send {count} emails now?",
     "resultTitle": "Result",
     "sendingProgress": "{processed} of {total} processed",
     "batchInfo": "Sending is throttled (speed in Settings). You can close the page – sending continues.",
@@ -551,6 +554,8 @@
     "loadError": "Could not load data.",
     "previewError": "Preview failed.",
     "sendError": "Sending failed.",
-    "notConfigured": "Email sending is not configured (Settings)."
+    "notConfigured": "Email sending is not configured (Settings).",
+    "sendConfirmLetter": "Send {count} donor letters now?",
+    "sendConfirmReminder": "Send {count} reminders now?"
   }
 }

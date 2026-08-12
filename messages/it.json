@@ -59,7 +59,7 @@
     "performance": "Prestazioni",
     "shares": "Quote",
     "administration": "Amministrazione",
-    "mailing": "Invio ai donatori",
+    "mailing": "Informare i membri",
     "fiscalYears": "Esercizi fiscali",
     "targets": "Obiettivi",
     "users": "Gestione utenti",
@@ -519,8 +519,12 @@
     "formatPdf": "PDF"
   },
   "mailing": {
-    "title": "Invio ai donatori",
-    "subtitle": "Invia la lettera ai donatori di un esercizio ai membri selezionati – con link di stato ed elenco indirizzi.",
+    "title": "Informare i membri",
+    "subtitle": "Invia la lettera ai donatori o un aggiornamento per anno sociale ai membri selezionati – con il link di stato.",
+    "modeLetter": "Lettera ai donatori",
+    "modeReminder": "Promemoria",
+    "modeLetterHint": "Invia la lettera ai donatori salvata (PDF) e l’elenco indirizzi personale (CSV).",
+    "modeReminderHint": "Invia solo lo stato attuale con il link di stato – senza allegati, anche senza lettera salvata.",
     "fiscalYear": "Esercizio fiscale",
     "letterPresent": "Lettera ai donatori caricata",
     "letterMissing": "Nessuna lettera ai donatori è stata caricata per questo esercizio.",
@@ -540,7 +544,6 @@
     "send": "Invia",
     "sending": "Invio in corso…",
     "sendConfirmTitle": "Conferma invio",
-    "sendConfirmMessage": "Inviare {count} e-mail ora?",
     "resultTitle": "Risultato",
     "sendingProgress": "{processed} di {total} elaborati",
     "batchInfo": "L'invio è limitato (velocità nelle impostazioni). Puoi chiudere la pagina – l'invio continua.",
@@ -551,6 +554,8 @@
     "loadError": "Impossibile caricare i dati.",
     "previewError": "Anteprima non riuscita.",
     "sendError": "Invio non riuscito.",
-    "notConfigured": "L'invio di e-mail non è configurato (Impostazioni)."
+    "notConfigured": "L'invio di e-mail non è configurato (Impostazioni).",
+    "sendConfirmLetter": "Inviare ora {count} lettere ai donatori?",
+    "sendConfirmReminder": "Inviare ora {count} promemoria?"
   }
 }

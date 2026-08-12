@@ -59,7 +59,7 @@
     "performance": "Performance",
     "shares": "Parts",
     "administration": "Administration",
-    "mailing": "Envoi aux donateurs",
+    "mailing": "Informer les membres",
     "fiscalYears": "Exercices fiscaux",
     "targets": "Objectifs",
     "users": "Gestion des utilisateurs",
@@ -519,8 +519,12 @@
     "formatPdf": "PDF"
   },
   "mailing": {
-    "title": "Envoi aux donateurs",
-    "subtitle": "Envoyer la lettre aux donateurs d'un exercice à des membres sélectionnés – avec lien de statut et liste d'adresses.",
+    "title": "Informer les membres",
+    "subtitle": "Envoyer la lettre aux donateurs ou un point de situation par exercice aux membres sélectionnés – avec le lien de statut.",
+    "modeLetter": "Lettre aux donateurs",
+    "modeReminder": "Rappel",
+    "modeLetterHint": "Envoie la lettre aux donateurs enregistrée (PDF) et la liste d’adresses personnelle (CSV).",
+    "modeReminderHint": "Envoie uniquement le point de situation avec le lien de statut – sans pièce jointe, même sans lettre enregistrée.",
     "fiscalYear": "Exercice fiscal",
     "letterPresent": "Lettre aux donateurs enregistrée",
     "letterMissing": "Aucune lettre aux donateurs n'a été téléversée pour cet exercice.",
@@ -540,7 +544,6 @@
     "send": "Envoyer",
     "sending": "Envoi en cours…",
     "sendConfirmTitle": "Confirmer l'envoi",
-    "sendConfirmMessage": "Envoyer {count} e-mails maintenant ?",
     "resultTitle": "Résultat",
     "sendingProgress": "{processed} sur {total} traités",
     "batchInfo": "L'envoi est limité (vitesse dans les paramètres). Tu peux fermer la page – l'envoi continue.",
@@ -551,6 +554,8 @@
     "loadError": "Impossible de charger les données.",
     "previewError": "Échec de l'aperçu.",
     "sendError": "Échec de l'envoi.",
-    "notConfigured": "L'envoi d'e-mails n'est pas configuré (Paramètres)."
+    "notConfigured": "L'envoi d'e-mails n'est pas configuré (Paramètres).",
+    "sendConfirmLetter": "Envoyer {count} lettres aux donateurs maintenant ?",
+    "sendConfirmReminder": "Envoyer {count} rappels maintenant ?"
   }
 }

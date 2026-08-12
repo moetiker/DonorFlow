@@ -10,7 +10,8 @@ function getBaseUrl(request: NextRequest): string {
 
 /** Render one member's email for preview, without sending. */
 export const POST = withApiRoute(async (request: NextRequest) => {
-  const { memberId, fiscalYearId } = await request.json()
+  const { memberId, fiscalYearId, mode } = await request.json()
+  const variant = mode === 'reminder' ? 'reminder' : 'letter'
   if (!memberId || !fiscalYearId) {
     return NextResponse.json({ error: 'memberId and fiscalYearId are required' }, { status: 400 })
   }
@@ -42,8 +43,9 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     sponsors: data.sponsors,
     previousYearName: data.previousYearName,
     groupInfo: data.groupInfo,
-    attachmentsNote: Boolean(letter),
+    attachmentsNote: variant === 'letter' && Boolean(letter),
     locale: 'de',
+    variant,
   })
 
   return NextResponse.json({

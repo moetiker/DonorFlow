@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Form, Table, Alert, Badge, Spinner, Modal, InputGroup, ProgressBar } from 'react-bootstrap'
+import { Container, Card, Button, ButtonGroup, Form, Table, Alert, Badge, Spinner, Modal, InputGroup, ProgressBar } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -19,6 +19,12 @@ type Recipient = {
   groupName: string | null
 }
 
+/**
+ * What is being sent: the donor letter with its attachments, or a reminder
+ * carrying only the current standing and the status link.
+ */
+type MailMode = 'letter' | 'reminder'
+
 type SendResult = {
   memberId: string
   name?: string
@@ -33,6 +39,7 @@ export default function MailingPage() {
 
   const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [selectedFy, setSelectedFy] = useState<string>('')
+  const [mode, setMode] = useState<MailMode>('letter')
   const [recipients, setRecipients] = useState<Recipient[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
@@ -96,6 +103,8 @@ export default function MailingPage() {
 
   const currentFy = fiscalYears.find((f) => f.id === selectedFy)
   const hasLetter = Boolean(currentFy?.donorLetter)
+  // A reminder has nothing to attach, so a missing letter does not block it.
+  const letterRequired = mode === 'letter'
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -109,6 +118,14 @@ export default function MailingPage() {
   const selectableIds = filtered.filter((r) => r.email).map((r) => r.id)
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id))
   const selectedWithEmail = recipients.filter((r) => selected.has(r.id) && r.email).length
+
+  function handleModeChange(next: MailMode) {
+    if (next === mode) return
+    setMode(next)
+    // The previous run's outcome refers to the other mode
+    setResults(null)
+    setPreviewHtml(null)
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -137,7 +154,7 @@ export default function MailingPage() {
       const res = await fetch('/api/mailing/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: firstId, fiscalYearId: selectedFy }),
+        body: JSON.stringify({ memberId: firstId, fiscalYearId: selectedFy, mode }),
       })
       const data = await res.json()
       if (res.ok) setPreviewHtml(data.html)
@@ -161,7 +178,7 @@ export default function MailingPage() {
       const res = await fetch('/api/mailing/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fiscalYearId: selectedFy, memberIds: [...selected] }),
+        body: JSON.stringify({ fiscalYearId: selectedFy, memberIds: [...selected], mode }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -217,7 +234,32 @@ export default function MailingPage() {
           </Alert>
         )}
 
-        {/* Step 1: fiscal year + letter */}
+        {/* Step 1: what to send */}
+        <Card className="mb-3">
+          <Card.Body>
+            <ButtonGroup className="mb-2">
+              <Button
+                variant={mode === 'letter' ? 'primary' : 'outline-primary'}
+                onClick={() => handleModeChange('letter')}
+              >
+                <i className="bi bi-file-earmark-pdf me-2"></i>
+                {t('modeLetter')}
+              </Button>
+              <Button
+                variant={mode === 'reminder' ? 'primary' : 'outline-primary'}
+                onClick={() => handleModeChange('reminder')}
+              >
+                <i className="bi bi-bell me-2"></i>
+                {t('modeReminder')}
+              </Button>
+            </ButtonGroup>
+            <p className="text-muted small mb-0">
+              {mode === 'letter' ? t('modeLetterHint') : t('modeReminderHint')}
+            </p>
+          </Card.Body>
+        </Card>
+
+        {/* Step 2: fiscal year + letter */}
         <Card className="mb-3">
           <Card.Body>
             <div className="row g-3 align-items-end">
@@ -230,7 +272,7 @@ export default function MailingPage() {
                 </Form.Select>
               </Form.Group>
               <div className="col-md-7">
-                {hasLetter ? (
+                {!letterRequired ? null : hasLetter ? (
                   <Alert variant="success" className="mb-0 py-2">
                     <i className="bi bi-file-earmark-pdf me-2"></i>
                     {t('letterPresent')}: <strong>{currentFy?.donorLetter?.fileName}</strong>
@@ -247,7 +289,7 @@ export default function MailingPage() {
           </Card.Body>
         </Card>
 
-        {/* Step 2: recipients */}
+        {/* Step 3: recipients */}
         <Card className="mb-3">
           <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <strong>{t('recipients')}</strong>
@@ -318,7 +360,7 @@ export default function MailingPage() {
           </Button>
           <Button
             variant="primary"
-            disabled={selectedWithEmail === 0 || !hasLetter || sending}
+            disabled={selectedWithEmail === 0 || (letterRequired && !hasLetter) || sending}
             onClick={() => setShowConfirm(true)}
           >
             {sending ? <><Spinner animation="border" size="sm" className="me-2" />{t('sending')}</> : <><i className="bi bi-send me-1"></i>{t('send')}</>}
@@ -385,7 +427,11 @@ export default function MailingPage() {
         <Modal.Header closeButton>
           <Modal.Title className="h6">{t('sendConfirmTitle')}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>{t('sendConfirmMessage', { count: selectedWithEmail })}</Modal.Body>
+        <Modal.Body>
+          {mode === 'letter'
+            ? t('sendConfirmLetter', { count: selectedWithEmail })
+            : t('sendConfirmReminder', { count: selectedWithEmail })}
+        </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowConfirm(false)}>{tCommon('cancel')}</Button>
           <Button variant="primary" onClick={handleSend}>

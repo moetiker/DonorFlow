@@ -1,6 +1,6 @@
 import { prisma } from './db'
 import { buildMemberMailData, getOrgName, mailCsvFilename } from './mailing-data'
-import { renderStatusEmail } from './email-template'
+import { renderStatusEmail, type EmailVariant } from './email-template'
 import { getMailSender, getMailRatePerMinute, type MailSender } from './mail'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -35,21 +35,30 @@ export async function runMailJob(jobId: string): Promise<void> {
     where: { id: job.fiscalYearId },
     select: { name: true },
   })
-  const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId: job.fiscalYearId } })
+  // A reminder carries no attachments, so it needs no donor letter and can be
+  // sent for a fiscal year that has none.
+  const variant: EmailVariant = job.type === 'reminder' ? 'reminder' : 'letter'
+  const letter =
+    variant === 'letter'
+      ? await prisma.donorLetter.findUnique({ where: { fiscalYearId: job.fiscalYearId } })
+      : null
   const sender = await getMailSender()
 
-  if (!fiscalYear || !letter || !sender) {
+  if (!fiscalYear || !sender || (variant === 'letter' && !letter)) {
     await setStatus(jobId, 'failed', results)
     sender?.close()
     return
   }
 
   const ctx = {
+    variant,
     fiscalYearId: job.fiscalYearId,
     fiscalYearName: fiscalYear.name,
     baseUrl: job.baseUrl || process.env.NEXTAUTH_URL || '',
     orgName: await getOrgName(),
-    letter: { fileName: letter.fileName, mimeType: letter.mimeType, data: Buffer.from(letter.data) },
+    letter: letter
+      ? { fileName: letter.fileName, mimeType: letter.mimeType, data: Buffer.from(letter.data) }
+      : null,
   }
 
   // Throttle: pause 60s / rate between consecutive emails
@@ -91,11 +100,12 @@ async function setStatus(jobId: string, status: 'done' | 'failed', results: Mail
 }
 
 type SendCtx = {
+  variant: EmailVariant
   fiscalYearId: string
   fiscalYearName: string
   baseUrl: string
   orgName: string
-  letter: { fileName: string; mimeType: string; data: Buffer }
+  letter: { fileName: string; mimeType: string; data: Buffer } | null
 }
 
 async function sendToMember(sender: MailSender, memberId: string, ctx: SendCtx): Promise<MailJobResult> {
@@ -113,8 +123,9 @@ async function sendToMember(sender: MailSender, memberId: string, ctx: SendCtx):
       sponsors: data.sponsors,
       previousYearName: data.previousYearName,
       groupInfo: data.groupInfo,
-      attachmentsNote: true,
+      attachmentsNote: ctx.variant === 'letter',
       locale: 'de',
+      variant: ctx.variant,
     })
 
     await sender.send({
@@ -122,10 +133,13 @@ async function sendToMember(sender: MailSender, memberId: string, ctx: SendCtx):
       subject: email.subject,
       html: email.html,
       text: email.text,
-      attachments: [
-        { filename: ctx.letter.fileName, content: ctx.letter.data, contentType: ctx.letter.mimeType },
-        { filename: mailCsvFilename(data.displayName), content: Buffer.from(data.csvContent, 'utf-8'), contentType: 'text/csv; charset=utf-8' },
-      ],
+      attachments:
+        ctx.variant === 'letter' && ctx.letter
+          ? [
+              { filename: ctx.letter.fileName, content: ctx.letter.data, contentType: ctx.letter.mimeType },
+              { filename: mailCsvFilename(data.displayName), content: Buffer.from(data.csvContent, 'utf-8'), contentType: 'text/csv; charset=utf-8' },
+            ]
+          : undefined,
     })
     return { memberId, name: data.memberName, email: data.email, status: 'sent' }
   } catch (error) {

@@ -9,16 +9,20 @@ function getBaseUrl(request: NextRequest): string {
 }
 
 /**
- * Start a throttled donor mailing. Emails are sent in the background in batches
- * (see mailing-runner) so the request returns immediately with a job id the UI
- * can poll. Only one mailing job may run at a time (guards against duplicate
- * sends from double submits or reloads).
+ * Start a throttled member mailing. `mode` picks what is sent: the donor letter
+ * with its attachments, or a reminder carrying only the current standing and
+ * the status link. Emails go out in the background in batches (see
+ * mailing-runner) so the request returns immediately with a job id the UI can
+ * poll. Only one mailing job may run at a time (guards against duplicate sends
+ * from double submits or reloads).
  */
 export const POST = withApiRoute(async (request: NextRequest) => {
-  const { fiscalYearId, memberIds } = await request.json()
+  const { fiscalYearId, memberIds, mode } = await request.json()
   if (!fiscalYearId || !Array.isArray(memberIds) || memberIds.length === 0) {
     return NextResponse.json({ error: 'fiscalYearId and memberIds are required' }, { status: 400 })
   }
+
+  const type = mode === 'reminder' ? 'reminder' : 'letter'
 
   if (!(await isMailConfigured())) {
     return NextResponse.json({ error: 'mail_not_configured' }, { status: 400 })
@@ -38,15 +42,19 @@ export const POST = withApiRoute(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Fiscal year not found' }, { status: 404 })
   }
 
-  const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId }, select: { id: true } })
-  if (!letter) {
-    return NextResponse.json({ error: 'no_letter' }, { status: 400 })
+  // Only the letter mail needs one; a reminder is sent without attachments.
+  if (type === 'letter') {
+    const letter = await prisma.donorLetter.findUnique({ where: { fiscalYearId }, select: { id: true } })
+    if (!letter) {
+      return NextResponse.json({ error: 'no_letter' }, { status: 400 })
+    }
   }
 
   const ids = memberIds.map((id: unknown) => String(id))
   const job = await prisma.mailJob.create({
     data: {
       fiscalYearId,
+      type,
       status: 'running',
       total: ids.length,
       processed: 0,

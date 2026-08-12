@@ -6,6 +6,13 @@
 
 type EmailLocale = 'de' | 'en' | 'fr' | 'it'
 
+/**
+ * Which mail is being composed:
+ * - `letter`: accompanies the donor letter PDF and the address list
+ * - `reminder`: current standing and status link only, no attachments
+ */
+export type EmailVariant = 'letter' | 'reminder'
+
 // Guggemusig Müüs brand orange (email header)
 const BRAND_ORANGE = '#EA7600'
 
@@ -20,6 +27,8 @@ export type StatusEmailData = {
   groupInfo: { name: string; memberNames: string[] } | null
   attachmentsNote: boolean
   locale?: EmailLocale
+  /** Defaults to `letter`, which renders exactly as before. */
+  variant?: EmailVariant
 }
 
 const LOCALE_MAP: Record<EmailLocale, string> = {
@@ -100,6 +109,35 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
   },
 }
 
+/**
+ * Reminder wording. Only the lines that differ from the letter mail: it stands
+ * on its own, has no attachments to announce and must not repeat the letter's
+ * apéro call to action. Everything else (figures, progress bar, button, patron
+ * list) is shared.
+ */
+const REMINDER_STRINGS: Record<EmailLocale, Record<string, string>> = {
+  de: {
+    subject: 'Dein Gönner:innen-Stand – {org}',
+    intro: 'Hier ein kurzer Zwischenstand zum laufenden Vereinsjahr {year}.',
+    contact: 'Bei Fragen kannst du dich gerne bei uns melden.',
+  },
+  en: {
+    subject: 'Your patron standing – {org}',
+    intro: 'Here is a short update on the current season {year}.',
+    contact: 'If you have any questions, just get in touch with us.',
+  },
+  fr: {
+    subject: 'Le point sur tes donateurs – {org}',
+    intro: 'Voici un bref point sur la saison en cours {year}.',
+    contact: 'Pour toute question, n’hésite pas à nous contacter.',
+  },
+  it: {
+    subject: 'Il tuo stato donatori – {org}',
+    intro: 'Ecco un breve aggiornamento sulla stagione in corso {year}.',
+    contact: 'Per domande, non esitare a contattarci.',
+  },
+}
+
 function fill(tpl: string, vars: Record<string, string | number>): string {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 }
@@ -118,7 +156,11 @@ export function renderStatusEmail(data: StatusEmailData): {
   text: string
 } {
   const locale = data.locale && STRINGS[data.locale] ? data.locale : 'de'
-  const s = STRINGS[locale]
+  const variant = data.variant ?? 'letter'
+  const s = variant === 'reminder' ? { ...STRINGS[locale], ...REMINDER_STRINGS[locale] } : STRINGS[locale]
+  // The reminder stands on its own: no letter to hand out, nothing attached.
+  const showApero = variant === 'letter'
+  const showAttachments = variant === 'letter' && data.attachmentsNote
   const intlLocale = LOCALE_MAP[locale]
   const money = (n: number) =>
     new Intl.NumberFormat(intlLocale, {
@@ -128,7 +170,12 @@ export function renderStatusEmail(data: StatusEmailData): {
       maximumFractionDigits: 0,
     }).format(n)
 
-  const vars = { org: data.orgName, name: data.firstName, pct: data.progress.percentage }
+  const vars = {
+    org: data.orgName,
+    name: data.firstName,
+    pct: data.progress.percentage,
+    year: data.fiscalYearName,
+  }
   const subject = fill(s.subject, vars)
   const pct = Math.min(100, Math.max(0, data.progress.percentage))
 
@@ -185,7 +232,7 @@ export function renderStatusEmail(data: StatusEmailData): {
           <td style="padding:28px;color:#1f2a37;">
             <p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#16202c;">${escapeHtml(fill(s.greeting, vars))}</p>
             <p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:#414d5b;">${escapeHtml(fill(s.intro, vars))}</p>
-            <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#16202c;font-weight:600;">${escapeHtml(s.aperoCta)}</p>
+            ${showApero ? `<p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#16202c;font-weight:600;">${escapeHtml(s.aperoCta)}</p>` : ''}
             ${groupHtml}
 
             <!-- stats -->
@@ -236,7 +283,7 @@ export function renderStatusEmail(data: StatusEmailData): {
 
             <p style="margin:24px 0 0;font-size:15px;line-height:1.55;color:#414d5b;">${escapeHtml(s.contact)}</p>
 
-            ${data.attachmentsNote ? `<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#77828f;">📎 ${escapeHtml(s.attachments)}</p>` : ''}
+            ${showAttachments ? `<p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#77828f;">📎 ${escapeHtml(s.attachments)}</p>` : ''}
           </td>
         </tr>
         <!-- footer -->
@@ -252,7 +299,8 @@ export function renderStatusEmail(data: StatusEmailData): {
 </body>
 </html>`
 
-  const textLines = [fill(s.greeting, vars), '', fill(s.intro, vars), '', s.aperoCta]
+  const textLines = [fill(s.greeting, vars), '', fill(s.intro, vars)]
+  if (showApero) textLines.push('', s.aperoCta)
   if (groupText) textLines.push('', groupText)
   textLines.push(
     '',
@@ -270,7 +318,7 @@ export function renderStatusEmail(data: StatusEmailData): {
     }
   }
   textLines.push('', s.contact)
-  if (data.attachmentsNote) textLines.push('', s.attachments)
+  if (showAttachments) textLines.push('', s.attachments)
   textLines.push('', fill(s.footer, vars))
 
   return { subject, html, text: textLines.join('\n') }

@@ -164,6 +164,7 @@ model DonorLetter {
 model MailJob {
   id              String     @id @default(cuid())
   fiscalYearId    String
+  type            String     @default("letter")  // letter | reminder — decides attachments and wording
   status          String     @default("running") // running | done | failed
   total           Int
   processed       Int        @default(0)
