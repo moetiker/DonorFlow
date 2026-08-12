@@ -85,8 +85,11 @@ function createTransport(cfg: MailConfig, opts?: { pool?: boolean }) {
   })
 }
 
-function formatFrom(cfg: MailConfig): string {
-  return cfg.fromName ? `"${cfg.fromName}" <${cfg.from}>` : cfg.from
+// Pass the display name as a separate field rather than pre-quoting it into a
+// string: nodemailer then encodes names containing quotes, commas or non-ASCII
+// characters correctly instead of stripping them.
+function formatFrom(cfg: MailConfig): { name: string; address: string } | string {
+  return cfg.fromName ? { name: cfg.fromName, address: cfg.from } : cfg.from
 }
 
 /**
