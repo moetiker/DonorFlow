@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Table, Badge, Alert } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
@@ -64,13 +64,7 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DetailData | null>(null)
 
-  useEffect(() => {
-    if (show && (memberId || groupId)) {
-      loadDetailData()
-    }
-  }, [show, memberId, groupId, fiscalYearId])
-
-  const loadDetailData = async () => {
+  const loadDetailData = useCallback(async () => {
     if (!memberId && !groupId) return
 
     setLoading(true)
@@ -186,7 +180,19 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
     } finally {
       setLoading(false)
     }
-  }
+  }, [memberId, groupId, fiscalYearId])
+
+  useEffect(() => {
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      if (show && (memberId || groupId)) {
+        await loadDetailData()
+      }
+    }
+    void run()
+  }, [show, memberId, groupId, fiscalYearId, loadDetailData])
+
 
   const getSponsorDisplayName = (sponsor: Sponsor) => {
     if (sponsor.company) return sponsor.company

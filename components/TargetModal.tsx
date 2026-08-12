@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 type Member = {
@@ -34,14 +34,14 @@ export function TargetModal({ show, target, onHide, onSave }: Props) {
   const [error, setError] = useState('')
   const [targetAmount, setTargetAmount] = useState('')
 
-  useEffect(() => {
-    if (target) {
-      setTargetAmount(target.targetAmount.toString())
-    } else {
-      setTargetAmount('')
-    }
+  // Reset the form while rendering instead of in an effect, so the amount for
+  // a newly opened (or switched) target is correct on the very first render.
+  const [formSource, setFormSource] = useState({ show, target })
+  if (formSource.show !== show || formSource.target !== target) {
+    setFormSource({ show, target })
+    setTargetAmount(target ? target.targetAmount.toString() : '')
     setError('')
-  }, [target, show])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -3,7 +3,7 @@
 import { Container, Card, Table, Button } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { UserModal } from '@/components/UserModal'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
@@ -24,8 +24,9 @@ export default function UsersPage() {
   const tCommon = useTranslations('common')
   const { formatDate } = useLocalizedFormatters()
 
-  const loadUsers = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       const data = await response.json()
@@ -35,11 +36,21 @@ export default function UsersPage() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const reloadUsers = () => {
+    setLoading(true)
+    void loadUsers()
   }
 
   useEffect(() => {
-    loadUsers()
-  }, [])
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadUsers()
+    }
+    void run()
+  }, [loadUsers])
 
   const handleRowClick = (user: User) => {
     setSelectedUser(user)
@@ -57,7 +68,7 @@ export default function UsersPage() {
   }
 
   const handleSave = () => {
-    loadUsers()
+    reloadUsers()
   }
 
   return (

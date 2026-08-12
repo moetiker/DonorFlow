@@ -2,7 +2,7 @@
 
 import { Modal, Table, Badge, Button } from 'react-bootstrap'
 import { DonationModal } from './DonationModal'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
@@ -64,16 +64,7 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
   const [showDonationModal, setShowDonationModal] = useState(false)
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null)
 
-  useEffect(() => {
-    if (show && sponsorId) {
-      loadDonations()
-      loadSponsors()
-      loadMembers()
-      loadGroups()
-    }
-  }, [show, sponsorId])
-
-  const loadDonations = async () => {
+  const loadDonations = useCallback(async () => {
     if (!sponsorId) return
 
     setLoading(true)
@@ -87,9 +78,9 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
     } finally {
       setLoading(false)
     }
-  }
+  }, [sponsorId])
 
-  const loadSponsors = async () => {
+  const loadSponsors = useCallback(async () => {
     try {
       const response = await fetch('/api/sponsors?include=all')
       const data = await response.json()
@@ -98,9 +89,9 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
       console.error('Error loading sponsors:', error)
       setSponsors([])
     }
-  }
+  }, [])
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const response = await fetch('/api/members')
       const data = await response.json()
@@ -109,9 +100,9 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
       console.error('Error loading members:', error)
       setMembers([])
     }
-  }
+  }, [])
 
-  const loadGroups = async () => {
+  const loadGroups = useCallback(async () => {
     try {
       const response = await fetch('/api/groups')
       const data = await response.json()
@@ -120,7 +111,18 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
       console.error('Error loading groups:', error)
       setGroups([])
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // Wrapped in an async function so the loads start after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      if (show && sponsorId) {
+        await Promise.all([loadDonations(), loadSponsors(), loadMembers(), loadGroups()])
+      }
+    }
+    void run()
+  }, [show, sponsorId, loadDonations, loadSponsors, loadMembers, loadGroups])
 
   const handleNewDonation = () => {
     setSelectedDonation(null)

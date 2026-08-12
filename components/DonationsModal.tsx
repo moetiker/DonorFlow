@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Table, Badge } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
@@ -35,13 +35,7 @@ export function DonationsModal({ show, entityId, entityName, entityType, fiscalY
   const [donations, setDonations] = useState<Donation[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (show && entityId) {
-      loadDonations()
-    }
-  }, [show, entityId, fiscalYearId])
-
-  const loadDonations = async () => {
+  const loadDonations = useCallback(async () => {
     if (!entityId) return
 
     setLoading(true)
@@ -60,7 +54,19 @@ export function DonationsModal({ show, entityId, entityName, entityType, fiscalY
     } finally {
       setLoading(false)
     }
-  }
+  }, [entityId, entityType, fiscalYearId])
+
+  useEffect(() => {
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      if (show && entityId) {
+        await loadDonations()
+      }
+    }
+    void run()
+  }, [show, entityId, fiscalYearId, loadDonations])
+
 
   const totalAmount = donations.reduce((sum, d) => sum + d.amount, 0)
 

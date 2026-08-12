@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Button, Form } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 
@@ -24,13 +24,13 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
   const [error, setError] = useState<string | null>(null)
   const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
 
-  useEffect(() => {
-    if (group) {
-      setName(group.name)
-    } else {
-      setName('')
-    }
-  }, [group])
+  // Reset the form while rendering instead of in an effect, so the name for a
+  // newly opened (or switched) group is correct on the very first render.
+  const [formSource, setFormSource] = useState(group)
+  if (formSource !== group) {
+    setFormSource(group)
+    setName(group?.name ?? '')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -3,7 +3,7 @@
 import { Container, Card, Row, Col, Badge, Table, Form } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -33,6 +33,7 @@ type SharesData = {
 }
 
 export default function SharesReportPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const yearParam = searchParams.get('year')
   const [data, setData] = useState<SharesData | null>(null)
@@ -44,24 +45,27 @@ export default function SharesReportPage() {
   const { formatCurrency } = useLocalizedFormatters()
 
   useEffect(() => {
-    fetchData()
+    // Declared inside the effect so no state is updated synchronously while
+    // the effect runs.
+    async function fetchData() {
+      try {
+        const url = yearParam ? `/api/reports/shares?year=${yearParam}` : '/api/reports/shares'
+        const response = await fetch(url)
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        console.error('Error fetching shares:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void fetchData()
   }, [yearParam])
 
-  async function fetchData() {
-    try {
-      const url = yearParam ? `/api/reports/shares?year=${yearParam}` : '/api/reports/shares'
-      const response = await fetch(url)
-      const result = await response.json()
-      setData(result)
-    } catch (error) {
-      console.error('Error fetching shares:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   function handleYearChange(yearId: string) {
-    window.location.href = `/reports/shares?year=${yearId}`
+    setLoading(true)
+    router.push(`/reports/shares?year=${yearId}`)
   }
 
   if (loading) {

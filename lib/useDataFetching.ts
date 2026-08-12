@@ -32,9 +32,9 @@ export function useDataFetching<T>(
   const [loading, setLoading] = useState(!options.skip)
   const [error, setError] = useState<Error | null>(null)
 
+  // Does not switch the spinner on itself: the initial state already reflects
+  // the pending load, and refetch() sets it from the caller's event handler.
   const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
       const response = await fetch(endpoint)
       if (!response.ok) {
@@ -42,6 +42,7 @@ export function useDataFetching<T>(
       }
       const result = await response.json()
       setData(result)
+      setError(null)
     } catch (err) {
       console.error(`Error fetching ${endpoint}:`, err)
       setError(err instanceof Error ? err : new Error('Unknown error'))
@@ -50,11 +51,21 @@ export function useDataFetching<T>(
     }
   }, [endpoint])
 
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    await fetchData()
+  }, [fetchData])
+
   useEffect(() => {
-    if (!options.skip) {
-      fetchData()
+    if (options.skip) return
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await fetchData()
     }
+    void run()
   }, [fetchData, options.skip])
 
-  return { data, loading, error, refetch: fetchData }
+  return { data, loading, error, refetch }
 }

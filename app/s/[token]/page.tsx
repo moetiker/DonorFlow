@@ -3,7 +3,7 @@
 import { useEffect, useState, use, Fragment } from 'react'
 import { Container, Card, ProgressBar, Table, Alert, Spinner } from 'react-bootstrap'
 import { NextIntlClientProvider } from 'next-intl'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { detectBrowserLocale } from '@/lib/i18n/utils'
 import { type Locale } from '@/lib/i18n/config'
 
@@ -72,7 +72,8 @@ function StatusPageContent({ token }: { token: string }) {
   const [data, setData] = useState<StatusData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [locale, setLocale] = useState<Locale>('de')
+  // Provided by the NextIntlClientProvider below, which detects the locale once
+  const locale = useLocale() as Locale
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const toggleHistory = (key: string) => {
@@ -86,12 +87,6 @@ function StatusPageContent({ token }: { token: string }) {
       return next
     })
   }
-
-  useEffect(() => {
-    // Detect browser locale
-    const detectedLocale = detectBrowserLocale()
-    setLocale(detectedLocale)
-  }, [])
 
   useEffect(() => {
     async function fetchStatus() {

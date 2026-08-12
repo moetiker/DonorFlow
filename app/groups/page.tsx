@@ -9,7 +9,7 @@ import { SponsorsModal } from '@/components/SponsorsModal'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { SearchBar } from '@/components/SearchBar'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 import { useCurrentFiscalYear } from '@/lib/useFiscalYear'
@@ -59,8 +59,9 @@ export default function GroupsPage() {
   const { formatCurrency } = useLocalizedFormatters()
   const { currentFiscalYearId } = useCurrentFiscalYear()
 
-  const loadGroups = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadGroups = useCallback(async () => {
     try {
       const response = await fetch('/api/groups?include=all')
       const data = await response.json()
@@ -70,10 +71,20 @@ export default function GroupsPage() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const reloadGroups = () => {
+    setLoading(true)
+    void loadGroups()
   }
 
   useEffect(() => {
-    loadGroups()
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadGroups()
+    }
+    void run()
 
     // Check for highlight parameter
     const params = new URLSearchParams(window.location.search)
@@ -91,7 +102,7 @@ export default function GroupsPage() {
         }
       }, 100)
     }
-  }, [])
+  }, [loadGroups])
 
   const handleNameClick = (e: React.MouseEvent, group: Group) => {
     e.stopPropagation()
@@ -376,12 +387,12 @@ export default function GroupsPage() {
             setSelectedGroup(null)
           }}
           onSave={() => {
-            loadGroups()
+            reloadGroups()
             setShowEditModal(false)
             setSelectedGroup(null)
           }}
           onDelete={() => {
-            loadGroups()
+            reloadGroups()
             setShowEditModal(false)
             setSelectedGroup(null)
           }}

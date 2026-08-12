@@ -4,8 +4,8 @@ import { Container, Card, Table, Form, Alert, Button, InputGroup } from 'react-b
 import { Navbar } from '@/components/Navbar'
 import { TargetModal } from '@/components/TargetModal'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
@@ -37,6 +37,7 @@ type TargetsData = {
 }
 
 export default function TargetsPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const yearParam = searchParams.get('year')
 
@@ -51,8 +52,9 @@ export default function TargetsPage() {
   const tFiscalYears = useTranslations('fiscalYears')
   const { formatCurrency } = useLocalizedFormatters()
 
-  const loadData = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadData = useCallback(async () => {
     try {
       const url = yearParam ? `/api/targets?year=${yearParam}` : '/api/targets'
       const response = await fetch(url)
@@ -63,11 +65,21 @@ export default function TargetsPage() {
     } finally {
       setLoading(false)
     }
+  }, [yearParam])
+
+  const reloadData = () => {
+    setLoading(true)
+    void loadData()
   }
 
   useEffect(() => {
-    loadData()
-  }, [yearParam])
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadData()
+    }
+    void run()
+  }, [loadData])
 
   const handleRowClick = (target: Target) => {
     setSelectedTarget(target)
@@ -80,7 +92,7 @@ export default function TargetsPage() {
   }
 
   const handleSave = () => {
-    loadData()
+    reloadData()
   }
 
   const handleBulkCreate = async () => {
@@ -105,7 +117,7 @@ export default function TargetsPage() {
 
       if (response.ok) {
         alert(result.message)
-        loadData()
+        reloadData()
       } else {
         alert(`${tCommon('error')}: ${result.error}`)
       }
@@ -162,7 +174,8 @@ export default function TargetsPage() {
               <Form.Select
                 value={fiscalYear.id}
                 onChange={(e) => {
-                  window.location.href = `/targets?year=${e.target.value}`
+                  setLoading(true)
+                  router.push(`/targets?year=${e.target.value}`)
                 }}
               >
                 {allYears.map(year => (

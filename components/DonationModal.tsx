@@ -3,7 +3,7 @@
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { Typeahead } from 'react-bootstrap-typeahead'
 import 'react-bootstrap-typeahead/css/Typeahead.css'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 
@@ -80,7 +80,17 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
   const [selectedMember, setSelectedMember] = useState<Member[]>([])
   const [selectedGroup, setSelectedGroup] = useState<Group[]>([])
 
-  useEffect(() => {
+  // Reset the form while rendering instead of in an effect, so the fields for a
+  // newly opened (or switched) donation are correct on the very first render.
+  // The lookup lists are part of the trigger because the typeahead selections
+  // can only be resolved once they have arrived.
+  const [formSource, setFormSource] = useState({ show, donation, sponsors, members, groups })
+  if (formSource.show !== show ||
+    formSource.donation !== donation ||
+    formSource.sponsors !== sponsors ||
+    formSource.members !== members ||
+    formSource.groups !== groups) {
+    setFormSource({ show, donation, sponsors, members, groups })
     if (donation) {
       setFormData({
         sponsorId: donation.sponsorId,
@@ -116,7 +126,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     }
     setError('')
     setShowDeleteConfirm(false)
-  }, [donation, show, sponsors, members, groups])
+  }
 
   // Auto-populate member/group when sponsor is selected
   const handleSponsorChange = (selected: any[]) => {

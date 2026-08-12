@@ -12,13 +12,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Detect and load locale
+    // Detect and load locale. Locale and messages are applied together in the
+    // callback, so no state is updated synchronously inside the effect and the
+    // UI never renders a new locale with the previous messages.
     const detectedLocale = detectBrowserLocale()
-    setLocaleState(detectedLocale)
 
-    // Load messages for detected locale
     import(`../messages/${detectedLocale}.json`)
       .then((mod) => {
+        setLocaleState(detectedLocale)
         setMessages(mod.default)
         setIsLoading(false)
       })

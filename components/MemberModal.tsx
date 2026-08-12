@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormSubmit } from '@/lib/useFormSubmit'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
@@ -45,7 +45,11 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
     deleteErrorMessage: tErrors('deleteFailed')
   })
 
-  useEffect(() => {
+  // Reset the form while rendering instead of in an effect, so the fields for
+  // a newly opened (or switched) member are correct on the very first render.
+  const [formSource, setFormSource] = useState({ show, member })
+  if (formSource.show !== show || formSource.member !== member) {
+    setFormSource({ show, member })
     if (member) {
       setFormData({
         firstName: member.firstName,
@@ -63,7 +67,7 @@ export function MemberModal({ show, member, onHide, onSave }: Props) {
     }
     clearError()
     setShowDeleteConfirm(false)
-  }, [member, show, clearError])
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

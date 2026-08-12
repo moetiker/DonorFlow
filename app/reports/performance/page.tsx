@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { PerformanceDetailModal } from '@/components/PerformanceDetailModal'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useTranslations } from 'next-intl'
@@ -81,6 +81,7 @@ export default function PerformancePage() {
   const t = useTranslations('reports')
   const tCommon = useTranslations('common')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const yearParam = searchParams.get('year')
   const [data, setData] = useState<ReportData | null>(null)
@@ -92,24 +93,27 @@ export default function PerformancePage() {
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadReportData()
+    // Declared inside the effect so no state is updated synchronously while
+    // the effect runs.
+    async function loadReportData() {
+      try {
+        const url = yearParam ? `/api/reports?year=${yearParam}` : '/api/reports'
+        const response = await fetch(url)
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        console.error('Error loading reports:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadReportData()
   }, [yearParam])
 
-  async function loadReportData() {
-    try {
-      const url = yearParam ? `/api/reports?year=${yearParam}` : '/api/reports'
-      const response = await fetch(url)
-      const result = await response.json()
-      setData(result)
-    } catch (error) {
-      console.error('Error loading reports:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   function handleYearChange(yearId: string) {
-    window.location.href = `/reports/performance?year=${yearId}`
+    setLoading(true)
+    router.push(`/reports/performance?year=${yearId}`)
   }
 
   function handleMemberClick(memberId: string) {

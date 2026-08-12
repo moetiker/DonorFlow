@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Button, Form } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 
@@ -43,7 +43,11 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const [error, setError] = useState<string | null>(null)
   const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
 
-  useEffect(() => {
+  // Fill the form while rendering instead of in an effect, so the fields for a
+  // newly selected member are correct on the very first render.
+  const [formSource, setFormSource] = useState(member)
+  if (formSource !== member) {
+    setFormSource(member)
     if (member) {
       setFirstName(member.firstName)
       setLastName(member.lastName)
@@ -52,16 +56,9 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
       // Get current group if member is in one
       setSelectedGroupId(member.groupId || '')
     }
-  }, [member])
+  }
 
-  useEffect(() => {
-    // Load available groups
-    if (show) {
-      loadGroups()
-    }
-  }, [show])
-
-  const loadGroups = async () => {
+  const loadGroups = useCallback(async () => {
     try {
       const response = await fetch('/api/groups')
       const data = await response.json()
@@ -70,7 +67,18 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
       console.error('Error loading groups:', error)
       setGroups([])
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // Load available groups. Wrapped in an async function so the load starts
+    // after the effect has run, instead of updating state synchronously in it.
+    const run = async () => {
+      if (show) {
+        await loadGroups()
+      }
+    }
+    void run()
+  }, [show, loadGroups])
 
   const loadDeleteImpact = async () => {
     if (!member) return

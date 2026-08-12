@@ -43,20 +43,22 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadReportData()
-  }, [])
-
-  async function loadReportData() {
-    try {
-      const response = await fetch('/api/reports')
-      const result = await response.json()
-      setData(result)
-    } catch (error) {
-      console.error('Error loading reports:', error)
-    } finally {
-      setLoading(false)
+    // Declared inside the effect so no state is updated synchronously while
+    // the effect runs.
+    async function loadReportData() {
+      try {
+        const response = await fetch('/api/reports')
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        console.error('Error loading reports:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    void loadReportData()
+  }, [])
 
   if (loading) {
     return (

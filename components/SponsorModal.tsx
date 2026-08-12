@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Form, Button, Alert } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 
@@ -63,7 +63,11 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     note: ''
   })
 
-  useEffect(() => {
+  // Reset the form while rendering instead of in an effect, so the fields for
+  // a newly opened (or switched) sponsor are correct on the very first render.
+  const [formSource, setFormSource] = useState({ show, sponsor })
+  if (formSource.show !== show || formSource.sponsor !== sponsor) {
+    setFormSource({ show, sponsor })
     if (sponsor) {
       setFormData({
         company: sponsor.company || '',
@@ -105,7 +109,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       donationDate: new Date().toISOString().split('T')[0],
       note: ''
     })
-  }, [sponsor, show])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

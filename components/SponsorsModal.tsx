@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Table, Badge } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { getSponsorDisplayName } from '@/lib/utils'
 
@@ -28,13 +28,7 @@ export function SponsorsModal({ show, entityId, entityName, entityType, onHide }
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (show && entityId) {
-      loadSponsors()
-    }
-  }, [show, entityId])
-
-  const loadSponsors = async () => {
+  const loadSponsors = useCallback(async () => {
     if (!entityId) return
 
     setLoading(true)
@@ -52,7 +46,19 @@ export function SponsorsModal({ show, entityId, entityName, entityType, onHide }
     } finally {
       setLoading(false)
     }
-  }
+  }, [entityId, entityType])
+
+  useEffect(() => {
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      if (show && entityId) {
+        await loadSponsors()
+      }
+    }
+    void run()
+  }, [show, entityId, loadSponsors])
+
 
   return (
     <Modal show={show} onHide={onHide} size="lg">

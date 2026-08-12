@@ -9,7 +9,7 @@ import { DonationsModal } from '@/components/DonationsModal'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { SearchBar } from '@/components/SearchBar'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
@@ -59,8 +59,9 @@ export default function MembersPage() {
   const tCommon = useTranslations('common')
   const { formatCurrency } = useLocalizedFormatters()
 
-  const loadMembers = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadMembers = useCallback(async () => {
     try {
       const response = await fetch('/api/members?include=all')
       const data = await response.json()
@@ -70,11 +71,21 @@ export default function MembersPage() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const reloadMembers = () => {
+    setLoading(true)
+    void loadMembers()
   }
 
   useEffect(() => {
-    loadMembers()
-  }, [])
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadMembers()
+    }
+    void run()
+  }, [loadMembers])
 
   const handleNewMember = () => {
     setSelectedMember(null)
@@ -87,7 +98,7 @@ export default function MembersPage() {
   }
 
   const handleSave = () => {
-    loadMembers()
+    reloadMembers()
   }
 
   const handleNameClick = (e: React.MouseEvent, member: Member) => {
@@ -342,12 +353,12 @@ export default function MembersPage() {
             setSelectedMember(null)
           }}
           onSave={() => {
-            loadMembers()
+            reloadMembers()
             setShowEditModal(false)
             setSelectedMember(null)
           }}
           onDelete={() => {
-            loadMembers()
+            reloadMembers()
             setShowEditModal(false)
             setSelectedMember(null)
           }}

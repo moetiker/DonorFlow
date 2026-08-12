@@ -7,7 +7,7 @@ import { SponsorDonationsModal } from '@/components/SponsorDonationsModal'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { SearchBar } from '@/components/SearchBar'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
@@ -55,8 +55,9 @@ export default function SponsorsPage() {
   const tErrors = useTranslations('errors')
   const { formatCurrency } = useLocalizedFormatters()
 
-  const loadData = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadData = useCallback(async () => {
     try {
       const [sponsorsRes, membersRes, groupsRes] = await Promise.all([
         fetch('/api/sponsors?include=all'),
@@ -82,11 +83,21 @@ export default function SponsorsPage() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const reloadData = () => {
+    setLoading(true)
+    void loadData()
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadData()
+    }
+    void run()
+  }, [loadData])
 
   const handleRowClick = (e: React.MouseEvent, sponsor: Sponsor) => {
     // If clicking on donations count, show donations modal
@@ -111,7 +122,7 @@ export default function SponsorsPage() {
   }
 
   const handleSave = () => {
-    loadData()
+    reloadData()
   }
 
   const handleExportCSV = async () => {
@@ -278,7 +289,7 @@ export default function SponsorsPage() {
           onHide={() => {
             setShowDonationsModal(false)
             setSelectedSponsor(null)
-            loadData() // Reload to update donation counts
+            reloadData() // Reload to update donation counts
           }}
         />
       </Container>

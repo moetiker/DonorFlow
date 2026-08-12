@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { DonationModal } from '@/components/DonationModal'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
@@ -66,8 +66,9 @@ export default function DonationsPage() {
   const t = useTranslations('donations')
   const { formatCurrency, formatDate } = useLocalizedFormatters()
 
-  const loadData = async () => {
-    setLoading(true)
+  // Does not switch the spinner on itself: the initial load starts with
+  // loading=true, and reloads are triggered from event handlers that set it.
+  const loadData = useCallback(async () => {
     try {
       const typeParam = typeFilter !== 'ALL' ? `&type=${typeFilter}` : ''
       const [donationsRes, sponsorsRes, membersRes, groupsRes] = await Promise.all([
@@ -94,11 +95,27 @@ export default function DonationsPage() {
     } finally {
       setLoading(false)
     }
+  }, [typeFilter])
+
+  const reloadData = () => {
+    setLoading(true)
+    void loadData()
   }
 
   useEffect(() => {
-    loadData()
-  }, [typeFilter])
+    // Wrapped in an async function so the load starts after the effect has
+    // run, instead of updating state synchronously inside it.
+    const run = async () => {
+      await loadData()
+    }
+    void run()
+  }, [loadData])
+
+  const handleTypeFilterChange = (value: 'ALL' | 'MONETARY' | 'IN_KIND') => {
+    if (value === typeFilter) return
+    setLoading(true)
+    setTypeFilter(value)
+  }
 
   const handleRowClick = (donation: Donation) => {
     setSelectedDonation(donation)
@@ -116,7 +133,7 @@ export default function DonationsPage() {
   }
 
   const handleSave = () => {
-    loadData()
+    reloadData()
   }
 
   // Filter donations based on search term
@@ -158,14 +175,14 @@ export default function DonationsPage() {
                 <ButtonGroup>
                   <Button
                     variant={typeFilter === 'ALL' ? 'primary' : 'outline-primary'}
-                    onClick={() => setTypeFilter('ALL')}
+                    onClick={() => handleTypeFilterChange('ALL')}
                     size="sm"
                   >
                     {t('allDonations')}
                   </Button>
                   <Button
                     variant={typeFilter === 'MONETARY' ? 'success' : 'outline-success'}
-                    onClick={() => setTypeFilter('MONETARY')}
+                    onClick={() => handleTypeFilterChange('MONETARY')}
                     size="sm"
                   >
                     <i className="bi bi-cash me-1"></i>
@@ -173,7 +190,7 @@ export default function DonationsPage() {
                   </Button>
                   <Button
                     variant={typeFilter === 'IN_KIND' ? 'info' : 'outline-info'}
-                    onClick={() => setTypeFilter('IN_KIND')}
+                    onClick={() => handleTypeFilterChange('IN_KIND')}
                     size="sm"
                   >
                     <i className="bi bi-gift me-1"></i>

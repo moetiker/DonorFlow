@@ -39,6 +39,11 @@
   "prisma": {
     "seed": "tsx prisma/seed-demo.ts"
   },
+  "overrides": {
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    }
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-better-sqlite3": "^7.2.0",

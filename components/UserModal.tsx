@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Button, Form, Alert } from 'react-bootstrap'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 
@@ -33,22 +33,20 @@ export function UserModal({ show, user, onHide, onSave }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  useEffect(() => {
+  // Reset the form while rendering instead of in an effect, so the fields for
+  // a newly opened (or switched) user are correct on the very first render.
+  const [formSource, setFormSource] = useState({ show, user })
+  if (formSource.show !== show || formSource.user !== user) {
+    setFormSource({ show, user })
     if (show) {
-      if (user) {
-        setUsername(user.username)
-        setName(user.name || '')
-        setPassword('')
-      } else {
-        setUsername('')
-        setPassword('')
-        setName('')
-      }
+      setUsername(user?.username ?? '')
+      setName(user?.name ?? '')
+      setPassword('')
       setError(null)
       setShowDeleteConfirm(false)
       setShowPassword(false)
     }
-  }, [show, user])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

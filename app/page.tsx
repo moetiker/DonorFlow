@@ -36,20 +36,22 @@ export default function DashboardPage() {
   const { formatCurrency } = useLocalizedFormatters()
 
   useEffect(() => {
-    fetchStats()
-  }, [])
-
-  async function fetchStats() {
-    try {
-      const response = await fetch('/api/dashboard/stats')
-      const data = await response.json()
-      setStats(data)
-    } catch (error) {
-      console.error('Error fetching stats:', error)
-    } finally {
-      setLoading(false)
+    // Declared inside the effect so no state is updated synchronously while
+    // the effect runs.
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/dashboard/stats')
+        const data = await response.json()
+        setStats(data)
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    void fetchStats()
+  }, [])
 
   if (loading) {
     return (

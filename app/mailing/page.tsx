@@ -48,6 +48,10 @@ export default function MailingPage() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobTotal, setJobTotal] = useState(0)
   const [processed, setProcessed] = useState(0)
+  // Set instead of a translated string when an effect hits an error, so the
+  // effects do not have to depend on the translator.
+  const [jobFailed, setJobFailed] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
     if (!jobId) return
@@ -62,7 +66,7 @@ export default function MailingPage() {
         if (data.status === 'done' || data.status === 'failed') {
           setSending(false)
           setJobId(null)
-          if (data.status === 'failed') setError(t('sendError'))
+          if (data.status === 'failed') setJobFailed(true)
         }
       } catch {
         // keep polling; transient errors are fine
@@ -86,9 +90,8 @@ export default function MailingPage() {
         setRecipients(recs)
         if (Array.isArray(fys) && fys.length > 0) setSelectedFy(fys[0].id)
       })
-      .catch(() => setError(t('loadError')))
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const currentFy = fiscalYears.find((f) => f.id === selectedFy)
@@ -151,6 +154,8 @@ export default function MailingPage() {
     setSending(true)
     setResults(null)
     setError(null)
+    setJobFailed(false)
+    setLoadFailed(false)
     setProcessed(0)
     try {
       const res = await fetch('/api/mailing/send', {
@@ -198,7 +203,19 @@ export default function MailingPage() {
         <h1 className="mb-1">{t('title')}</h1>
         <p className="text-muted">{t('subtitle')}</p>
 
-        {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
+        {(error || jobFailed || loadFailed) && (
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => {
+              setError(null)
+              setJobFailed(false)
+              setLoadFailed(false)
+            }}
+          >
+            {error || (loadFailed ? t('loadError') : t('sendError'))}
+          </Alert>
+        )}
 
         {/* Step 1: fiscal year + letter */}
         <Card className="mb-3">
