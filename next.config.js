@@ -13,6 +13,11 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Next defaults to one build worker per CPU core. On a many-core build host
+    // that fans out far enough to exhaust the session's cgroup task limit, and
+    // the build dies with "OS can't spawn worker thread: Resource temporarily
+    // unavailable". Keep the fan-out modest; override via NEXT_BUILD_CPUS.
+    cpus: Number(process.env.NEXT_BUILD_CPUS) || 8,
   },
 }
 
