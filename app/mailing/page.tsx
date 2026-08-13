@@ -51,7 +51,10 @@ export default function MailingPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [sending, setSending] = useState(false)
   const [results, setResults] = useState<SendResult[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // The alert shows `message`; `detail` carries the server's own wording for
+  // anything we have no translation for (a misconfiguration, a schema that is
+  // out of date, a transport error) instead of swallowing it.
+  const [error, setError] = useState<{ message: string; detail?: string } | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobTotal, setJobTotal] = useState(0)
   const [processed, setProcessed] = useState(0)
@@ -145,6 +148,22 @@ export default function MailingPage() {
     })
   }
 
+  function describeError(data: { error?: string; message?: string } | null, fallback: string) {
+    switch (data?.error) {
+      case 'mail_not_configured':
+        return { message: t('notConfigured') }
+      case 'no_letter':
+        return { message: t('letterMissing') }
+      case 'job_running':
+        return { message: t('jobRunning') }
+      default: {
+        // `error` is the generic label of a 500, `message` its actual cause
+        const detail = data?.message || (data?.error && data.error !== 'Internal Server Error' ? data.error : undefined)
+        return { message: fallback, detail }
+      }
+    }
+  }
+
   async function handlePreview() {
     const firstId = [...selected].find((id) => recipients.find((r) => r.id === id)?.email)
     if (!firstId) return
@@ -158,9 +177,9 @@ export default function MailingPage() {
       })
       const data = await res.json()
       if (res.ok) setPreviewHtml(data.html)
-      else setError(data.error || t('previewError'))
+      else setError(describeError(data, t('previewError')))
     } catch {
-      setError(t('previewError'))
+      setError({ message: t('previewError') })
     } finally {
       setPreviewLoading(false)
     }
@@ -182,22 +201,14 @@ export default function MailingPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(
-          data.error === 'mail_not_configured'
-            ? t('notConfigured')
-            : data.error === 'no_letter'
-              ? t('letterMissing')
-              : data.error === 'job_running'
-                ? t('jobRunning')
-                : t('sendError')
-        )
+        setError(describeError(data, t('sendError')))
         setSending(false)
         return
       }
       setJobTotal(data.total ?? selected.size)
       setJobId(data.jobId) // starts polling
-    } catch {
-      setError(t('sendError'))
+    } catch (err) {
+      setError({ message: t('sendError'), detail: err instanceof Error ? err.message : undefined })
       setSending(false)
     }
   }
@@ -230,7 +241,8 @@ export default function MailingPage() {
               setLoadFailed(false)
             }}
           >
-            {error || (loadFailed ? t('loadError') : t('sendError'))}
+            <div>{error?.message || (loadFailed ? t('loadError') : t('sendError'))}</div>
+            {error?.detail && <div className="small mt-1 font-monospace opacity-75">{error.detail}</div>}
           </Alert>
         )}
 
