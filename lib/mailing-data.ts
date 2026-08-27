@@ -19,8 +19,9 @@ export type MemberMailData = {
   statusToken: string
   progress: { target: number; collected: number; remaining: number; percentage: number }
   csvContent: string
-  // Sponsors of the entity with the amount they gave in the previous fiscal year
-  sponsors: { name: string; lastYearAmount: number }[]
+  // Sponsors of the entity with the amount they gave in the previous fiscal
+  // year and what they have already paid in the selected one
+  sponsors: { name: string; lastYearAmount: number; currentYearAmount: number }[]
   previousYearName: string | null
   // Set when the member belongs to a group: the group name and its members
   groupInfo: { name: string; memberNames: string[] } | null
@@ -86,6 +87,11 @@ export async function buildMemberMailData(
         lastYearAmount: prevFyId
           ? s.donations.filter((d) => d.fiscalYearId === prevFyId).reduce((a, d) => a + (d.amount || 0), 0)
           : 0,
+        // Monetary donations already booked in the selected fiscal year —
+        // matches the "collected" figure the mail reports.
+        currentYearAmount: s.donations
+          .filter((d) => d.fiscalYearId === fiscalYearId && d.type === 'MONETARY')
+          .reduce((a, d) => a + (d.amount || 0), 0),
       }))
       .sort((a, b) => b.lastYearAmount - a.lastYearAmount || a.name.localeCompare(b.name))
 

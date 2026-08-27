@@ -20,8 +20,8 @@ function mailData(overrides: Partial<StatusEmailData> = {}): StatusEmailData {
     statusUrl: STATUS_URL,
     progress: { target: 800, collected: 360, remaining: 440, percentage: 45 },
     sponsors: [
-      { name: 'Muster AG', lastYearAmount: 200 },
-      { name: 'Familie Weber', lastYearAmount: 0 },
+      { name: 'Muster AG', lastYearAmount: 200, currentYearAmount: 0 },
+      { name: 'Familie Weber', lastYearAmount: 0, currentYearAmount: 150 },
     ],
     previousYearName: 'Saison 2025/2026',
     groupInfo: null,
@@ -70,7 +70,7 @@ test('the reminder carries no apéro call to action and no attachments note', ()
   }
 })
 
-test('the reminder keeps the figures, the status link and the patron list', () => {
+test('the reminder keeps the figures and the status link', () => {
   const mail = renderStatusEmail(mailData({ variant: 'reminder' }))
 
   assert.ok(mail.html.includes(STATUS_URL), 'the status button links to the status page')
@@ -80,9 +80,39 @@ test('the reminder keeps the figures, the status link and the patron list', () =
   assert.match(mail.text, /Gesammelt: CHF\s360/)
   assert.match(mail.text, /Offen: CHF\s440/)
   assert.match(mail.text, /45% des Ziels erreicht/)
-  assert.match(mail.html, /Muster AG/)
+})
+
+test('the letter lists every patron with the previous year amount', () => {
+  const mail = renderStatusEmail(mailData())
+
+  assert.match(mail.html, /Deine bisherigen Gönner:innen/)
   assert.match(mail.text, /Muster AG: CHF\s200/)
   assert.match(mail.text, /Familie Weber: –/, 'a patron without a previous amount shows a dash')
+})
+
+test('the reminder lists only the patrons who have already paid this year', () => {
+  const mail = renderStatusEmail(mailData({ variant: 'reminder' }))
+
+  for (const rendered of [mail.html, mail.text]) {
+    assert.doesNotMatch(rendered, /bisherigen Gönner:innen/, 'no previous-patron section')
+    assert.doesNotMatch(rendered, /Muster AG/, 'a patron who has not paid yet stays out')
+  }
+  assert.match(mail.html, /Bereits eingegangene Beiträge/)
+  assert.match(mail.text, /Familie Weber: CHF\s150/, 'with the amount paid this year')
+})
+
+test('the reminder drops the patron list when nobody has paid yet', () => {
+  const mail = renderStatusEmail(
+    mailData({
+      variant: 'reminder',
+      sponsors: [{ name: 'Muster AG', lastYearAmount: 200, currentYearAmount: 0 }],
+    })
+  )
+
+  for (const rendered of [mail.html, mail.text]) {
+    assert.doesNotMatch(rendered, /Bereits eingegangene Beiträge/)
+    assert.doesNotMatch(rendered, /Muster AG/)
+  }
 })
 
 test('the reminder renders in every supported locale', () => {

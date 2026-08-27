@@ -18,7 +18,7 @@ export const SPONSOR_CSV_SELECT = {
   phone: true,
   email: true,
   notes: true,
-  donations: { select: { amount: true, fiscalYearId: true } },
+  donations: { select: { amount: true, fiscalYearId: true, type: true } },
 } as const
 
 export type SponsorCsvRow = {
@@ -32,7 +32,7 @@ export type SponsorCsvRow = {
   phone: string | null
   email: string | null
   notes: string | null
-  donations: { amount: number | null; fiscalYearId: string | null }[]
+  donations: { amount: number | null; fiscalYearId: string | null; type?: string }[]
 }
 
 export const SPONSOR_CSV_HEADERS = [

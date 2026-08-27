@@ -22,7 +22,7 @@ export type StatusEmailData = {
   fiscalYearName: string
   statusUrl: string
   progress: { target: number; collected: number; remaining: number; percentage: number }
-  sponsors: { name: string; lastYearAmount: number }[]
+  sponsors: { name: string; lastYearAmount: number; currentYearAmount?: number }[]
   previousYearName: string | null
   groupInfo: { name: string; memberNames: string[] } | null
   attachmentsNote: boolean
@@ -112,29 +112,33 @@ const STRINGS: Record<EmailLocale, Record<string, string>> = {
 /**
  * Reminder wording. Only the lines that differ from the letter mail: it stands
  * on its own, has no attachments to announce and must not repeat the letter's
- * apéro call to action. Everything else (figures, progress bar, button, patron
- * list) is shared.
+ * apéro call to action, and its patron list names only those who have already
+ * paid this year. Everything else (figures, progress bar, button) is shared.
  */
 const REMINDER_STRINGS: Record<EmailLocale, Record<string, string>> = {
   de: {
     subject: 'Dein Gönner:innen-Stand – {org}',
     intro: 'Hier ein kurzer Zwischenstand zum laufenden Vereinsjahr {year}.',
     contact: 'Bei Fragen kannst du dich gerne bei uns melden.',
+    sponsorsTitle: 'Bereits eingegangene Beiträge',
   },
   en: {
     subject: 'Your patron standing – {org}',
     intro: 'Here is a short update on the current season {year}.',
     contact: 'If you have any questions, just get in touch with us.',
+    sponsorsTitle: 'Contributions received so far',
   },
   fr: {
     subject: 'Le point sur tes donateurs – {org}',
     intro: 'Voici un bref point sur la saison en cours {year}.',
     contact: 'Pour toute question, n’hésite pas à nous contacter.',
+    sponsorsTitle: 'Contributions déjà reçues',
   },
   it: {
     subject: 'Il tuo stato donatori – {org}',
     intro: 'Ecco un breve aggiornamento sulla stagione in corso {year}.',
     contact: 'Per domande, non esitare a contattarci.',
+    sponsorsTitle: 'Contributi già ricevuti',
   },
 }
 
@@ -191,17 +195,26 @@ export function renderStatusEmail(data: StatusEmailData): {
        </p>`
     : ''
 
-  // Patron list with previous-year amounts, introduced by the apéro call-to-action
-  const sponsorRows = data.sponsors
+  // Patron list. The letter names every patron with the previous year's amount
+  // (introduced by the apéro call-to-action); the reminder instead lists only
+  // those who have already paid this year, with what they gave.
+  const sponsorEntries =
+    variant === 'reminder'
+      ? data.sponsors
+          .filter((sp) => (sp.currentYearAmount ?? 0) > 0)
+          .map((sp) => ({ name: sp.name, amount: sp.currentYearAmount ?? 0 }))
+          .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
+      : data.sponsors.map((sp) => ({ name: sp.name, amount: sp.lastYearAmount }))
+  const sponsorRows = sponsorEntries
     .map(
       (sp) => `<tr>
         <td style="padding:7px 0;border-bottom:1px solid #edf0f4;font-size:14px;color:#414d5b;">${escapeHtml(sp.name)}</td>
-        <td align="right" style="padding:7px 0;border-bottom:1px solid #edf0f4;font-size:14px;font-weight:600;color:#16202c;white-space:nowrap;">${sp.lastYearAmount > 0 ? escapeHtml(money(sp.lastYearAmount)) : '–'}</td>
+        <td align="right" style="padding:7px 0;border-bottom:1px solid #edf0f4;font-size:14px;font-weight:600;color:#16202c;white-space:nowrap;">${sp.amount > 0 ? escapeHtml(money(sp.amount)) : '–'}</td>
       </tr>`
     )
     .join('')
   const sponsorsHtml =
-    data.sponsors.length > 0
+    sponsorEntries.length > 0
       ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
            <tr><td style="padding:26px 0 8px;font-size:14px;font-weight:700;color:#16202c;">${escapeHtml(s.sponsorsTitle)}</td></tr>
          </table>
@@ -311,10 +324,10 @@ export function renderStatusEmail(data: StatusEmailData): {
     '',
     `${s.button}: ${data.statusUrl}`
   )
-  if (data.sponsors.length > 0) {
+  if (sponsorEntries.length > 0) {
     textLines.push('', s.sponsorsTitle)
-    for (const sp of data.sponsors) {
-      textLines.push(`  ${sp.name}: ${sp.lastYearAmount > 0 ? money(sp.lastYearAmount) : '–'}`)
+    for (const sp of sponsorEntries) {
+      textLines.push(`  ${sp.name}: ${sp.amount > 0 ? money(sp.amount) : '–'}`)
     }
   }
   textLines.push('', s.contact)
