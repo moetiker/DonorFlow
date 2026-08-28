@@ -548,6 +548,7 @@
     "sendingProgress": "{processed} of {total} processed",
     "batchInfo": "Sending is throttled (speed in Settings). You can close the page – sending continues.",
     "jobRunning": "A mailing is already running. Please wait until it finishes.",
+    "baseUrlMissing": "The base URL (NEXTAUTH_URL) is not configured on the server. Without it no valid status links can be sent.",
     "statusSent": "Sent",
     "statusSkipped": "Skipped",
     "statusFailed": "Failed",

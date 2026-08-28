@@ -192,6 +192,17 @@ export async function buildMemberMailData(
   }
 }
 
+/**
+ * Base URL for the status links in a mailing. Deliberately read from the
+ * environment only: falling back to the request origin would let a forged Host
+ * header decide where the status tokens in every sent mail point. Returns null
+ * when unset, so the caller can refuse to send instead of mailing broken links.
+ */
+export function getMailBaseUrl(): string | null {
+  const url = process.env.NEXTAUTH_URL?.trim()
+  return url ? url.replace(/\/+$/, '') : null
+}
+
 export async function getOrgName(): Promise<string> {
   const s = await prisma.setting.findUnique({ where: { key: 'organizationName' }, select: { value: true } })
   return s?.value || 'Gönnerverwaltung'

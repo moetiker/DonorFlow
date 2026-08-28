@@ -156,6 +156,8 @@ export default function MailingPage() {
         return { message: t('letterMissing') }
       case 'job_running':
         return { message: t('jobRunning') }
+      case 'base_url_not_configured':
+        return { message: t('baseUrlMissing') }
       default: {
         // `error` is the generic label of a 500, `message` its actual cause
         const detail = data?.message || (data?.error && data.error !== 'Internal Server Error' ? data.error : undefined)

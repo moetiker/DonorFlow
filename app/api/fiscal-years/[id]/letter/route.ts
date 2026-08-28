@@ -32,6 +32,10 @@ export const POST = withApiRoute(async (request: NextRequest, { params }: RouteC
   }
 
   const data = Buffer.from(await file.arrayBuffer())
+  // The declared type is client-supplied; verify the content really is a PDF.
+  if (data.subarray(0, 5).toString('latin1') !== '%PDF-') {
+    return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 })
+  }
   const fileName = file.name || 'goennerbrief.pdf'
 
   const letter = await prisma.donorLetter.upsert({
@@ -59,7 +63,11 @@ export const GET = withApiRoute(async (_request: NextRequest, { params }: RouteC
   return new NextResponse(body, {
     status: 200,
     headers: {
-      'Content-Type': letter.mimeType,
+      // Serve as PDF regardless of the stored type, and forbid sniffing: the
+      // bytes come from an upload, so a browser must never be free to decide
+      // they are HTML and run them on this origin.
+      'Content-Type': ALLOWED_MIME,
+      'X-Content-Type-Options': 'nosniff',
       'Content-Disposition': `inline; filename="${encodeURIComponent(letter.fileName)}"`,
       'Content-Length': String(letter.size),
       'Cache-Control': 'private, no-cache'

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { withApiRoute } from '@/lib/api-helpers'
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withApiRoute(async (request: NextRequest) => {
     const { searchParams } = new URL(request.url)
     const yearParam = searchParams.get('year')
 
@@ -145,11 +145,4 @@ export async function GET(request: NextRequest) {
         name: y.name
       }))
     })
-  } catch (error) {
-    console.error('Error fetching shares:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch shares data' },
-      { status: 500 }
-    )
-  }
-}
+})

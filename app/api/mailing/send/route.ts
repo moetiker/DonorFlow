@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { isMailConfigured } from '@/lib/mail'
+import { getMailBaseUrl } from '@/lib/mailing-data'
 import { runMailJob } from '@/lib/mailing-runner'
-
-function getBaseUrl(request: NextRequest): string {
-  return process.env.NEXTAUTH_URL || request.nextUrl.origin
-}
 
 /**
  * Start a throttled member mailing. `mode` picks what is sent: the donor letter
@@ -26,6 +23,14 @@ export const POST = withApiRoute(async (request: NextRequest) => {
 
   if (!(await isMailConfigured())) {
     return NextResponse.json({ error: 'mail_not_configured' }, { status: 400 })
+  }
+
+  // Without a configured base URL the status links would have to be guessed
+  // from the request, so refuse rather than mail out links to whatever host
+  // the request claimed to be for.
+  const baseUrl = getMailBaseUrl()
+  if (!baseUrl) {
+    return NextResponse.json({ error: 'base_url_not_configured' }, { status: 500 })
   }
 
   // Only one mailing at a time — prevents duplicate emails from a second submit.
@@ -59,7 +64,7 @@ export const POST = withApiRoute(async (request: NextRequest) => {
       total: ids.length,
       processed: 0,
       memberIds: JSON.stringify(ids),
-      baseUrl: getBaseUrl(request),
+      baseUrl,
       results: '[]',
     },
     select: { id: true },

@@ -548,6 +548,7 @@
     "sendingProgress": "{processed} di {total} elaborati",
     "batchInfo": "L'invio è limitato (velocità nelle impostazioni). Puoi chiudere la pagina – l'invio continua.",
     "jobRunning": "Un invio è già in corso. Attendi che finisca.",
+    "baseUrlMissing": "L’URL di base (NEXTAUTH_URL) non è configurato sul server. Senza di esso non è possibile inviare link di stato validi.",
     "statusSent": "Inviato",
     "statusSkipped": "Saltato",
     "statusFailed": "Errore",

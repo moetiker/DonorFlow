@@ -548,6 +548,7 @@
     "sendingProgress": "{processed} von {total} verarbeitet",
     "batchInfo": "Der Versand ist gedrosselt (Tempo in den Einstellungen). Du kannst die Seite schliessen – der Versand läuft weiter.",
     "jobRunning": "Es läuft bereits ein Versand. Bitte warte, bis er abgeschlossen ist.",
+    "baseUrlMissing": "Die Basis-URL (NEXTAUTH_URL) ist auf dem Server nicht konfiguriert. Ohne sie können keine gültigen Status-Links verschickt werden.",
     "statusSent": "Gesendet",
     "statusSkipped": "Übersprungen",
     "statusFailed": "Fehler",
