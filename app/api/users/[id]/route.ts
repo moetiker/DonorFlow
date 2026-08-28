@@ -86,20 +86,16 @@ export const DELETE = withApiRoute(async (
     )
   }
 
-  // Don't allow user to delete themselves
+  // Don't allow user to delete themselves. Compare on the session's user id
+  // (set by the jwt callback) - `session.user.name` is the display name, which
+  // is not unique and can even be another user's username.
   // Session is guaranteed to exist because of withApiRoute wrapper
   const session = await getServerSession(authOptions)
-  if (session?.user?.name) {
-    const currentUser = await prisma.user.findUnique({
-      where: { username: session.user.name }
-    })
-
-    if (currentUser && currentUser.id === userId) {
-      return NextResponse.json(
-        { error: messages.users?.cannotDeleteSelf || 'You cannot delete yourself' },
-        { status: 400 }
-      )
-    }
+  if (session?.user?.id === userId) {
+    return NextResponse.json(
+      { error: messages.users?.cannotDeleteSelf || 'You cannot delete yourself' },
+      { status: 400 }
+    )
   }
 
   await prisma.user.delete({
