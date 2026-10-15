@@ -496,7 +496,6 @@
     "followUp": "Nachfassen – letztes Jahr gespendet",
     "others": "Übrige",
     "lastDonated": "zuletzt {amount} ({year})",
-    "neverDonated": "noch nie gespendet",
     "callSponsor": "{name} anrufen",
     "emailSponsor": "{name} anschreiben",
     "noSponsors": "Keine Gönner zugeordnet",

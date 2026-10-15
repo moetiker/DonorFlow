@@ -496,7 +496,6 @@
     "followUp": "Da ricontattare – ha donato l'anno scorso",
     "others": "Altri",
     "lastDonated": "ultimo {amount} ({year})",
-    "neverDonated": "non ha mai donato",
     "callSponsor": "Chiama {name}",
     "emailSponsor": "Scrivi a {name}",
     "noSponsors": "Nessuno sponsor assegnato",

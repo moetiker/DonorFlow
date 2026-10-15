@@ -277,14 +277,14 @@ function StatusPageContent({ token }: { token: string }) {
           amount: formatCurrency(lastMonetary.amount ?? 0),
           year: lastMonetary.fiscalYearName || '—'
         })
-      : t('neverDonated')
+      : null
     const tel = sponsor.phone?.replace(/\s+/g, '')
 
     return (
       <div key={rowKey} className="d-flex align-items-center gap-2 px-3 border-top not-donated-row">
         <div className="flex-grow-1 min-w-0">
           <div className="fw-semibold text-truncate">{sponsor.name}</div>
-          <div className="small text-muted">{meta}</div>
+          {meta && <div className="small text-muted">{meta}</div>}
         </div>
         {tel ? (
           <a

@@ -496,7 +496,6 @@
     "followUp": "Follow up – donated last year",
     "others": "Others",
     "lastDonated": "last {amount} ({year})",
-    "neverDonated": "never donated",
     "callSponsor": "Call {name}",
     "emailSponsor": "Email {name}",
     "noSponsors": "No sponsors assigned",
