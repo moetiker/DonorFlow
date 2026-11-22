@@ -170,3 +170,16 @@ test('a memberId outside the group fails', async () => {
   const group = await prisma.group.findUniqueOrThrow({ where: { id: groupA.id } })
   assert.equal(group.dissolvedAt, null)
 })
+
+test('dissolving gives released members a status token and keeps existing ones', async () => {
+  const { groupA, memberA1, memberA2 } = await seedBasics(prisma)
+  await prisma.member.update({ where: { id: memberA1.id }, data: { statusToken: null } })
+  await prisma.member.update({ where: { id: memberA2.id }, data: { statusToken: 'keep-me' } })
+
+  await dissolve(groupA.id, [])
+
+  const a1 = await prisma.member.findUniqueOrThrow({ where: { id: memberA1.id } })
+  const a2 = await prisma.member.findUniqueOrThrow({ where: { id: memberA2.id } })
+  assert.ok(a1.statusToken)
+  assert.equal(a2.statusToken, 'keep-me')
+})

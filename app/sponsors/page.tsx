@@ -162,7 +162,7 @@ export default function SponsorsPage() {
     const searchLower = searchTerm.toLowerCase()
     const name = getSponsorDisplayName(sponsor).toLowerCase()
     const city = (sponsor.city || '').toLowerCase()
-    const recipients = sponsor.assignments.map(a => recipientLabel(a).toLowerCase())
+    const recipients = sponsor.assignments.map(a => recipientLabel(a, tCommon('group')).toLowerCase())
 
     return name.includes(searchLower) ||
            city.includes(searchLower) ||
@@ -246,7 +246,7 @@ export default function SponsorsPage() {
                       <td><strong>{getSponsorDisplayName(sponsor)}</strong></td>
                       <td className="text-muted">{sponsor.city || '-'}</td>
                       <td>
-                        <small>{sponsor.assignments.map(recipientLabel).join(', ')}</small>
+                        <small>{sponsor.assignments.map(a => recipientLabel(a, tCommon('group'))).join(', ')}</small>
                       </td>
                       <td className="donations-cell">
                         <span className="text-primary">

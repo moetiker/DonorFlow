@@ -1,5 +1,6 @@
 import { getClubPool, ClubPoolLockedError, type PrismaTx } from '@/lib/club-pool'
 import type { RecipientRef } from '@/lib/crediting'
+import { generateStatusToken } from '@/lib/tokens'
 
 /** Thrown when a sponsor would be assigned to a dissolved group. */
 export class DissolvedGroupError extends Error {
@@ -234,6 +235,14 @@ export async function dissolveGroup(
   await tx.sponsorAssignment.deleteMany({ where: { groupId } })
   if (toCreate.length > 0) {
     await tx.sponsorAssignment.createMany({ data: toCreate })
+  }
+  // Grouped members carry no status token; released members need one for their status link.
+  const withoutToken = await tx.member.findMany({
+    where: { groupId, statusToken: null },
+    select: { id: true }
+  })
+  for (const m of withoutToken) {
+    await tx.member.update({ where: { id: m.id }, data: { statusToken: generateStatusToken() } })
   }
   await tx.member.updateMany({ where: { groupId }, data: { groupId: null } })
   await tx.group.update({ where: { id: groupId }, data: { dissolvedAt: new Date() } })

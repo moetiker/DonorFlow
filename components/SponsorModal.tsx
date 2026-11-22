@@ -96,7 +96,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       })
       setRecipients((sponsor.assignments ?? []).map(a => ({
         value: a.memberId ? `m:${a.memberId}` : `g:${a.groupId}`,
-        label: recipientLabel(a)
+        label: recipientLabel(a, tCommon('group'))
       })))
     } else {
       setRecipients([])
@@ -204,8 +204,8 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     if (!pendingRecipient || recipients.some(r => r.value === pendingRecipient)) return
     const id = pendingRecipient.slice(2)
     const label = pendingRecipient.startsWith('m:')
-      ? recipientLabel({ member: members.find(m => m.id === id) ?? null, group: null })
-      : recipientLabel({ member: null, group: groups.find(g => g.id === id) ?? null })
+      ? recipientLabel({ member: members.find(m => m.id === id) ?? null, group: null }, tCommon('group'))
+      : recipientLabel({ member: null, group: groups.find(g => g.id === id) ?? null }, tCommon('group'))
     setRecipients([...recipients, { value: pendingRecipient, label }])
     setPendingRecipient('')
   }

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     const rows = sponsors.map(sponsor => {
       // All recipients of the sponsor, e.g. "Hans Müller, Team Nord (Gruppe)"
       const assignedTo = sponsor.assignments.length > 0
-        ? sponsor.assignments.map(recipientLabel).join(', ')
+        ? sponsor.assignments.map(a => recipientLabel(a)).join(', ')
         : '-'
 
       const donationCount = sponsor.donations.length

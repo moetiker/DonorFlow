@@ -36,11 +36,14 @@ export function sponsorsListedFor(r: RecipientRef): Prisma.SponsorWhereInput {
   return { OR: [sponsorsAssignedTo(r), { donations: { some: donationsCreditedTo(r) } }] }
 }
 
-/** Display label of an assignment's recipient: the member name or "<group> (Gruppe)". */
+/**
+ * Display label of an assignment's recipient: the member name or "<group> (<groupSuffix>)".
+ * Client components pass the localized word for "group"; exports keep the German default.
+ */
 export function recipientLabel(a: {
   member: { firstName: string; lastName: string } | null
   group: { name: string } | null
-}): string {
+}, groupSuffix: string = 'Gruppe'): string {
   if (a.member) return getMemberDisplayName(a.member)
-  return `${a.group?.name ?? ''} (Gruppe)`
+  return `${a.group?.name ?? ''} (${groupSuffix})`
 }

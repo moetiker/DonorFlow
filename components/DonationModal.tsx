@@ -158,17 +158,17 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
   // Dissolved groups are not offered, except the one the donation already has.
   const sponsorOptions = (selectedSponsor[0]?.assignments ?? []).map(a => ({
     value: assignmentValue(a),
-    label: recipientLabel(a)
+    label: recipientLabel(a, tCommon('group'))
   }))
   const sponsorValues = new Set(sponsorOptions.map(o => o.value))
   const otherOptions = [
     ...members.map(m => ({
       value: `m:${m.id}`,
-      label: recipientLabel({ member: m, group: null })
+      label: recipientLabel({ member: m, group: null }, tCommon('group'))
     })),
     ...groups
       .filter(g => !g.dissolvedAt || donation?.groupId === g.id)
-      .map(g => ({ value: `g:${g.id}`, label: recipientLabel({ member: null, group: g }) }))
+      .map(g => ({ value: `g:${g.id}`, label: recipientLabel({ member: null, group: g }, tCommon('group')) }))
   ].filter(o => !sponsorValues.has(o.value))
 
   // Keep the donation's stored recipient selectable even if it is not offered
@@ -180,7 +180,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         label: recipientLabel({
           member: donation.member ?? null,
           group: donation.group ?? { name: '' }
-        })
+        }, tCommon('group'))
       }]
     : []
 
@@ -286,7 +286,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
               labelKey={(option) => {
                 const sponsor = option as Sponsor
                 const name = getSponsorDisplayName(sponsor)
-                const labels = (sponsor.assignments ?? []).map(recipientLabel)
+                const labels = (sponsor.assignments ?? []).map(a => recipientLabel(a, tCommon('group')))
                 return labels.length > 0 ? `${name} (${labels.join(', ')})` : name
               }}
               options={sponsors}

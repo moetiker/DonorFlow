@@ -5,6 +5,7 @@ import { DonationModal } from './DonationModal'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
+import { recipientLabel } from '@/lib/crediting'
 
 type Donation = {
   id: string
@@ -193,6 +194,7 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
                   <thead>
                     <tr>
                       <th>{t('date')}</th>
+                      <th>{t('assignment')}</th>
                       <th>{t('type')}</th>
                       <th>{t('amountOrDescription')}</th>
                       <th>{t('note')}</th>
@@ -206,6 +208,12 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
                         style={{ cursor: 'pointer' }}
                       >
                         <td>{formatDate(donation.donationDate)}</td>
+                        <td>
+                          {recipientLabel(
+                            { member: donation.member ?? null, group: donation.group ?? null },
+                            tCommon('group')
+                          )}
+                        </td>
                         <td>
                           <Badge bg={donation.type === 'MONETARY' ? 'success' : 'info'}>
                             {donation.type === 'MONETARY' ? t('monetary') : t('inKind')}
