@@ -99,3 +99,36 @@ export async function unassignedActual(
 ): Promise<number> {
   return (await unassignedFigures(client, fiscalYearId, type)).actual
 }
+
+/** Club-level actuals of a fiscal year, split by where the donations are credited. */
+export type ClubFigures = {
+  memberActual: number
+  groupActual: number
+  unassignedTotal: number
+  totalActual: number
+}
+
+/**
+ * Club-level actuals of a fiscal year: members without a group, every group's
+ * total (dissolved groups included: their history stays credited to them and
+ * dissolving must not shrink the club's numbers) and donations without a
+ * recipient. Each donation is counted exactly once.
+ */
+export async function clubFigures(
+  client: PrismaClientOrTx,
+  fiscalYearId: string,
+  type?: DonationType
+): Promise<ClubFigures> {
+  const add = (values: number[]) => values.reduce((acc, v) => acc + v, 0)
+  const members = await client.member.findMany({ where: { groupId: null }, select: { id: true } })
+  const groups = await client.group.findMany({ select: { id: true } })
+  const memberTotal = add(await Promise.all(members.map(m => memberActual(client, m.id, fiscalYearId, type))))
+  const groupTotal = add(await Promise.all(groups.map(g => groupActual(client, g.id, fiscalYearId, type))))
+  const unassignedTotal = await unassignedActual(client, fiscalYearId, type)
+  return {
+    memberActual: memberTotal,
+    groupActual: groupTotal,
+    unassignedTotal,
+    totalActual: memberTotal + groupTotal + unassignedTotal
+  }
+}

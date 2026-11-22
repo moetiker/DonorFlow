@@ -84,9 +84,11 @@ export const GET = withApiRoute(async () => {
       startDate: currentYear.startDate,
       endDate: currentYear.endDate
     },
-    inKindCount: memberStats.reduce((sum, s) => sum + s.count, 0) +
-                 groupStats.reduce((sum, s) => sum + s.count, 0) +
-                 unassignedDonations.length,
+    // Club-wide: every in-kind donation of the year once, including those
+    // credited to dissolved groups (which have no row above)
+    inKindCount: await prisma.donation.count({
+      where: { fiscalYearId: currentYear.id, type: 'IN_KIND' }
+    }),
     memberStats,
     groupStats,
     unassignedCount: unassignedDonations.length,

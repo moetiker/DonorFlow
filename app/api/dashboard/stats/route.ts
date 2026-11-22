@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
-import {
-  memberActual as memberActualFor,
-  groupActual as groupActualFor,
-  unassignedActual
-} from '@/lib/report-figures'
-
-const sum = (values: number[]) => values.reduce((acc, v) => acc + v, 0)
+import { clubFigures } from '@/lib/report-figures'
 
 export const GET = withApiRoute(async (_request: NextRequest) => {
   const now = new Date()
@@ -54,29 +48,12 @@ export const GET = withApiRoute(async (_request: NextRequest) => {
     })
     totalTarget = allMemberTargets.reduce((sum, mt) => sum + mt.targetAmount, 0)
 
-    // Members WITHOUT group membership: MONETARY donations credited to them
-    const fiscalYearId = currentYear.id
-    const members = await prisma.member.findMany({
-      where: { groupId: null },
-      select: { id: true }
-    })
-    memberActual = sum(await Promise.all(
-      members.map(m => memberActualFor(prisma, m.id, fiscalYearId, 'MONETARY'))
-    ))
-
-    // Groups (not dissolved): donations credited to the group and its members
-    const groups = await prisma.group.findMany({
-      where: { dissolvedAt: null },
-      select: { id: true }
-    })
-    groupActual = sum(await Promise.all(
-      groups.map(g => groupActualFor(prisma, g.id, fiscalYearId, 'MONETARY'))
-    ))
-
-    // Donations without a recipient (MONETARY only)
-    unassignedTotal = await unassignedActual(prisma, fiscalYearId, 'MONETARY')
-
-    totalActual = memberActual + groupActual + unassignedTotal
+    // Club-level actuals (MONETARY), dissolved groups included
+    const club = await clubFigures(prisma, currentYear.id, 'MONETARY')
+    memberActual = club.memberActual
+    groupActual = club.groupActual
+    unassignedTotal = club.unassignedTotal
+    totalActual = club.totalActual
   }
 
   const response = {

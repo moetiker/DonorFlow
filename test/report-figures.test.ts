@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { useTestDb as openTestDb, resetDb, seedBasics } from './helpers/test-db'
-import { memberActual, groupActual, unassignedActual } from '../lib/report-figures'
+import { memberActual, groupActual, unassignedActual, clubFigures } from '../lib/report-figures'
 
 // Admin figures count donations by their own recipient, never by the
 // sponsor's assignments.
@@ -75,4 +75,24 @@ test('unassigned actual counts only donations without a recipient', async () => 
   await prisma.donation.create({ data: { ...base, amount: 5, memberId: memberSolo.id } })
   assert.equal(await unassignedActual(prisma, fy.id), 15)
   assert.equal(await unassignedActual(prisma, fy.id, 'IN_KIND'), 0)
+})
+
+test('a donation credited to a dissolved group still counts in the club-level actual', async () => {
+  const { prisma, groupA, memberA1, memberSolo, fy } = await fresh()
+  const s = await prisma.sponsor.create({ data: { lastName: 'Club' } })
+  const base = { sponsorId: s.id, donationDate: new Date(), fiscalYearId: fy.id }
+  await prisma.donation.create({ data: { ...base, amount: 60, groupId: groupA.id } })
+  await prisma.donation.create({ data: { ...base, amount: 30, memberId: memberA1.id } })
+  await prisma.donation.create({ data: { ...base, amount: 10, memberId: memberSolo.id } })
+  await prisma.donation.create({ data: { ...base, amount: 5 } })
+  const before = await clubFigures(prisma, fy.id, 'MONETARY')
+  assert.deepEqual(before, { memberActual: 10, groupActual: 90, unassignedTotal: 5, totalActual: 105 })
+
+  // Dissolve groupA: its members leave, its donations stay credited to it
+  await prisma.member.updateMany({ where: { groupId: groupA.id }, data: { groupId: null } })
+  await prisma.group.update({ where: { id: groupA.id }, data: { dissolvedAt: new Date() } })
+  const after = await clubFigures(prisma, fy.id, 'MONETARY')
+  assert.equal(after.totalActual, 105)
+  assert.equal(after.groupActual, 60)
+  assert.equal(after.memberActual, 40)
 })
