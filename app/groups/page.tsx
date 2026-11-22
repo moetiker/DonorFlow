@@ -1,11 +1,14 @@
 'use client'
 
-import { Container, Card, Table, Badge, Button, ButtonGroup } from 'react-bootstrap'
+import { Container, Card, Table, Badge, Button, ButtonGroup, Collapse, Alert } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { DonationsModal } from '@/components/DonationsModal'
 import { GroupEditModal } from '@/components/GroupEditModal'
 import { GroupMembersModal } from '@/components/GroupMembersModal'
 import { SponsorsModal } from '@/components/SponsorsModal'
+import { DissolveGroupModal } from '@/components/DissolveGroupModal'
+import { DeleteConfirmModal, useHandOverText } from '@/components/DeleteConfirmModal'
+import type { HandOver } from '@/lib/club-pool'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { SearchBar } from '@/components/SearchBar'
@@ -19,6 +22,7 @@ type Group = {
   name: string
   statusToken?: string | null
   isClubPool?: boolean
+  dissolvedAt?: string | null
   members?: Array<{
     id: string
     firstName: string
@@ -43,7 +47,7 @@ type Group = {
 }
 
 export default function GroupsPage() {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [allGroups, setAllGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMembersModal, setShowMembersModal] = useState(false)
@@ -52,19 +56,36 @@ export default function GroupsPage() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [dissolveTarget, setDissolveTarget] = useState<{
+    id: string
+    name: string
+    members: { id: string; firstName: string; lastName: string }[]
+  } | null>(null)
+  const [showDissolvedGroups, setShowDissolvedGroups] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Group | null>(null)
+  const [deleteImpact, setDeleteImpact] = useState<(HandOver & { poolName: string }) | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [dissolvedNotice, setDissolvedNotice] = useState<string | null>(null)
   const t = useTranslations('groups')
   const tMembers = useTranslations('members')
   const tCommon = useTranslations('common')
-  const { formatCurrency } = useLocalizedFormatters()
+  const tErrors = useTranslations('errors')
+  const handOverText = useHandOverText()
+  const { formatCurrency, formatDate } = useLocalizedFormatters()
+
+  // Dissolved groups are listed in their own collapsed section
+  const groups = allGroups.filter(g => !g.dissolvedAt)
+  const dissolvedGroups = allGroups.filter(g => g.dissolvedAt)
   const { currentFiscalYearId } = useCurrentFiscalYear()
 
   // Does not switch the spinner on itself: the initial load starts with
   // loading=true, and reloads are triggered from event handlers that set it.
   const loadGroups = useCallback(async () => {
     try {
-      const response = await fetch('/api/groups?include=all')
+      const response = await fetch('/api/groups?include=all,dissolved')
       const data = await response.json()
-      setGroups(data)
+      setAllGroups(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error loading groups:', error)
     } finally {
@@ -130,6 +151,60 @@ export default function GroupsPage() {
   const handleNewGroup = () => {
     setSelectedGroup(null)
     setShowEditModal(true)
+  }
+
+  const handleDissolveClick = () => {
+    if (!selectedGroup) return
+    setDissolveTarget({
+      id: selectedGroup.id,
+      name: selectedGroup.name,
+      members: (selectedGroup.members || []).map(m => ({
+        id: m.id,
+        firstName: m.firstName,
+        lastName: m.lastName
+      }))
+    })
+    setShowEditModal(false)
+    setSelectedGroup(null)
+  }
+
+  const handleDeleteDissolvedClick = async (group: Group) => {
+    setDeleteTarget(group)
+    setDeleteError(null)
+    setDeleteImpact(null)
+    try {
+      const response = await fetch(`/api/groups/${group.id}/impact`)
+      if (response.ok) {
+        setDeleteImpact(await response.json())
+      }
+    } catch (error) {
+      console.error('Error loading delete impact:', error)
+    }
+  }
+
+  const handleDeleteDissolved = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      const response = await fetch(`/api/groups/${deleteTarget.id}`, { method: 'DELETE' })
+      if (response.ok) {
+        setDeleteTarget(null)
+        reloadGroups()
+      } else {
+        const data = await response.json()
+        setDeleteError(
+          data.error === 'noClubPool' || data.error === 'clubPoolLocked'
+            ? t(data.error)
+            : tErrors('deleteFailed')
+        )
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error)
+      setDeleteError(tErrors('deleteFailed'))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const handleCopyStatusLink = async (e: React.MouseEvent, groupId: string, token: string) => {
@@ -222,6 +297,12 @@ export default function GroupsPage() {
             {t('newGroup')}
           </Button>
         </div>
+
+        {dissolvedNotice && (
+          <Alert variant="success" dismissible onClose={() => setDissolvedNotice(null)}>
+            {dissolvedNotice}
+          </Alert>
+        )}
 
         {!loading && groups.length > 0 && (
           <SearchBar
@@ -376,9 +457,82 @@ export default function GroupsPage() {
           </Card>
         )}
 
+        {!loading && dissolvedGroups.length > 0 && (
+          <Card className="mt-4">
+            <Card.Header
+              onClick={() => setShowDissolvedGroups(v => !v)}
+              style={{ cursor: 'pointer' }}
+              aria-expanded={showDissolvedGroups}
+              aria-controls="dissolved-groups"
+            >
+              <i className={`bi ${showDissolvedGroups ? 'bi-chevron-down' : 'bi-chevron-right'} me-2`}></i>
+              {t('dissolvedGroups')} ({dissolvedGroups.length})
+            </Card.Header>
+            <Collapse in={showDissolvedGroups}>
+              <div id="dissolved-groups">
+                <Card.Body>
+                  <Table responsive className="mb-0">
+                    <thead>
+                      <tr>
+                        <th>{t('name')}</th>
+                        <th>{t('dissolvedOn')}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dissolvedGroups.map(group => (
+                        <tr key={group.id} id={`group-${group.id}`} className="align-middle">
+                          <td>{group.name}</td>
+                          <td>{group.dissolvedAt ? formatDate(group.dissolvedAt) : '-'}</td>
+                          <td className="text-end">
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDeleteDissolvedClick(group)}
+                            >
+                              {tCommon('delete')}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </Card.Body>
+              </div>
+            </Collapse>
+          </Card>
+        )}
+
+        <DeleteConfirmModal
+          show={deleteTarget !== null}
+          title={`${tCommon('delete')} ${t('group')}`}
+          message={t('deleteConfirm')}
+          detail={deleteImpact ? handOverText(deleteImpact) : null}
+          error={deleteError}
+          onConfirm={handleDeleteDissolved}
+          onCancel={() => setDeleteTarget(null)}
+          deleting={deleting}
+        />
+
+        <DissolveGroupModal
+          show={dissolveTarget !== null}
+          group={dissolveTarget}
+          onHide={() => setDissolveTarget(null)}
+          onDissolved={() => {
+            if (dissolveTarget) setDissolvedNotice(t('dissolvedNotice', { name: dissolveTarget.name }))
+            reloadGroups()
+          }}
+        />
+
         <GroupEditModal
           show={showEditModal}
-          group={selectedGroup ? { id: selectedGroup.id, name: selectedGroup.name } : null}
+          group={selectedGroup ? {
+            id: selectedGroup.id,
+            name: selectedGroup.name,
+            isClubPool: selectedGroup.isClubPool,
+            dissolved: Boolean(selectedGroup.dissolvedAt)
+          } : null}
+          onDissolve={handleDissolveClick}
           onHide={() => {
             setShowEditModal(false)
             setSelectedGroup(null)

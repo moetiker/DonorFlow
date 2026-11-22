@@ -1,14 +1,22 @@
 'use client'
 
-import { Modal, Button, Form } from 'react-bootstrap'
+import { Modal, Button, Form, Alert } from 'react-bootstrap'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import type { HandOver } from '@/lib/club-pool'
+import { getSponsorDisplayName } from '@/lib/utils'
 import { DeleteConfirmModal, useHandOverText } from './DeleteConfirmModal'
 
 type Group = {
   id: string
   name: string
+}
+
+type MemberSponsor = {
+  id: string
+  company: string | null
+  firstName: string | null
+  lastName: string | null
 }
 
 type Props = {
@@ -33,12 +41,15 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const handOverText = useHandOverText()
   const tErrors = useTranslations('errors')
   const tGroups = useTranslations('groups')
+  const tValidation = useTranslations('validation')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string>('')
   const [groups, setGroups] = useState<Group[]>([])
+  const [memberSponsors, setMemberSponsors] = useState<MemberSponsor[]>([])
+  const [moveSponsors, setMoveSponsors] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -57,8 +68,14 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
       setPhone(member.phone || '')
       // Get current group if member is in one
       setSelectedGroupId(member.groupId || '')
+      setMoveSponsors(true)
+      setMemberSponsors([])
     }
   }
+
+  // Joining a (different) group: offer to take the member's sponsors along
+  const joinsGroup = selectedGroupId !== '' && selectedGroupId !== (member?.groupId || '')
+  const offerMoveSponsors = joinsGroup && memberSponsors.length > 0
 
   const loadGroups = useCallback(async () => {
     try {
@@ -81,6 +98,23 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
     }
     void run()
   }, [show, loadGroups])
+
+  const memberId = member?.id
+  useEffect(() => {
+    // The member's own sponsors, listed when the member joins a group
+    const run = async () => {
+      if (!show || !memberId) return
+      try {
+        const response = await fetch(`/api/members/${memberId}/sponsors`)
+        const data = response.ok ? await response.json() : []
+        setMemberSponsors(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error loading member sponsors:', error)
+        setMemberSponsors([])
+      }
+    }
+    void run()
+  }, [show, memberId])
 
   const loadDeleteImpact = async () => {
     if (!member) return
@@ -111,7 +145,8 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
           lastName,
           email: email || null,
           phone: phone || null,
-          groupId: selectedGroupId || null
+          groupId: selectedGroupId || null,
+          moveSponsorsToGroup: offerMoveSponsors && moveSponsors
         })
       })
 
@@ -120,7 +155,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         onHide()
       } else {
         const data = await response.json()
-        setError(data.error || tErrors('saveFailed'))
+        setError(data.error === 'groupDissolved' ? tValidation('groupDissolved') : data.error || tErrors('saveFailed'))
       }
     } catch (error) {
       console.error('Error updating member:', error)
@@ -219,6 +254,21 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
               ))}
             </Form.Select>
           </Form.Group>
+          {offerMoveSponsors && (
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                id="move-sponsors-to-group"
+                label={t('moveSponsorsToGroup')}
+                checked={moveSponsors}
+                onChange={(e) => setMoveSponsors(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                {memberSponsors.map(getSponsorDisplayName).join(', ')}
+              </Form.Text>
+            </Form.Group>
+          )}
+          {error && !showDeleteConfirm && <Alert variant="danger" className="mb-0">{error}</Alert>}
         </Modal.Body>
         <Modal.Footer>
           <div className="me-auto">

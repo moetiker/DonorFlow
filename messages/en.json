@@ -133,7 +133,8 @@
     "statusLink": "Status Link",
     "copyStatusLink": "Copy status link",
     "linkCopied": "Link copied!",
-    "useGroupLink": "See group"
+    "useGroupLink": "See group",
+    "moveSponsorsToGroup": "Move this member's sponsors to the group"
   },
   "sponsors": {
     "title": "Sponsors",
@@ -239,7 +240,20 @@
     "clubPool": "Club pool",
     "clubPoolHint": "Sponsors of deleted members end up here",
     "noClubPool": "No group is marked as the club pool. Please mark one first.",
-    "clubPoolLocked": "The club pool cannot be deleted. Mark another group first."
+    "clubPoolLocked": "The club pool cannot be deleted. Mark another group first.",
+    "dissolve": "Dissolve",
+    "dissolving": "Dissolving...",
+    "dissolveTitle": "Dissolve group \"{name}\"",
+    "dissolveIntro": "Choose which members take over the group's sponsors. Past donations stay credited to the dissolved group.",
+    "dissolveNoSponsors": "This group has no sponsors.",
+    "dissolveNoMembers": "This group has no members.",
+    "dissolveSponsorsToPool": "{count, plural, one {# sponsor goes} other {# sponsors go}} to the club pool.",
+    "dissolvedGroups": "Dissolved groups",
+    "dissolvedOn": "Dissolved on",
+    "dissolvedNotice": "The group \"{name}\" has been dissolved.",
+    "groupAlreadyDissolved": "This group has already been dissolved.",
+    "notAGroupMember": "Sponsors can only be handed to members of the group.",
+    "clubPoolDissolveLocked": "The club pool cannot be dissolved."
   },
   "targets": {
     "title": "Targets",

@@ -166,7 +166,9 @@ export const updateMemberSchema = z.object({
   lastName: z.string().min(1).optional(),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
-  groupId: z.string().optional().nullable()
+  groupId: z.string().optional().nullable(),
+  /** When the member joins a group: move the member's sponsors to it. */
+  moveSponsorsToGroup: z.boolean().optional()
 })
 
 export type CreateMemberInput = z.infer<typeof createMemberSchema>
@@ -185,8 +187,16 @@ export const updateGroupSchema = z.object({
   isClubPool: z.boolean().optional()
 })
 
+export const dissolveGroupSchema = z.object({
+  assignments: z.array(z.object({
+    sponsorId: z.string().min(1),
+    memberIds: z.array(z.string().min(1))
+  }))
+})
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>
 export type UpdateGroupInput = z.infer<typeof updateGroupSchema>
+export type DissolveGroupInput = z.infer<typeof dissolveGroupSchema>
 
 // ============================================================================
 // User Schemas

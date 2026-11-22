@@ -133,7 +133,8 @@
     "statusLink": "Status-Link",
     "copyStatusLink": "Status-Link kopieren",
     "linkCopied": "Link kopiert!",
-    "useGroupLink": "Siehe Gruppe"
+    "useGroupLink": "Siehe Gruppe",
+    "moveSponsorsToGroup": "Gönner dieses Mitglieds in die Gruppe übernehmen"
   },
   "sponsors": {
     "title": "Gönner",
@@ -239,7 +240,20 @@
     "clubPool": "Vereinstopf",
     "clubPoolHint": "Gönner von gelöschten Mitgliedern landen hier",
     "noClubPool": "Keine Gruppe ist als Vereinstopf markiert. Bitte zuerst eine Gruppe markieren.",
-    "clubPoolLocked": "Der Vereinstopf kann nicht gelöscht werden. Markiere zuerst eine andere Gruppe."
+    "clubPoolLocked": "Der Vereinstopf kann nicht gelöscht werden. Markiere zuerst eine andere Gruppe.",
+    "dissolve": "Auflösen",
+    "dissolving": "Wird aufgelöst...",
+    "dissolveTitle": "Gruppe «{name}» auflösen",
+    "dissolveIntro": "Wähle, welche Mitglieder die Gönner der Gruppe übernehmen. Die bisherigen Spenden bleiben der aufgelösten Gruppe gutgeschrieben.",
+    "dissolveNoSponsors": "Diese Gruppe hat keine Gönner.",
+    "dissolveNoMembers": "Diese Gruppe hat keine Mitglieder.",
+    "dissolveSponsorsToPool": "{count, plural, one {# Gönner geht} other {# Gönner gehen}} an den Vereinstopf.",
+    "dissolvedGroups": "Aufgelöste Gruppen",
+    "dissolvedOn": "Aufgelöst am",
+    "dissolvedNotice": "Die Gruppe «{name}» wurde aufgelöst.",
+    "groupAlreadyDissolved": "Diese Gruppe wurde bereits aufgelöst.",
+    "notAGroupMember": "Gönner können nur Mitgliedern der Gruppe übergeben werden.",
+    "clubPoolDissolveLocked": "Der Vereinstopf kann nicht aufgelöst werden."
   },
   "targets": {
     "title": "Vorgaben",

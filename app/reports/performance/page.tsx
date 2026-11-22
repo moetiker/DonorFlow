@@ -53,6 +53,7 @@ type InKindDonation = {
   assignedTo: {
     type: 'member' | 'group'
     name: string
+    dissolved?: boolean
   } | null
 }
 
@@ -348,7 +349,11 @@ export default function PerformancePage() {
         const inKindTableData = inKindDonations.map(donation => [
           donation.sponsorName,
           donation.description,
-          donation.assignedTo ? donation.assignedTo.name : '-',
+          donation.assignedTo
+            ? donation.assignedTo.dissolved
+              ? `${donation.assignedTo.name} ${t('dissolved')}`
+              : donation.assignedTo.name
+            : '-',
           formatDate(donation.donationDate)
         ])
 
@@ -691,9 +696,14 @@ export default function PerformancePage() {
                         <td>{donation.description}</td>
                         <td>
                           {donation.assignedTo ? (
-                            <Badge bg={donation.assignedTo.type === 'group' ? 'primary' : 'secondary'}>
-                              {donation.assignedTo.name}
-                            </Badge>
+                            <>
+                              <Badge bg={donation.assignedTo.type === 'group' ? 'primary' : 'secondary'}>
+                                {donation.assignedTo.name}
+                              </Badge>
+                              {donation.assignedTo.dissolved && (
+                                <span className="text-muted ms-1">{t('dissolved')}</span>
+                              )}
+                            </>
                           ) : (
                             <span className="text-muted">-</span>
                           )}

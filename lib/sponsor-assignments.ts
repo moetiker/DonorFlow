@@ -1,4 +1,4 @@
-import type { PrismaTx } from '@/lib/club-pool'
+import { getClubPool, ClubPoolLockedError, type PrismaTx } from '@/lib/club-pool'
 import type { RecipientRef } from '@/lib/crediting'
 
 /** Thrown when a sponsor would be assigned to a dissolved group. */
@@ -6,6 +6,22 @@ export class DissolvedGroupError extends Error {
   constructor() {
     super('groupDissolved')
     this.name = 'DissolvedGroupError'
+  }
+}
+
+/** Thrown when a group that is already dissolved is dissolved again. */
+export class GroupAlreadyDissolvedError extends Error {
+  constructor() {
+    super('groupAlreadyDissolved')
+    this.name = 'GroupAlreadyDissolvedError'
+  }
+}
+
+/** Thrown when a dissolve plan hands a sponsor to someone who is not a member of the group. */
+export class NotAGroupMemberError extends Error {
+  constructor() {
+    super('notAGroupMember')
+    this.name = 'NotAGroupMemberError'
   }
 }
 
@@ -92,4 +108,135 @@ export function toRecipientRefs(
   entries: { memberId?: string | null; groupId?: string | null }[]
 ): RecipientRef[] {
   return entries.map(e => (e.memberId ? { memberId: e.memberId } : { groupId: e.groupId as string }))
+}
+
+/**
+ * Moves a member's sponsors to the group the member joins (spec "Joining a
+ * group"): each of the member's assignments is replaced by one to the group,
+ * without creating a duplicate when the sponsor is already assigned to it.
+ * Donations stay credited to the member.
+ *
+ * @returns the number of sponsors moved
+ * @throws DissolvedGroupError if the group has been dissolved
+ */
+export async function moveMemberSponsorsToGroup(
+  tx: PrismaTx,
+  memberId: string,
+  groupId: string
+): Promise<number> {
+  if (await isGroupDissolved(tx, groupId)) throw new DissolvedGroupError()
+
+  const memberAssignments = await tx.sponsorAssignment.findMany({
+    where: { memberId },
+    select: { id: true, sponsorId: true }
+  })
+  if (memberAssignments.length === 0) return 0
+
+  const sponsorIds = memberAssignments.map(a => a.sponsorId)
+  const alreadyInGroup = new Set(
+    (
+      await tx.sponsorAssignment.findMany({
+        where: { groupId, sponsorId: { in: sponsorIds } },
+        select: { sponsorId: true }
+      })
+    ).map(a => a.sponsorId)
+  )
+
+  await tx.sponsorAssignment.deleteMany({ where: { id: { in: memberAssignments.map(a => a.id) } } })
+  const toCreate = sponsorIds.filter(id => !alreadyInGroup.has(id))
+  if (toCreate.length > 0) {
+    await tx.sponsorAssignment.createMany({ data: toCreate.map(sponsorId => ({ sponsorId, groupId })) })
+  }
+  return sponsorIds.length
+}
+
+/** For each of the group's sponsors, the members that take it over. */
+export type DissolvePlan = { sponsorId: string; memberIds: string[] }[]
+
+/**
+ * Dissolves a group (spec "Dissolving a group"), in the caller's transaction:
+ *
+ * 1. Each sponsor assigned to the group gets an assignment to the members the
+ *    plan lists for it (existing member assignments are not duplicated).
+ * 2. A group sponsor with no member in the plan (missing or empty memberIds)
+ *    gets an assignment to the club pool, but only if it has no other
+ *    assignment left once the group's is gone.
+ * 3. All assignments to the group are removed, its members lose the group and
+ *    the group is marked dissolved.
+ *
+ * Donations credited to the group stay credited to it. Plan entries for
+ * sponsors not assigned to the group are ignored.
+ *
+ * @throws ClubPoolLockedError if the group is the club pool
+ * @throws GroupAlreadyDissolvedError if the group is already dissolved
+ * @throws NotAGroupMemberError if the plan names someone outside the group
+ * @throws NoClubPoolError if no group is marked as the club pool
+ */
+export async function dissolveGroup(
+  tx: PrismaTx,
+  groupId: string,
+  plan: DissolvePlan
+): Promise<{ assignmentsCreated: number; sponsorsToPool: number }> {
+  const group = await tx.group.findUniqueOrThrow({
+    where: { id: groupId },
+    select: { isClubPool: true, dissolvedAt: true, members: { select: { id: true } } }
+  })
+  if (group.isClubPool) throw new ClubPoolLockedError()
+  if (group.dissolvedAt) throw new GroupAlreadyDissolvedError()
+
+  const memberIds = new Set(group.members.map(m => m.id))
+  for (const entry of plan) {
+    if (entry.memberIds.some(id => !memberIds.has(id))) throw new NotAGroupMemberError()
+  }
+
+  const pool = await getClubPool(tx)
+
+  const groupSponsorIds = (
+    await tx.sponsorAssignment.findMany({ where: { groupId }, select: { sponsorId: true } })
+  ).map(a => a.sponsorId)
+  // Every assignment of those sponsors except the one to the group. Filtered
+  // in code: SQL's NOT (groupId = x) would also drop the member assignments,
+  // whose groupId is NULL.
+  const otherAssignments = (
+    await tx.sponsorAssignment.findMany({
+      where: { sponsorId: { in: groupSponsorIds } },
+      select: { sponsorId: true, memberId: true, groupId: true }
+    })
+  ).filter(a => a.groupId !== groupId)
+
+  const chosen = new Map<string, Set<string>>()
+  for (const entry of plan) {
+    const set = chosen.get(entry.sponsorId) ?? new Set<string>()
+    entry.memberIds.forEach(id => set.add(id))
+    chosen.set(entry.sponsorId, set)
+  }
+
+  const toCreate: { sponsorId: string; memberId?: string; groupId?: string }[] = []
+  let assignmentsCreated = 0
+  let sponsorsToPool = 0
+  for (const sponsorId of groupSponsorIds) {
+    const others = otherAssignments.filter(a => a.sponsorId === sponsorId)
+    const members = chosen.get(sponsorId) ?? new Set<string>()
+    if (members.size > 0) {
+      const hasMember = new Set(others.map(a => a.memberId))
+      for (const memberId of members) {
+        if (!hasMember.has(memberId)) {
+          toCreate.push({ sponsorId, memberId })
+          assignmentsCreated++
+        }
+      }
+    } else if (others.length === 0) {
+      toCreate.push({ sponsorId, groupId: pool.id })
+      sponsorsToPool++
+    }
+  }
+
+  await tx.sponsorAssignment.deleteMany({ where: { groupId } })
+  if (toCreate.length > 0) {
+    await tx.sponsorAssignment.createMany({ data: toCreate })
+  }
+  await tx.member.updateMany({ where: { groupId }, data: { groupId: null } })
+  await tx.group.update({ where: { id: groupId }, data: { dissolvedAt: new Date() } })
+
+  return { assignmentsCreated, sponsorsToPool }
 }

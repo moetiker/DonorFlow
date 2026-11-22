@@ -8,13 +8,15 @@ import { DeleteConfirmModal, useHandOverText } from './DeleteConfirmModal'
 
 type Props = {
   show: boolean
-  group: { id: string; name: string } | null
+  group: { id: string; name: string; isClubPool?: boolean; dissolved?: boolean } | null
   onHide: () => void
   onSave: () => void
   onDelete?: () => void
+  /** Opens the dissolve dialog; the action is hidden for the club pool and dissolved groups. */
+  onDissolve?: () => void
 }
 
-export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props) {
+export function GroupEditModal({ show, group, onHide, onSave, onDelete, onDissolve }: Props) {
   const t = useTranslations('groups')
   const tCommon = useTranslations('common')
   const handOverText = useHandOverText()
@@ -143,6 +145,16 @@ export function GroupEditModal({ show, group, onHide, onSave, onDelete }: Props)
               >
                 {tCommon('delete')}
               </Button>
+              {onDissolve && !group.isClubPool && !group.dissolved && (
+                <Button
+                  variant="outline-danger"
+                  className="ms-2"
+                  onClick={onDissolve}
+                  disabled={saving}
+                >
+                  {t('dissolve')}
+                </Button>
+              )}
             </div>
           )}
           <Button variant="secondary" onClick={onHide}>

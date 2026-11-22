@@ -153,7 +153,8 @@ export const GET = withApiRoute(async (request: NextRequest) => {
         group: {
           select: {
             id: true,
-            name: true
+            name: true,
+            dissolvedAt: true
           }
         }
       },
@@ -171,7 +172,7 @@ export const GET = withApiRoute(async (request: NextRequest) => {
       assignedTo: d.member
         ? { type: 'member' as const, name: `${d.member.firstName} ${d.member.lastName}` }
         : d.group
-          ? { type: 'group' as const, name: d.group.name }
+          ? { type: 'group' as const, name: d.group.name, dissolved: d.group.dissolvedAt !== null }
           : null
     }))
 

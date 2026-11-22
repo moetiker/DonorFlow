@@ -133,7 +133,8 @@
     "statusLink": "Link stato",
     "copyStatusLink": "Copia link stato",
     "linkCopied": "Link copiato!",
-    "useGroupLink": "Vedi gruppo"
+    "useGroupLink": "Vedi gruppo",
+    "moveSponsorsToGroup": "Trasferisci i donatori di questo membro al gruppo"
   },
   "sponsors": {
     "title": "Sponsor",
@@ -239,7 +240,20 @@
     "clubPool": "Fondo della società",
     "clubPoolHint": "I donatori dei membri eliminati finiscono qui",
     "noClubPool": "Nessun gruppo è contrassegnato come fondo della società. Contrassegnane uno.",
-    "clubPoolLocked": "Il fondo della società non può essere eliminato. Contrassegna prima un altro gruppo."
+    "clubPoolLocked": "Il fondo della società non può essere eliminato. Contrassegna prima un altro gruppo.",
+    "dissolve": "Sciogli",
+    "dissolving": "Scioglimento...",
+    "dissolveTitle": "Sciogli il gruppo «{name}»",
+    "dissolveIntro": "Scegli quali membri rilevano i donatori del gruppo. Le donazioni passate restano accreditate al gruppo sciolto.",
+    "dissolveNoSponsors": "Questo gruppo non ha donatori.",
+    "dissolveNoMembers": "Questo gruppo non ha membri.",
+    "dissolveSponsorsToPool": "{count, plural, one {# donatore passa} other {# donatori passano}} al fondo della società.",
+    "dissolvedGroups": "Gruppi sciolti",
+    "dissolvedOn": "Sciolto il",
+    "dissolvedNotice": "Il gruppo «{name}» è stato sciolto.",
+    "groupAlreadyDissolved": "Questo gruppo è già stato sciolto.",
+    "notAGroupMember": "I donatori possono essere assegnati solo ai membri del gruppo.",
+    "clubPoolDissolveLocked": "Il fondo della società non può essere sciolto."
   },
   "targets": {
     "title": "Obiettivi",

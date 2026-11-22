@@ -75,9 +75,10 @@ export const GET = withApiRoute(async (request: NextRequest) => {
       return {
         id: member.id,
         name: `${member.firstName} ${member.lastName}`,
-        type: 'member' as const,
+        type: 'member' as 'member' | 'group',
         amount: amount,
-        groupName: member.group?.name
+        groupName: member.group?.name,
+        dissolved: false
       }
     }))).filter(share => share.amount > 0)
 
@@ -89,9 +90,10 @@ export const GET = withApiRoute(async (request: NextRequest) => {
         memberShares.push({
           id: group.id,
           name: group.name,
-          type: 'member' as const,
+          type: 'group',
           amount,
-          groupName: undefined
+          groupName: undefined,
+          dissolved: group.dissolvedAt !== null
         })
       }
     }
@@ -103,9 +105,10 @@ export const GET = withApiRoute(async (request: NextRequest) => {
       memberShares.push({
         id: 'unassigned',
         name: 'Unassigned',
-        type: 'member' as const,
+        type: 'member',
         amount: unassignedTotal,
-        groupName: undefined
+        groupName: undefined,
+        dissolved: false
       })
     }
 

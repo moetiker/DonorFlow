@@ -133,7 +133,8 @@
     "statusLink": "Lien de statut",
     "copyStatusLink": "Copier le lien de statut",
     "linkCopied": "Lien copie!",
-    "useGroupLink": "Voir groupe"
+    "useGroupLink": "Voir groupe",
+    "moveSponsorsToGroup": "Transférer les donateurs de ce membre au groupe"
   },
   "sponsors": {
     "title": "Sponsors",
@@ -239,7 +240,20 @@
     "clubPool": "Fonds de l'association",
     "clubPoolHint": "Les donateurs des membres supprimés arrivent ici",
     "noClubPool": "Aucun groupe n'est marqué comme fonds de l'association. Veuillez en marquer un.",
-    "clubPoolLocked": "Le fonds de l'association ne peut pas être supprimé. Marquez d'abord un autre groupe."
+    "clubPoolLocked": "Le fonds de l'association ne peut pas être supprimé. Marquez d'abord un autre groupe.",
+    "dissolve": "Dissoudre",
+    "dissolving": "Dissolution...",
+    "dissolveTitle": "Dissoudre le groupe «{name}»",
+    "dissolveIntro": "Choisissez les membres qui reprennent les donateurs du groupe. Les dons passés restent attribués au groupe dissous.",
+    "dissolveNoSponsors": "Ce groupe n'a pas de donateurs.",
+    "dissolveNoMembers": "Ce groupe n'a pas de membres.",
+    "dissolveSponsorsToPool": "{count, plural, one {# donateur est transféré} other {# donateurs sont transférés}} vers le fonds de l'association.",
+    "dissolvedGroups": "Groupes dissous",
+    "dissolvedOn": "Dissous le",
+    "dissolvedNotice": "Le groupe «{name}» a été dissous.",
+    "groupAlreadyDissolved": "Ce groupe a déjà été dissous.",
+    "notAGroupMember": "Les donateurs ne peuvent être remis qu'aux membres du groupe.",
+    "clubPoolDissolveLocked": "Le fonds de l'association ne peut pas être dissous."
   },
   "targets": {
     "title": "Objectifs",

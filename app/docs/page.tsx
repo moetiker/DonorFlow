@@ -122,6 +122,43 @@ export default function DocsPage() {
 
         <Card className="mt-4">
           <Card.Header>
+            <h5 className="mb-0">Sponsors, Groups and the Club Pool</h5>
+          </Card.Header>
+          <Card.Body>
+            <h6>Sponsor assignment</h6>
+            <p className="text-muted">
+              A sponsor can be assigned to several recipients, each a member or a group. Every
+              donation is credited to exactly one of them, chosen when the donation is entered, and
+              stays with that recipient when the sponsor&apos;s assignments change later.
+            </p>
+            <h6>Joining a group</h6>
+            <p className="text-muted">
+              When a member with sponsors is put into a group, the member dialog offers to move the
+              member&apos;s sponsors to the group (ticked by default). Past donations stay credited to
+              the member. Leaving or switching groups never moves the group&apos;s sponsors.
+            </p>
+            <h6>Deleting a member or group</h6>
+            <p className="text-muted">
+              Donations credited to the deleted member or group go to the sponsor&apos;s remaining
+              recipient if it has exactly one, otherwise to the club pool. Sponsors left without any
+              recipient are assigned to the club pool. The club pool itself cannot be deleted; mark
+              another group as the club pool first.
+            </p>
+            <h6>Dissolving a group</h6>
+            <p className="text-muted mb-0">
+              &quot;Dissolve&quot; in the group dialog hands the group&apos;s sponsors to its members:
+              each sponsor goes to all members unless unticked. A sponsor ticked for no member and
+              without any other recipient goes to the club pool. The members leave the group, but the
+              donations credited to the group stay with it, so past reports still show it, marked
+              &quot;(dissolved)&quot;. Dissolved groups can no longer be chosen for sponsors, donations
+              or members and are listed in the collapsed &quot;Dissolved groups&quot; section of the
+              groups page, where they can still be deleted.
+            </p>
+          </Card.Body>
+        </Card>
+
+        <Card className="mt-4">
+          <Card.Header>
             <h5 className="mb-0">Quick Links</h5>
           </Card.Header>
           <Card.Body>

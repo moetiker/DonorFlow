@@ -14,10 +14,11 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 type Share = {
   id: string
   name: string
-  type: 'member'
+  type: 'member' | 'group'
   amount: number
   percentage: number
   groupName?: string
+  dissolved?: boolean
 }
 
 type FiscalYear = {
@@ -119,8 +120,11 @@ export default function SharesReportPage() {
 
   const colors = generateColors(data.shares.length)
 
+  // A dissolved group keeps its row, marked like on the reports page
+  const shareLabel = (share: Share) => (share.dissolved ? `${share.name} ${t('dissolved')}` : share.name)
+
   const chartData = {
-    labels: data.shares.map(s => s.name),
+    labels: data.shares.map(shareLabel),
     datasets: [
       {
         data: data.shares.map(s => s.amount),
@@ -144,7 +148,7 @@ export default function SharesReportPage() {
           label: function(context: any) {
             const share = data.shares[context.dataIndex]
             return [
-              `${share.name}`,
+              shareLabel(share),
               share.groupName ? `(${share.groupName})` : '',
               `${formatCurrency(share.amount)}`,
               `${share.percentage.toFixed(1)}%`
@@ -263,6 +267,7 @@ export default function SharesReportPage() {
                           }}
                         />
                         <strong>{share.name}</strong>
+                        {share.dissolved && <span className="text-muted ms-1">{t('dissolved')}</span>}
                       </div>
                     </td>
                     <td>
