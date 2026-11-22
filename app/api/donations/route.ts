@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import { sponsorAssignmentsInclude, isGroupDissolved } from '@/lib/sponsor-assignments'
 import { createDonationSchema, validateRequestI18n, getLocaleFromRequest, type DonationType } from '@/lib/validation'
 
 export const GET = withApiRoute(async (request: NextRequest) => {
@@ -16,10 +17,7 @@ export const GET = withApiRoute(async (request: NextRequest) => {
     ...(includeAll && {
       include: {
         sponsor: {
-          include: {
-            member: true,
-            group: true
-          }
+          include: sponsorAssignmentsInclude
         },
         member: true,  // Include donation's assigned member
         group: true    // Include donation's assigned group
@@ -52,6 +50,10 @@ export const POST = withApiRoute(async (request: NextRequest) => {
       endDate: { gte: parsedDate }
     }
   })
+
+  if (groupId && await isGroupDissolved(prisma, groupId)) {
+    return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
+  }
 
   const donation = await prisma.donation.create({
     data: {

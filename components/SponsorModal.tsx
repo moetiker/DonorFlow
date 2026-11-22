@@ -50,7 +50,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
   const tDonations = useTranslations('donations')
-  const tValidation = useTranslations('validation.errors')
+  const tValidation = useTranslations('validation')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -69,6 +69,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   })
   const [recipients, setRecipients] = useState<RecipientRow[]>([])
   const [pendingRecipient, setPendingRecipient] = useState('')
+  const [donationRecipient, setDonationRecipient] = useState('')
   const [donationData, setDonationData] = useState({
     amount: '',
     donationDate: new Date().toISOString().split('T')[0],
@@ -113,6 +114,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       })
     }
     setPendingRecipient('')
+    setDonationRecipient('')
     setError('')
     setShowDeleteConfirm(false)
     setAddDonation(false)
@@ -173,9 +175,8 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
           amount: parseFloat(donationData.amount),
           donationDate: donationData.donationDate,
           note: donationData.note || null,
-          // The first donation is credited to the first listed recipient
-          memberId: recipients[0].value.startsWith('m:') ? recipients[0].value.slice(2) : null,
-          groupId: recipients[0].value.startsWith('g:') ? recipients[0].value.slice(2) : null
+          memberId: firstDonationRecipient.startsWith('m:') ? firstDonationRecipient.slice(2) : null,
+          groupId: firstDonationRecipient.startsWith('g:') ? firstDonationRecipient.slice(2) : null
         }
 
         const donationResponse = await fetch('/api/donations', {
@@ -208,6 +209,13 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     setRecipients([...recipients, { value: pendingRecipient, label }])
     setPendingRecipient('')
   }
+
+  // One recipient receives the first donation; with several the user picks one
+  // (a removed recipient can no longer be picked).
+  const firstDonationRecipient = recipients.length === 1
+    ? recipients[0].value
+    : recipients.some(r => r.value === donationRecipient) ? donationRecipient : ''
+  const missingDonationRecipient = !sponsor && addDonation && Boolean(donationData.amount) && !firstDonationRecipient
 
   const availableMembers = members.filter(m => !recipients.some(r => r.value === `m:${m.id}`))
   const availableGroups = groups.filter(
@@ -493,6 +501,23 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
                     </div>
                   </div>
 
+                  {recipients.length > 1 && (
+                    <Form.Group className="mb-3">
+                      <Form.Label>{tDonations('assignment')} *</Form.Label>
+                      <Form.Select
+                        aria-label={tDonations('assignment')}
+                        value={firstDonationRecipient}
+                        onChange={(e) => setDonationRecipient(e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="">-- {tDonations('selectRecipient')} --</option>
+                        {recipients.map(r => (
+                          <option key={r.value} value={r.value}>{r.label}</option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  )}
+
                   <Form.Group className="mb-3">
                     <Form.Label>{tDonations('note')}</Form.Label>
                     <Form.Control
@@ -528,7 +553,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
               <Button variant="secondary" onClick={onHide} disabled={loading}>
                 {tCommon('cancel')}
               </Button>
-              <Button variant="primary" type="submit" disabled={loading || recipients.length === 0}>
+              <Button variant="primary" type="submit" disabled={loading || recipients.length === 0 || missingDonationRecipient}>
                 {loading ? tCommon('saving') : tCommon('save')}
               </Button>
             </div>

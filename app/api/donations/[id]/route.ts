@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import { isGroupDissolved } from '@/lib/sponsor-assignments'
 import { updateDonationSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
 
 export const PUT = withApiRoute(async (
@@ -31,23 +32,11 @@ export const PUT = withApiRoute(async (
 
   const { sponsorId, type, amount, description, donationDate, note, memberId, groupId } = validation.data
 
-  // Merge with existing values to validate XOR constraint
-  const mergedMemberId = memberId !== undefined ? memberId : existingDonation.memberId
-  const mergedGroupId = groupId !== undefined ? groupId : existingDonation.groupId
-
-  // Validate XOR constraint: exactly one must be set
-  if (!mergedMemberId && !mergedGroupId) {
-    const messages = await import(`@/messages/${locale}.json`)
-    return NextResponse.json({
-      error: messages.default.validation.memberOrGroupRequired
-    }, { status: 400 })
-  }
-
-  if (mergedMemberId && mergedGroupId) {
-    const messages = await import(`@/messages/${locale}.json`)
-    return NextResponse.json({
-      error: messages.default.validation.cannotAssignBoth
-    }, { status: 400 })
+  // The schema guarantees exactly one recipient whenever either key is sent.
+  // An absent key counts as cleared, so the other column is written as null.
+  const changesRecipient = memberId !== undefined || groupId !== undefined
+  if (changesRecipient && groupId && await isGroupDissolved(prisma, groupId)) {
+    return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
   }
 
   // Build update data object (only include provided fields)
@@ -57,8 +46,10 @@ export const PUT = withApiRoute(async (
   if (amount !== undefined) updateData.amount = amount
   if (description !== undefined) updateData.description = description || null
   if (note !== undefined) updateData.note = note || null
-  if (memberId !== undefined) updateData.memberId = memberId || null
-  if (groupId !== undefined) updateData.groupId = groupId || null
+  if (changesRecipient) {
+    updateData.memberId = memberId || null
+    updateData.groupId = groupId || null
+  }
 
   // Re-calculate fiscal year if date changed
   if (donationDate !== undefined) {

@@ -26,20 +26,20 @@ const requireMemberOrGroup = (data: MemberGroupFields) => data.memberId || data.
 /** Validates that both memberId AND groupId are not provided simultaneously */
 const preventBothMemberAndGroup = (data: MemberGroupFields) => !(data.memberId && data.groupId)
 
-/** For update operations: only validate if both fields are explicitly provided */
-const requireMemberOrGroupOnUpdate = (data: MemberGroupFields) => {
-  if (data.memberId !== undefined && data.groupId !== undefined) {
-    return data.memberId || data.groupId
-  }
-  return true
-}
+/**
+ * For update operations: if either key is present the recipient is being
+ * changed, and exactly one of the two must then be non-empty. An absent key
+ * counts as cleared (the route writes null for it). If neither key is present
+ * the recipient stays untouched.
+ */
+const touchesRecipient = (data: MemberGroupFields) =>
+  data.memberId !== undefined || data.groupId !== undefined
 
-const preventBothOnUpdate = (data: MemberGroupFields) => {
-  if (data.memberId !== undefined && data.groupId !== undefined) {
-    return !(data.memberId && data.groupId)
-  }
-  return true
-}
+const requireMemberOrGroupOnUpdate = (data: MemberGroupFields) =>
+  !touchesRecipient(data) || Boolean(data.memberId || data.groupId)
+
+const preventBothOnUpdate = (data: MemberGroupFields) =>
+  !touchesRecipient(data) || !(data.memberId && data.groupId)
 
 // Reusable refinement configs
 const memberOrGroupRequiredRefinement = {

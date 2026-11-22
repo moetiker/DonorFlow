@@ -25,11 +25,9 @@ type Donation = {
     salutation: string | null
     firstName: string | null
     lastName: string | null
-    member?: { id: string; firstName: string; lastName: string }
-    group?: { id: string; name: string }
   }
-  member?: { id: string; firstName: string; lastName: string }
-  group?: { id: string; name: string }
+  member?: { id: string; firstName: string; lastName: string } | null
+  group?: { id: string; name: string } | null
 }
 
 type Sponsor = {
@@ -38,8 +36,12 @@ type Sponsor = {
   salutation: string | null
   firstName: string | null
   lastName: string | null
-  member?: { id: string; firstName: string; lastName: string }
-  group?: { id: string; name: string }
+  assignments?: {
+    memberId: string | null
+    groupId: string | null
+    member: { id: string; firstName: string; lastName: string } | null
+    group: { id: string; name: string } | null
+  }[]
 }
 
 type Member = {
@@ -51,6 +53,7 @@ type Member = {
 type Group = {
   id: string
   name: string
+  dissolvedAt?: string | null
 }
 
 export default function DonationsPage() {
@@ -142,10 +145,11 @@ export default function DonationsPage() {
 
     const searchLower = searchTerm.toLowerCase()
     const sponsorName = getSponsorDisplayName(donation.sponsor).toLowerCase()
-    const memberName = donation.sponsor.member
-      ? `${donation.sponsor.member.firstName} ${donation.sponsor.member.lastName}`.toLowerCase()
+    // Search the donation's own recipient, not the sponsor's assignments
+    const memberName = donation.member
+      ? `${donation.member.firstName} ${donation.member.lastName}`.toLowerCase()
       : ''
-    const groupName = donation.sponsor.group ? donation.sponsor.group.name.toLowerCase() : ''
+    const groupName = donation.group ? donation.group.name.toLowerCase() : ''
     const note = (donation.note || '').toLowerCase()
     const description = (donation.description || '').toLowerCase()
 

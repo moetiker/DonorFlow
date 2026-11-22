@@ -54,6 +54,12 @@ export async function replaceSponsorAssignments(
   }
 }
 
+/** True when the group exists and has been dissolved. */
+export async function isGroupDissolved(tx: PrismaTx, groupId: string): Promise<boolean> {
+  const group = await tx.group.findUnique({ where: { id: groupId }, select: { dissolvedAt: true } })
+  return Boolean(group?.dissolvedAt)
+}
+
 /** Include clause that adds a sponsor's assignments with member and group names. */
 export const sponsorAssignmentsInclude = {
   assignments: {

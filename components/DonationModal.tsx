@@ -6,6 +6,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
+import { recipientLabel } from '@/lib/crediting'
 
 type Sponsor = {
   id: string
@@ -13,8 +14,14 @@ type Sponsor = {
   salutation: string | null
   firstName: string | null
   lastName: string | null
-  member?: { id: string; firstName: string; lastName: string }
-  group?: { id: string; name: string }
+  assignments?: Assignment[]
+}
+
+type Assignment = {
+  memberId: string | null
+  groupId: string | null
+  member: { id: string; firstName: string; lastName: string } | null
+  group: { id: string; name: string } | null
 }
 
 type Member = {
@@ -26,7 +33,12 @@ type Member = {
 type Group = {
   id: string
   name: string
+  dissolvedAt?: string | null
 }
+
+/** Form value of a recipient: "m:<id>" for a member, "g:<id>" for a group. */
+const assignmentValue = (a: { memberId: string | null; groupId: string | null }) =>
+  a.memberId ? `m:${a.memberId}` : `g:${a.groupId}`
 
 // Helper function to display sponsor name
 function getSponsorDisplayName(sponsor: Sponsor) {
@@ -63,6 +75,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
   const t = useTranslations('donations')
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
+  const tValidation = useTranslations('validation')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -73,12 +86,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     description: '',
     donationDate: new Date().toISOString().split('T')[0],
     note: '',
-    memberId: '',
-    groupId: ''
+    recipient: ''
   })
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor[]>([])
-  const [selectedMember, setSelectedMember] = useState<Member[]>([])
-  const [selectedGroup, setSelectedGroup] = useState<Group[]>([])
 
   // Reset the form while rendering instead of in an effect, so the fields for a
   // newly opened (or switched) donation are correct on the very first render.
@@ -99,16 +109,13 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         description: donation.description || '',
         donationDate: new Date(donation.donationDate).toISOString().split('T')[0],
         note: donation.note || '',
-        memberId: donation.memberId || '',
-        groupId: donation.groupId || ''
+        recipient: donation.memberId
+          ? `m:${donation.memberId}`
+          : donation.groupId ? `g:${donation.groupId}` : ''
       })
-      // Set typeahead selections
+      // Set typeahead selection
       const sponsor = sponsors.find(s => s.id === donation.sponsorId)
       setSelectedSponsor(sponsor ? [sponsor] : [])
-      const member = members.find(m => m.id === donation.memberId)
-      setSelectedMember(member ? [member] : [])
-      const group = groups.find(g => g.id === donation.groupId)
-      setSelectedGroup(group ? [group] : [])
     } else {
       setFormData({
         sponsorId: '',
@@ -117,40 +124,26 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         description: '',
         donationDate: new Date().toISOString().split('T')[0],
         note: '',
-        memberId: '',
-        groupId: ''
+        recipient: ''
       })
       setSelectedSponsor([])
-      setSelectedMember([])
-      setSelectedGroup([])
     }
     setError('')
     setShowDeleteConfirm(false)
   }
 
-  // Auto-populate member/group when sponsor is selected
+  // A sponsor with exactly one recipient pre-fills it; with several the user
+  // must choose, so no recipient is pre-selected.
   const handleSponsorChange = (selected: any[]) => {
     if (selected.length > 0) {
       const sponsor = selected[0] as Sponsor
       setSelectedSponsor([sponsor])
       setFormData(prev => {
         const newData = { ...prev, sponsorId: sponsor.id }
-
-        // Auto-fill member/group from sponsor if fields are empty and not editing
-        if (!donation && !prev.memberId && !prev.groupId) {
-          if (sponsor.member) {
-            newData.memberId = sponsor.member.id
-            newData.groupId = ''
-            setSelectedMember([sponsor.member])
-            setSelectedGroup([])
-          } else if (sponsor.group) {
-            newData.groupId = sponsor.group.id
-            newData.memberId = ''
-            setSelectedGroup([sponsor.group])
-            setSelectedMember([])
-          }
+        if (!donation) {
+          const assignments = sponsor.assignments ?? []
+          newData.recipient = assignments.length === 1 ? assignmentValue(assignments[0]) : ''
         }
-
         return newData
       })
     } else {
@@ -159,29 +152,22 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
     }
   }
 
-  const handleMemberChange = (selected: any[]) => {
-    if (selected.length > 0) {
-      const member = selected[0] as Member
-      setSelectedMember([member])
-      setSelectedGroup([])
-      setFormData(prev => ({ ...prev, memberId: member.id, groupId: '' }))
-    } else {
-      setSelectedMember([])
-      setFormData(prev => ({ ...prev, memberId: '' }))
-    }
-  }
-
-  const handleGroupChange = (selected: any[]) => {
-    if (selected.length > 0) {
-      const group = selected[0] as Group
-      setSelectedGroup([group])
-      setSelectedMember([])
-      setFormData(prev => ({ ...prev, groupId: group.id, memberId: '' }))
-    } else {
-      setSelectedGroup([])
-      setFormData(prev => ({ ...prev, groupId: '' }))
-    }
-  }
+  // The sponsor's recipients come first, then every other member and group.
+  // Dissolved groups are not offered, except the one the donation already has.
+  const sponsorOptions = (selectedSponsor[0]?.assignments ?? []).map(a => ({
+    value: assignmentValue(a),
+    label: recipientLabel(a)
+  }))
+  const sponsorValues = new Set(sponsorOptions.map(o => o.value))
+  const otherOptions = [
+    ...members.map(m => ({
+      value: `m:${m.id}`,
+      label: recipientLabel({ member: m, group: null })
+    })),
+    ...groups
+      .filter(g => !g.dissolvedAt || donation?.groupId === g.id)
+      .map(g => ({ value: `g:${g.id}`, label: recipientLabel({ member: null, group: g }) }))
+  ].filter(o => !sponsorValues.has(o.value))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -194,8 +180,8 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
         type: formData.type,
         donationDate: formData.donationDate,
         note: formData.note || null,
-        memberId: formData.memberId || null,
-        groupId: formData.groupId || null
+        memberId: formData.recipient.startsWith('m:') ? formData.recipient.slice(2) : null,
+        groupId: formData.recipient.startsWith('g:') ? formData.recipient.slice(2) : null
       }
 
       // Add type-specific fields
@@ -218,7 +204,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || tErrors('saveFailed'))
+        throw new Error(
+          data.error === 'groupDissolved' ? tValidation('groupDissolved') : data.error || tErrors('saveFailed')
+        )
       }
 
       onSave()
@@ -283,12 +271,8 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
               labelKey={(option) => {
                 const sponsor = option as Sponsor
                 const name = getSponsorDisplayName(sponsor)
-                const assignment = sponsor.member
-                  ? ` (${sponsor.member.firstName} ${sponsor.member.lastName})`
-                  : sponsor.group
-                    ? ` (${sponsor.group.name})`
-                    : ''
-                return name + assignment
+                const labels = (sponsor.assignments ?? []).map(recipientLabel)
+                return labels.length > 0 ? `${name} (${labels.join(', ')})` : name
               }}
               options={sponsors}
               selected={selectedSponsor}
@@ -308,41 +292,27 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
               {t('assignmentHelp')}
             </Form.Text>
 
-            <div className="row">
-              <div className="col-md-6">
-                <Form.Label className="text-muted small">{tCommon('member')}</Form.Label>
-                <Typeahead
-                  id="member-typeahead"
-                  labelKey={(option) => {
-                    const member = option as Member
-                    return `${member.firstName} ${member.lastName}`
-                  }}
-                  options={members}
-                  selected={selectedMember}
-                  onChange={handleMemberChange}
-                  placeholder={`-- ${tCommon('member')} --`}
-                  disabled={loading || selectedGroup.length > 0}
-                  emptyLabel={t('noResults')}
-                />
-              </div>
-
-              <div className="col-md-6">
-                <Form.Label className="text-muted small">{tCommon('group')}</Form.Label>
-                <Typeahead
-                  id="group-typeahead"
-                  labelKey={(option) => {
-                    const group = option as Group
-                    return group.name
-                  }}
-                  options={groups}
-                  selected={selectedGroup}
-                  onChange={handleGroupChange}
-                  placeholder={`-- ${tCommon('group')} --`}
-                  disabled={loading || selectedMember.length > 0}
-                  emptyLabel={t('noResults')}
-                />
-              </div>
-            </div>
+            <Form.Select
+              aria-label={t('assignment')}
+              value={formData.recipient}
+              onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
+              disabled={loading}
+              required
+            >
+              <option value="">-- {t('selectRecipient')} --</option>
+              {sponsorOptions.length > 0 && (
+                <optgroup label={t('sponsorRecipients')}>
+                  {sponsorOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label={sponsorOptions.length > 0 ? t('otherRecipients') : t('assignment')}>
+                {otherOptions.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </optgroup>
+            </Form.Select>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -443,7 +413,7 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
               <Button variant="secondary" onClick={onHide} disabled={loading}>
                 {tCommon('cancel')}
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="primary" type="submit" disabled={loading || !formData.recipient}>
                 {loading ? tCommon('saving') : tCommon('save')}
               </Button>
             </div>
