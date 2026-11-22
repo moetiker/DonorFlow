@@ -213,6 +213,7 @@ async function main() {
   await prisma.donorLetter.deleteMany()
   await prisma.mailJob.deleteMany()
   await prisma.memberTarget.deleteMany()
+  await prisma.sponsorAssignment.deleteMany()
   await prisma.sponsor.deleteMany()
   await prisma.member.deleteMany()
   await prisma.group.deleteMany()
@@ -353,14 +354,15 @@ async function main() {
       }
     }
 
-    // Assign to either a member or a group, per the XOR business rule.
-    // Roughly 60% member-assigned, 40% group-assigned.
+    // One recipient per sponsor here: a member or a group (each assignment is
+    // one or the other). Roughly 60% member-assigned, 40% group-assigned.
+    // A second recipient is added further below for one sponsor.
     const assignToMember = rng() < 0.6
     const memberId = assignToMember ? pick(members).id : null
     const groupId = assignToMember ? null : pick(groups).id
 
     const sponsor = await prisma.sponsor.create({
-      data: { ...data, memberId, groupId }
+      data: { ...data, assignments: { create: { memberId, groupId } } }
     })
     sponsors.push({ id: sponsor.id, memberId, groupId })
   }
@@ -409,7 +411,7 @@ async function main() {
    * stay exactly as planned - this function only decides *whether* a given
    * sponsor also gets previous-year history.
    */
-  async function applyDonationPlan(sponsorList: { id: string }[], currentYearAmounts: number[][]) {
+  async function applyDonationPlan(sponsorList: typeof sponsors, currentYearAmounts: number[][]) {
     for (let i = 0; i < sponsorList.length; i++) {
       const sponsor = sponsorList[i]
       const amounts = currentYearAmounts[i] ?? []
@@ -418,6 +420,8 @@ async function main() {
         await prisma.donation.create({
           data: {
             sponsorId: sponsor.id,
+            memberId: sponsor.memberId,
+            groupId: sponsor.groupId,
             type: 'MONETARY',
             amount,
             donationDate: randomDateBetween(current.start, now),
@@ -432,6 +436,8 @@ async function main() {
         await prisma.donation.create({
           data: {
             sponsorId: sponsor.id,
+            memberId: sponsor.memberId,
+            groupId: sponsor.groupId,
             type: 'MONETARY',
             amount: randInt(30, 250),
             donationDate: randomDateBetween(previous.start, previous.end),
@@ -444,13 +450,15 @@ async function main() {
   }
 
   /** Adds a single in-kind donation on top of an existing plan, for variety. */
-  async function addInKind(sponsorList: { id: string }[], index: number, year: 'current' | 'previous') {
+  async function addInKind(sponsorList: typeof sponsors, index: number, year: 'current' | 'previous') {
     const sponsor = sponsorList[index]
     if (!sponsor) return
     const range = year === 'current' ? { start: current.start, end: now } : { start: previous.start, end: previous.end }
     await prisma.donation.create({
       data: {
         sponsorId: sponsor.id,
+        memberId: sponsor.memberId,
+        groupId: sponsor.groupId,
         type: 'IN_KIND',
         description: pick(inKindDescriptions),
         donationDate: randomDateBetween(range.start, range.end),
@@ -518,7 +526,7 @@ async function main() {
   // "Nachfassen" screenshot.
   const groupPlans: number[][][] = [
     [[105]],                     // groups[0] Bläser-Ensemble       (target 700,  1 sponsor)  -> 15%
-    [[300, 285], []],            // groups[1] Schlagzeug-Team       (target 1300, 2 sponsors) -> 45%
+    [[300, 285], []],            // groups[1] Schlagzeug-Team       (target 1300, 2 sponsors) -> 45% (49% with the extra CHF 50 below)
     [[400, 400, 300], []],       // groups[2] Familie Steiner-Frei  (target 1100, 2 sponsors) -> 100%
     [[200], [100, 85], [], []],  // groups[3] Jungmusikanten        (target 700,  4 sponsors) -> 55%
     [[450, 350], []],            // groups[4] Vorstand              (target 800,  2 sponsors) -> 100%
@@ -539,6 +547,56 @@ async function main() {
   await addInKind(sponsorsByGroup.get(groups[2].id) ?? [], 0, 'current')  // Familie Steiner-Frei's donor
   await addInKind(sponsorsByGroup.get(groups[3].id) ?? [], 1, 'current')  // Jungmusikanten's second donor
   await addInKind(sponsorsByGroup.get(groups[5].id) ?? [], 0, 'previous') // club pool, previous year only
+
+  // --- A sponsor with two recipients ---------------------------------------
+  // Tobias Frei's first sponsor also supports Schlagzeug-Team. The group gets
+  // its own CHF 50; Tobias Frei's figures stay as planned above, since each
+  // donation counts only for its own recipient.
+  const twoRecipientSponsor = (sponsorsByMember.get(members[4].id) ?? [])[0]
+  if (twoRecipientSponsor) {
+    await prisma.sponsorAssignment.create({
+      data: { sponsorId: twoRecipientSponsor.id, groupId: groups[1].id }
+    })
+    await prisma.donation.create({
+      data: {
+        sponsorId: twoRecipientSponsor.id,
+        groupId: groups[1].id,
+        type: 'MONETARY',
+        amount: 50,
+        donationDate: randomDateBetween(current.start, now),
+        fiscalYearId: fyCurrent.id
+      }
+    })
+    donationCount++
+  }
+
+  // --- A dissolved group ----------------------------------------------------
+  // "Theatergruppe" was dissolved: it has no members, its old status link
+  // shows the dissolved page, and its previous-year donation stays credited
+  // to it. Its sponsor was handed over to the club pool.
+  const dissolvedGroup = await prisma.group.create({
+    data: { name: 'Theatergruppe', dissolvedAt: randomDateBetween(previous.end, now) }
+  })
+  const handedOverSponsor = await prisma.sponsor.create({
+    data: {
+      salutation: 'Frau',
+      firstName: 'Verena',
+      lastName: 'Kohler',
+      ...randomAddress(),
+      assignments: { create: { groupId: groups[groups.length - 1].id } }
+    }
+  })
+  await prisma.donation.create({
+    data: {
+      sponsorId: handedOverSponsor.id,
+      groupId: dissolvedGroup.id,
+      type: 'MONETARY',
+      amount: 120,
+      donationDate: randomDateBetween(previous.start, previous.end),
+      fiscalYearId: fyPrevious.id
+    }
+  })
+  donationCount++
 
   console.log(`Created ${donationCount} donations.`)
   console.log('Demo data seeded successfully.')

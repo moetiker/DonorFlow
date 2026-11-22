@@ -28,7 +28,6 @@ model Member {
 
   // Beziehungen
   group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  sponsors        Sponsor[]
   sponsorAssignments SponsorAssignment[]
   memberTargets   MemberTarget[]
   donations       Donation[]        // Spenden, die direkt diesem Mitglied zugeordnet sind
@@ -48,7 +47,6 @@ model Group {
 
   // Beziehungen
   members         Member[]
-  sponsors        Sponsor[]
   sponsorAssignments SponsorAssignment[]
   donations       Donation[]  // Spenden, die direkt dieser Gruppe zugeordnet sind
 }
@@ -86,20 +84,15 @@ model Sponsor {
 
   notes           String?    // Kommentare / zusätzliche Infos
 
-  // Zuordnung: Entweder zu Mitglied ODER zu Gruppe
-  memberId        String?
-  groupId         String?
+  // Legacy single assignment, read only by the startup migration. Remove in deployment 2.
+  legacyMemberId  String?    @map("memberId")
+  legacyGroupId   String?    @map("groupId")
 
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  member          Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  group           Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
   donations       Donation[]
   assignments     SponsorAssignment[]
-
-  @@index([memberId])
-  @@index([groupId])
 }
 
 // Zuordnung eines Gönners zu einem Mitglied ODER einer Gruppe

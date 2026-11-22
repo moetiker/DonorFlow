@@ -192,8 +192,7 @@ async function importSponsors(memberMap: Map<string, string>, groupMap: Map<stri
           phone: null,
           email: null,
           notes: null,
-          memberId,
-          groupId
+          assignments: memberId || groupId ? { create: { memberId, groupId } } : undefined
         }
       })
 

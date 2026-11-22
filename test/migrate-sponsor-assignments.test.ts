@@ -22,7 +22,7 @@ beforeEach(async () => {
 
 test('creates one assignment per legacy owner and fills recipient-less donations', async () => {
   const { memberSolo, fy } = basics
-  const s = await prisma.sponsor.create({ data: { lastName: 'Legacy', memberId: memberSolo.id } })
+  const s = await prisma.sponsor.create({ data: { lastName: 'Legacy', legacyMemberId: memberSolo.id } })
   const d = await prisma.donation.create({
     data: { sponsorId: s.id, amount: 40, donationDate: new Date(), fiscalYearId: fy.id }
   })
@@ -41,7 +41,7 @@ test('creates one assignment per legacy owner and fills recipient-less donations
 
 test('keeps explicit donation recipients and adds no assignment for them', async () => {
   const { groupA, memberSolo, fy } = basics
-  const s = await prisma.sponsor.create({ data: { lastName: 'Group', groupId: groupA.id } })
+  const s = await prisma.sponsor.create({ data: { lastName: 'Group', legacyGroupId: groupA.id } })
   const d = await prisma.donation.create({
     data: {
       sponsorId: s.id,
@@ -67,10 +67,10 @@ test('keeps explicit donation recipients and adds no assignment for them', async
 test('merges a duplicate pair into the kept record', async () => {
   const { groupA, memberSolo, fy } = basics
   const kept = await prisma.sponsor.create({
-    data: { firstName: 'Berta', lastName: 'Muster1', city: 'Musterstadt', groupId: groupA.id }
+    data: { firstName: 'Berta', lastName: 'Muster1', city: 'Musterstadt', legacyGroupId: groupA.id }
   })
   const merged = await prisma.sponsor.create({
-    data: { lastName: 'Muster2', street: 'Weg 1', notes: 'Testnotiz', memberId: memberSolo.id }
+    data: { lastName: 'Muster2', street: 'Weg 1', notes: 'Testnotiz', legacyMemberId: memberSolo.id }
   })
   const base = { amount: 10, donationDate: new Date(), fiscalYearId: fy.id }
   const dKept = await prisma.donation.create({ data: { ...base, sponsorId: kept.id } })
@@ -109,7 +109,7 @@ test('merges a duplicate pair into the kept record', async () => {
 
 test('second run is skipped', async () => {
   const { groupA, memberSolo } = basics
-  const s = await prisma.sponsor.create({ data: { lastName: 'Twice', groupId: groupA.id } })
+  const s = await prisma.sponsor.create({ data: { lastName: 'Twice', legacyGroupId: groupA.id } })
   await prisma.donation.create({ data: { sponsorId: s.id, amount: 5, donationDate: new Date() } })
   await prisma.donation.create({
     data: { sponsorId: s.id, amount: 7, donationDate: new Date(), memberId: memberSolo.id }
@@ -123,7 +123,7 @@ test('second run is skipped', async () => {
 
 test('a removed assignment is not re-created on the next run', async () => {
   const { groupA } = basics
-  const s = await prisma.sponsor.create({ data: { lastName: 'Removed', groupId: groupA.id } })
+  const s = await prisma.sponsor.create({ data: { lastName: 'Removed', legacyGroupId: groupA.id } })
   await prisma.donation.create({ data: { sponsorId: s.id, amount: 5, donationDate: new Date() } })
 
   assert.equal((await migrateSponsorAssignments(prisma)).status, 'migrated')
@@ -158,7 +158,7 @@ test('a recipient-less donation of an owner-less sponsor goes to the club pool',
 
 test('a changed total rolls everything back and writes no marker', async () => {
   const { groupA, fy } = basics
-  const s = await prisma.sponsor.create({ data: { lastName: 'Rollback', groupId: groupA.id } })
+  const s = await prisma.sponsor.create({ data: { lastName: 'Rollback', legacyGroupId: groupA.id } })
   const d = await prisma.donation.create({
     data: { sponsorId: s.id, amount: 20, donationDate: new Date(), fiscalYearId: fy.id }
   })

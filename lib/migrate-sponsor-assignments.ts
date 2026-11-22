@@ -73,15 +73,15 @@ async function computeTotals(
       fiscalYearId: true,
       memberId: true,
       groupId: true,
-      sponsor: { select: { memberId: true, groupId: true } }
+      sponsor: { select: { legacyMemberId: true, legacyGroupId: true } }
     }
   })
   const totals = new Map<string, number>()
   for (const d of donations) {
     let owner: Owner = { memberId: d.memberId, groupId: d.groupId }
     if (legacy && !owner.memberId && !owner.groupId) {
-      owner = d.sponsor.memberId || d.sponsor.groupId
-        ? { memberId: d.sponsor.memberId, groupId: d.sponsor.groupId }
+      owner = d.sponsor.legacyMemberId || d.sponsor.legacyGroupId
+        ? { memberId: d.sponsor.legacyMemberId, groupId: d.sponsor.legacyGroupId }
         : { memberId: null, groupId: poolId }
     }
     const key = totalsKey(owner, d.fiscalYearId)
@@ -120,24 +120,24 @@ async function needsMigration(client: PrismaClientOrTx): Promise<boolean> {
   return recipientless > 0
 }
 
-/** Sponsors whose legacy `memberId`/`groupId` has no matching `SponsorAssignment` yet. */
+/** Sponsors whose legacy `memberId`/`groupId` columns have no matching `SponsorAssignment` yet. */
 async function findUnassignedOwners(client: PrismaClientOrTx) {
   const sponsors = await client.sponsor.findMany({
-    where: { OR: [{ memberId: { not: null } }, { groupId: { not: null } }] },
+    where: { OR: [{ legacyMemberId: { not: null } }, { legacyGroupId: { not: null } }] },
     select: {
       id: true,
-      memberId: true,
-      groupId: true,
+      legacyMemberId: true,
+      legacyGroupId: true,
       assignments: { select: { memberId: true, groupId: true } }
     }
   })
   const missing: { sponsorId: string; memberId: string | null; groupId: string | null }[] = []
   for (const s of sponsors) {
-    if (s.memberId && !s.assignments.some(a => a.memberId === s.memberId)) {
-      missing.push({ sponsorId: s.id, memberId: s.memberId, groupId: null })
+    if (s.legacyMemberId && !s.assignments.some(a => a.memberId === s.legacyMemberId)) {
+      missing.push({ sponsorId: s.id, memberId: s.legacyMemberId, groupId: null })
     }
-    if (s.groupId && !s.assignments.some(a => a.groupId === s.groupId)) {
-      missing.push({ sponsorId: s.id, memberId: null, groupId: s.groupId })
+    if (s.legacyGroupId && !s.assignments.some(a => a.groupId === s.legacyGroupId)) {
+      missing.push({ sponsorId: s.id, memberId: null, groupId: s.legacyGroupId })
     }
   }
   return missing
@@ -220,14 +220,14 @@ export async function migrateSponsorAssignments(
         // 2. Fixed recipients for donations that inherited their sponsor's owner
         const recipientless = await tx.donation.findMany({
           where: { memberId: null, groupId: null },
-          select: { id: true, sponsor: { select: { memberId: true, groupId: true } } }
+          select: { id: true, sponsor: { select: { legacyMemberId: true, legacyGroupId: true } } }
         })
         for (const d of recipientless) {
           let data: Owner
-          if (d.sponsor.memberId) {
-            data = { memberId: d.sponsor.memberId, groupId: null }
-          } else if (d.sponsor.groupId) {
-            data = { memberId: null, groupId: d.sponsor.groupId }
+          if (d.sponsor.legacyMemberId) {
+            data = { memberId: d.sponsor.legacyMemberId, groupId: null }
+          } else if (d.sponsor.legacyGroupId) {
+            data = { memberId: null, groupId: d.sponsor.legacyGroupId }
           } else {
             console.warn(
               `Sponsor assignment migration: donation ${d.id} has no recipient and its sponsor no owner - credited to the club pool`

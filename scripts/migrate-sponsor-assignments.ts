@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 
 /**
- * Migration Script: Copy memberId/groupId from donations to sponsors
+ * Migration Script: Create sponsor assignments from donation recipients
  *
- * This script ensures that sponsors have the correct memberId/groupId assignments
+ * This script ensures that sponsors have a SponsorAssignment
  * based on their donation history. This is needed for the "sponsors without donations"
  * feature to work correctly.
  *
@@ -11,9 +11,9 @@
  *   npx tsx scripts/migrate-sponsor-assignments.ts
  *
  * What it does:
- * 1. Finds all sponsors without memberId/groupId assignment
+ * 1. Finds all sponsors without any SponsorAssignment
  * 2. Looks up their donations to find the assignment
- * 3. Updates the sponsor with the most common assignment from their donations
+ * 3. Assigns the sponsor to the most common recipient of their donations
  * 4. Reports conflicts (if a sponsor has donations to different members/groups)
  */
 
@@ -35,6 +35,7 @@ async function migrateSponsorAssignments() {
     // Get all sponsors
     const sponsors = await prisma.sponsor.findMany({
       include: {
+        assignments: { select: { id: true } },
         donations: {
           select: {
             memberId: true,
@@ -55,7 +56,7 @@ async function migrateSponsorAssignments() {
       const displayName = sponsor.company || `${sponsor.firstName || ''} ${sponsor.lastName || ''}`.trim() || sponsor.id
 
       // Skip if sponsor already has assignment
-      if (sponsor.memberId || sponsor.groupId) {
+      if (sponsor.assignments.length > 0) {
         console.log(`⏭️  Skipping "${displayName}" - already assigned`)
         skipped++
         continue
@@ -112,9 +113,9 @@ async function migrateSponsorAssignments() {
         const primaryAssignment = sortedAssignments[0]
         console.log(`     → Using most common: ${primaryAssignment.memberId ? 'member-' + primaryAssignment.memberId : 'group-' + primaryAssignment.groupId}`)
 
-        await prisma.sponsor.update({
-          where: { id: sponsor.id },
+        await prisma.sponsorAssignment.create({
           data: {
+            sponsorId: sponsor.id,
             memberId: primaryAssignment.memberId,
             groupId: primaryAssignment.groupId
           }
@@ -127,9 +128,9 @@ async function migrateSponsorAssignments() {
       // Single assignment - update sponsor
       const assignment = Array.from(assignmentCounts.values())[0]
 
-      await prisma.sponsor.update({
-        where: { id: sponsor.id },
+      await prisma.sponsorAssignment.create({
         data: {
+          sponsorId: sponsor.id,
           memberId: assignment.memberId,
           groupId: assignment.groupId
         }

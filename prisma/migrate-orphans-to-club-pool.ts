@@ -1,16 +1,8 @@
 /**
- * One-off migration: assign sponsors that lost their owner to the club pool.
+ * One-off migration: assign sponsors without any recipient to the club pool.
  *
- * These sponsors were orphaned by member deletions — Sponsor.memberId uses
- * onDelete: SetNull, so deleting a member left the sponsor with no owner. An
- * orphaned sponsor appears on no status page, and its donations count towards no
- * target either, because donations are credited through their sponsor.
- *
- * Donations are deliberately NOT touched. Donation.memberId/groupId are optional
- * overrides; NULL means "credit to whoever owns the sponsor". 98 donations have
- * both fields null and only 3 of them belong to an orphaned sponsor — moving them
- * all would take CHF 6'555 away from 24 members and groups. Once the sponsor
- * belongs to the pool, its donations follow on their own.
+ * An orphaned sponsor appears on no status page. Its donations are not touched:
+ * every donation keeps its own fixed recipient.
  *
  * Run with: npm run db:migrate-orphans
  */
@@ -36,7 +28,7 @@ async function main() {
   }
 
   const orphanedSponsors = await prisma.sponsor.findMany({
-    where: { memberId: null, groupId: null },
+    where: { assignments: { none: {} } },
     select: {
       id: true, company: true, firstName: true, lastName: true,
       donations: { select: { amount: true } }
@@ -51,14 +43,13 @@ async function main() {
   for (const s of orphanedSponsors) {
     console.log(`  - ${s.company ?? `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}`)
   }
-  console.log(`Their stranded donations: ${stranded.length} (CHF ${total}) — these start counting again once the sponsor has an owner; they are not modified.`)
+  console.log(`Their donations: ${stranded.length} (CHF ${total}) — they keep their own recipients and are not modified.`)
 
-  const sponsors = await prisma.sponsor.updateMany({
-    where: { memberId: null, groupId: null },
-    data: { groupId: pool.id }
+  const created = await prisma.sponsorAssignment.createMany({
+    data: orphanedSponsors.map((s) => ({ sponsorId: s.id, groupId: pool.id }))
   })
 
-  console.log(`\nMoved ${sponsors.count} sponsors to ${pool.name}`)
+  console.log(`\nMoved ${created.count} sponsors to ${pool.name}`)
 }
 
 main()
