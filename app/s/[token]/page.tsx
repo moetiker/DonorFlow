@@ -193,7 +193,7 @@ function StatusPageContent({ token }: { token: string }) {
   const remaining = Math.max(0, data.progress.target - data.progress.actual)
 
   // Collect ALL in-kind donations across all listed sponsors. For a group the
-  // list already includes donations credited to the group's members.
+  // listed sponsors' donations include those credited to the group's members.
   const collectAllInKindDonations = () => {
     const allDonations: (InKindDonation & { sponsorName: string })[] = []
 
@@ -522,7 +522,7 @@ function StatusPageContent({ token }: { token: string }) {
       {data.type === 'group' ? (
         <>
           {/* Group sponsors section: sponsors assigned to the group plus donors
-              credited to the group or its members; no per-member breakdown. */}
+              to the group itself; no per-member breakdown. */}
           {data.groupSponsors && data.groupSponsors.length > 0 && (
             renderSponsorTables(data.groupSponsors, 'group')
           )}

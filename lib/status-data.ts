@@ -4,7 +4,7 @@ import { getSponsorDisplayName, getMemberDisplayName, getGroupDisplayName } from
 import {
   donationsCreditedTo,
   donationsCreditedToGroupTotal,
-  sponsorsAssignedTo,
+  sponsorsListedFor,
   type RecipientRef
 } from '@/lib/crediting'
 
@@ -17,8 +17,10 @@ import {
  * - member: sponsors assigned to the member plus sponsors of donations
  *   credited to the member
  * - group: sponsors assigned to the group itself plus sponsors of donations
- *   credited to the group or to any of its members; the group total counts
- *   the same donations
+ *   credited to the group itself; their amounts count their donations credited
+ *   to the group or to any of its members. The group total counts every
+ *   donation credited to the group or its members, so it can exceed the sum
+ *   of the listed rows (a member-only sponsor is counted but not listed).
  * - dissolved group: only its name, no data
  */
 
@@ -103,16 +105,15 @@ type SponsorWithDonations = Prisma.SponsorGetPayload<{
 }>
 
 /**
- * Sponsors to list for a recipient: those matching `assigned` plus everyone
- * with a donation matching `credited`. Each sponsor's donations are limited to
- * `credited`, most recent first.
+ * Sponsors matching `listed`, each with its donations limited to `credited`,
+ * most recent first.
  */
 function loadSponsors(
-  assigned: Prisma.SponsorWhereInput,
+  listed: Prisma.SponsorWhereInput,
   credited: Prisma.DonationWhereInput
 ): Promise<SponsorWithDonations[]> {
   return prisma.sponsor.findMany({
-    where: { OR: [assigned, { donations: { some: credited } }] },
+    where: listed,
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }, { company: 'asc' }],
     select: {
       ...SPONSOR_FIELDS,
@@ -164,7 +165,7 @@ export async function loadStatusData(token: string): Promise<StatusData | null> 
 
   if (member) {
     const ref: RecipientRef = { memberId: member.id }
-    const sponsors = await loadSponsors(sponsorsAssignedTo(ref), donationsCreditedTo(ref))
+    const sponsors = await loadSponsors(sponsorsListedFor(ref), donationsCreditedTo(ref))
     const target = member.memberTargets[0]?.targetAmount ?? 0
     const { actual, sponsors: list } = buildSponsorList(sponsors, currentId, previousId)
     return {
@@ -192,14 +193,20 @@ export async function loadStatusData(token: string): Promise<StatusData | null> 
     return { type: 'dissolved', name: getGroupDisplayName(group) }
   }
 
-  const memberIds = group.members.map(m => m.id)
-  const sponsors = await loadSponsors(
-    sponsorsAssignedTo({ groupId: group.id }),
-    donationsCreditedToGroupTotal(group.id, memberIds)
-  )
+  const groupTotal = donationsCreditedToGroupTotal(group.id, group.members.map(m => m.id))
+  const sponsors = await loadSponsors(sponsorsListedFor({ groupId: group.id }), groupTotal)
   // Group target = sum of the member targets
   const target = group.members.reduce((sum, m) => sum + (m.memberTargets[0]?.targetAmount ?? 0), 0)
-  const { actual, sponsors: list } = buildSponsorList(sponsors, currentId, previousId)
+  const { sponsors: list } = buildSponsorList(sponsors, currentId, previousId)
+  // The total also counts donations of sponsors that are not listed
+  const actual = currentId
+    ? (
+        await prisma.donation.aggregate({
+          where: { AND: [groupTotal, { fiscalYearId: currentId, type: 'MONETARY' }] },
+          _sum: { amount: true }
+        })
+      )._sum.amount ?? 0
+    : 0
   return {
     type: 'group',
     name: getGroupDisplayName(group),

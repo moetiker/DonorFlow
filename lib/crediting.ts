@@ -25,6 +25,17 @@ export function sponsorsAssignedTo(r: RecipientRef): Prisma.SponsorWhereInput {
   return { assignments: { some: r } }
 }
 
+/**
+ * Sponsors listed for one recipient on its status page and status-link export:
+ * those assigned to it plus everyone with a donation credited to it. For a
+ * group this means donations credited to the group itself; sponsors assigned
+ * only to a member of the group are not listed (their donations still count
+ * in the group total).
+ */
+export function sponsorsListedFor(r: RecipientRef): Prisma.SponsorWhereInput {
+  return { OR: [sponsorsAssignedTo(r), { donations: { some: donationsCreditedTo(r) } }] }
+}
+
 /** Display label of an assignment's recipient: the member name or "<group> (Gruppe)". */
 export function recipientLabel(a: {
   member: { firstName: string; lastName: string } | null

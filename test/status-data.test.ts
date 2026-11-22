@@ -98,6 +98,41 @@ test('group page does not list sponsors assigned only to a member of the group',
   assert.equal(groupExport.entries.length, 0)
 })
 
+test('a member-only sponsor\'s donation counts in the group total but is not listed', async () => {
+  const { prisma, memberA1, fy, loadStatusData, loadStatusExportData } = await setup()
+  const s = await prisma.sponsor.create({ data: { firstName: 'Member', lastName: 'Donor' } })
+  await prisma.sponsorAssignment.create({ data: { sponsorId: s.id, memberId: memberA1.id } })
+  await prisma.donation.create({
+    data: { sponsorId: s.id, amount: 50, donationDate: new Date(), fiscalYearId: fy.id, memberId: memberA1.id }
+  })
+
+  const group = await loadStatusData(GROUP_TOKEN)
+  assert.ok(group && group.type === 'group')
+  assert.equal(group.groupSponsors.find(x => x.name === 'Member Donor'), undefined)
+  assert.equal(group.progress.actual, 50)
+
+  const groupExport = await loadStatusExportData(GROUP_TOKEN)
+  assert.ok(groupExport)
+  assert.equal(groupExport.entries.length, 0)
+})
+
+test('a one-off donor to the group itself is listed', async () => {
+  const { prisma, groupA, fy, loadStatusData, loadStatusExportData } = await setup()
+  const s = await prisma.sponsor.create({ data: { firstName: 'One', lastName: 'Off' } })
+  await prisma.donation.create({
+    data: { sponsorId: s.id, amount: 20, donationDate: new Date(), fiscalYearId: fy.id, groupId: groupA.id }
+  })
+
+  const group = await loadStatusData(GROUP_TOKEN)
+  assert.ok(group && group.type === 'group')
+  assert.equal(group.groupSponsors.find(x => x.name === 'One Off')?.totalAmount, 20)
+  assert.equal(group.progress.actual, 20)
+
+  const groupExport = await loadStatusExportData(GROUP_TOKEN)
+  assert.ok(groupExport)
+  assert.equal(groupExport.entries.length, 1)
+})
+
 test('dissolved group returns the dissolved variant', async () => {
   const { prisma, groupA, loadStatusData, loadStatusExportData } = await setup()
   await prisma.group.update({ where: { id: groupA.id }, data: { dissolvedAt: new Date() } })

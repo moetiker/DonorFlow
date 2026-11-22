@@ -4,7 +4,7 @@ import { sponsorCsvSelect, type SponsorCsvRow } from './sponsor-csv'
 import {
   donationsCreditedTo,
   donationsCreditedToGroupTotal,
-  sponsorsAssignedTo,
+  sponsorsListedFor,
   recipientLabel,
   type RecipientRef
 } from './crediting'
@@ -57,7 +57,7 @@ export async function loadStatusExportData(token: string): Promise<StatusExportD
   if (member) {
     const ref: RecipientRef = { memberId: member.id }
     const memberName = recipientLabel({ member, group: null })
-    const sponsors = await loadSponsorRows(sponsorsAssignedTo(ref), donationsCreditedTo(ref))
+    const sponsors = await loadSponsorRows(sponsorsListedFor(ref), donationsCreditedTo(ref))
     return {
       name: memberName,
       entries: sponsors.map(sponsor => ({ sponsor, assignedTo: memberName })),
@@ -67,7 +67,8 @@ export async function loadStatusExportData(token: string): Promise<StatusExportD
   }
 
   // Group link: sponsors assigned to the group itself plus donors credited to
-  // the group or to any of its members. A dissolved group exports nothing.
+  // the group itself; their donations count those credited to the group or to
+  // any of its members. A dissolved group exports nothing.
   const group = await prisma.group.findUnique({
     where: { statusToken: token },
     select: { id: true, name: true, dissolvedAt: true, members: { select: { id: true } } }
@@ -75,7 +76,7 @@ export async function loadStatusExportData(token: string): Promise<StatusExportD
 
   if (group && !group.dissolvedAt) {
     const sponsors = await loadSponsorRows(
-      sponsorsAssignedTo({ groupId: group.id }),
+      sponsorsListedFor({ groupId: group.id }),
       donationsCreditedToGroupTotal(group.id, group.members.map(m => m.id))
     )
     const assignedTo = recipientLabel({ member: null, group })
@@ -91,15 +92,15 @@ export async function loadStatusExportData(token: string): Promise<StatusExportD
 }
 
 /**
- * Sponsors matching `assigned` plus everyone with a donation matching
- * `credited`, sorted by name, with their donations limited to `credited`.
+ * Sponsors matching `listed`, sorted by name, with their donations limited
+ * to `credited`.
  */
 function loadSponsorRows(
-  assigned: Prisma.SponsorWhereInput,
+  listed: Prisma.SponsorWhereInput,
   credited: Prisma.DonationWhereInput
 ): Promise<SponsorCsvRow[]> {
   return prisma.sponsor.findMany({
-    where: { OR: [assigned, { donations: { some: credited } }] },
+    where: listed,
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }, { company: 'asc' }],
     select: sponsorCsvSelect(credited)
   })
