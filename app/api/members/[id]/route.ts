@@ -3,8 +3,12 @@ import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
 import { reassignToClubPool, NoClubPoolError } from '@/lib/club-pool'
-import { isGroupDissolved, moveMemberSponsorsToGroup } from '@/lib/sponsor-assignments'
-import { updateMemberSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
+import {
+  DissolvedGroupError, isGroupDissolved, moveMemberSponsorsToGroup
+} from '@/lib/sponsor-assignments'
+import {
+  updateMemberSchema, memberEmailSchema, validateRequestI18n, getLocaleFromRequest
+} from '@/lib/validation'
 
 export const PUT = withApiRoute(async (
   request: NextRequest,
@@ -22,35 +26,59 @@ export const PUT = withApiRoute(async (
   const { firstName, lastName, email, phone, groupId, moveSponsorsToGroup } = validation.data
   const newGroupId = groupId || null // Empty string or null = no group
 
-  const current = await prisma.member.findUnique({ where: { id: memberId }, select: { groupId: true } })
+  const current = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { groupId: true, email: true }
+  })
   if (!current) {
     return NextResponse.json({ error: 'Member not found' }, { status: 404 })
   }
 
-  if (newGroupId && newGroupId !== current.groupId && (await isGroupDissolved(prisma, newGroupId))) {
-    return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
+  // The email format is only checked when the email changes: members stored
+  // with an empty or malformed address (e.g. from an import) stay saveable.
+  if (email && email !== current.email) {
+    const emailValidation = await validateRequestI18n(memberEmailSchema, { email }, locale)
+    if (!emailValidation.success) {
+      return NextResponse.json({ error: emailValidation.error }, { status: 400 })
+    }
   }
 
-  const updatedMember = await prisma.$transaction(async (tx) => {
-    const member = await tx.member.update({
-      where: { id: memberId },
-      data: {
-        firstName,
-        lastName,
-        email: email || null,
-        phone: phone || null,
-        groupId: newGroupId
+  // The group the member joins, if any (null when staying, leaving or ungrouped)
+  const joinedGroupId = newGroupId !== null && newGroupId !== current.groupId ? newGroupId : null
+
+  let updatedMember
+  try {
+    updatedMember = await prisma.$transaction(async (tx) => {
+      // Checked inside the transaction so a concurrent dissolve cannot slip in
+      if (joinedGroupId && (await isGroupDissolved(tx, joinedGroupId))) {
+        throw new DissolvedGroupError()
       }
+
+      const member = await tx.member.update({
+        where: { id: memberId },
+        data: {
+          firstName,
+          lastName,
+          email: email || null,
+          phone: phone || null,
+          groupId: newGroupId
+        }
+      })
+
+      // Joining a group may take the member's sponsors along (spec "Joining a
+      // group"). Leaving or switching groups never moves the group's sponsors.
+      if (joinedGroupId && moveSponsorsToGroup === true) {
+        await moveMemberSponsorsToGroup(tx, memberId, joinedGroupId)
+      }
+
+      return member
     })
-
-    // Joining a group may take the member's sponsors along (spec "Joining a
-    // group"). Leaving or switching groups never moves the group's sponsors.
-    if (newGroupId && newGroupId !== current.groupId && moveSponsorsToGroup === true) {
-      await moveMemberSponsorsToGroup(tx, memberId, newGroupId)
+  } catch (error) {
+    if (error instanceof DissolvedGroupError) {
+      return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
     }
-
-    return member
-  })
+    throw error
+  }
 
   return NextResponse.json(serializeDates(updatedMember))
 })

@@ -164,11 +164,18 @@ export const createMemberSchema = z.object({
 export const updateMemberSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
-  email: z.string().email().optional().nullable(),
+  // Format checked in the route, and only when the email changes, so members
+  // stored with an empty or malformed address stay saveable (memberEmailSchema).
+  email: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   groupId: z.string().optional().nullable(),
   /** When the member joins a group: move the member's sponsors to it. */
   moveSponsorsToGroup: z.boolean().optional()
+})
+
+/** Format check for a member's new (changed) email address. */
+export const memberEmailSchema = z.object({
+  email: z.string().email()
 })
 
 export type CreateMemberInput = z.infer<typeof createMemberSchema>

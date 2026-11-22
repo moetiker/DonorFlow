@@ -41,24 +41,39 @@ export function DissolveGroupModal({ show, group, onHide, onDissolved }: Props) 
   const [loading, setLoading] = useState(false)
   const [dissolving, setDissolving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Id of the group whose sponsors were loaded successfully. Dissolving is only
+  // allowed then: posting an empty plan after a failed load would send every
+  // sponsor to the club pool, irreversibly.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const members = group?.members ?? []
+  const ready = !!group && loadedFor === group.id && !loading && !loadFailed
 
   useEffect(() => {
     // Wrapped in an async function so the load starts after the effect has
     // run, instead of updating state synchronously in it.
     const run = async () => {
-      if (!show || !group) return
+      if (!show || !group) {
+        // Forget the last load so a reopened dialog never acts on stale data
+        setLoadedFor(null)
+        return
+      }
       setLoading(true)
+      setLoadFailed(false)
+      setLoadedFor(null)
       setError(null)
       try {
         const response = await fetch(`/api/groups/${group.id}/sponsors`)
-        const data: GroupSponsor[] = response.ok ? await response.json() : []
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const data: GroupSponsor[] = await response.json()
         setSponsors(data)
         setTicked(new Set(data.flatMap(s => group.members.map(m => pairKey(s.id, m.id)))))
+        setLoadedFor(group.id)
       } catch (err) {
         console.error('Error loading group sponsors:', err)
         setSponsors([])
+        setLoadFailed(true)
         setError(tErrors('loadingFailed'))
       } finally {
         setLoading(false)
@@ -85,7 +100,7 @@ export function DissolveGroupModal({ show, group, onHide, onDissolved }: Props) 
   ).length
 
   const handleDissolve = async () => {
-    if (!group) return
+    if (!group || !ready) return
     setDissolving(true)
     setError(null)
     try {
@@ -128,7 +143,7 @@ export function DissolveGroupModal({ show, group, onHide, onDissolved }: Props) 
           <div className="text-center py-3">
             <Spinner animation="border" size="sm" />
           </div>
-        ) : sponsors.length === 0 ? (
+        ) : loadFailed ? null : sponsors.length === 0 ? (
           <p className="text-muted mb-0">{t('dissolveNoSponsors')}</p>
         ) : (
           <>
@@ -176,7 +191,7 @@ export function DissolveGroupModal({ show, group, onHide, onDissolved }: Props) 
         <Button variant="secondary" onClick={onHide} disabled={dissolving}>
           {tCommon('cancel')}
         </Button>
-        <Button variant="danger" onClick={handleDissolve} disabled={dissolving || loading}>
+        <Button variant="danger" onClick={handleDissolve} disabled={dissolving || !ready}>
           {dissolving ? t('dissolving') : t('dissolve')}
         </Button>
       </Modal.Footer>
