@@ -7,21 +7,6 @@ import { buildCSV } from './csv'
  * donor mailing so both produce identical CSVs.
  */
 
-// Prisma select for a sponsor row used in the CSV
-export const SPONSOR_CSV_SELECT = {
-  company: true,
-  salutation: true,
-  firstName: true,
-  lastName: true,
-  street: true,
-  postalCode: true,
-  city: true,
-  phone: true,
-  email: true,
-  notes: true,
-  donations: { select: { amount: true, fiscalYearId: true, type: true } },
-} as const
-
 /**
  * Prisma select for a sponsor CSV row whose donations are limited to those
  * matching `credited` (e.g. donations credited to one member or group), so the
@@ -29,7 +14,16 @@ export const SPONSOR_CSV_SELECT = {
  */
 export function sponsorCsvSelect(credited: Prisma.DonationWhereInput) {
   return {
-    ...SPONSOR_CSV_SELECT,
+    company: true,
+    salutation: true,
+    firstName: true,
+    lastName: true,
+    street: true,
+    postalCode: true,
+    city: true,
+    phone: true,
+    email: true,
+    notes: true,
     donations: { where: credited, select: { amount: true, fiscalYearId: true, type: true } },
   } as const
 }

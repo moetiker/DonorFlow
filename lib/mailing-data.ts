@@ -1,6 +1,7 @@
 import { prisma } from './db'
 import { getMemberDisplayName, getSponsorDisplayName } from './utils'
-import { SPONSOR_CSV_SELECT, buildSponsorAddressCsv, type SponsorCsvRow } from './sponsor-csv'
+import { sponsorCsvSelect, buildSponsorAddressCsv, type SponsorCsvRow } from './sponsor-csv'
+import { donationsCreditedTo, donationsCreditedToGroupTotal, sponsorsListedFor } from './crediting'
 import { generateStatusToken } from './tokens'
 
 /**
@@ -107,12 +108,16 @@ export async function buildMemberMailData(
     const groupMembers = await prisma.member.findMany({
       where: { groupId },
       orderBy: { lastName: 'asc' },
-      select: { id: true, firstName: true, lastName: true, sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT } },
+      select: { id: true, firstName: true, lastName: true },
     })
-    const groupSponsors = await prisma.sponsor.findMany({
-      where: { groupId },
+    // Same rule as the status page: sponsors assigned to the group itself plus
+    // one-off donors credited to it; amounts count donations credited to the
+    // group or its members.
+    const groupTotal = donationsCreditedToGroupTotal(groupId, groupMembers.map((m) => m.id))
+    const entitySponsors = await prisma.sponsor.findMany({
+      where: sponsorsListedFor({ groupId }),
       orderBy: { lastName: 'asc' },
-      select: SPONSOR_CSV_SELECT,
+      select: sponsorCsvSelect(groupTotal),
     })
 
     const targetAgg = await prisma.memberTarget.aggregate({
@@ -121,18 +126,7 @@ export async function buildMemberMailData(
     })
     const target = targetAgg._sum.targetAmount ?? 0
 
-    let collected = await sumMonetary({
-      fiscalYearId,
-      OR: [{ groupId }, { groupId: null, memberId: null, sponsor: { groupId } }],
-    })
-    for (const m of groupMembers) {
-      collected += await sumMonetary({
-        fiscalYearId,
-        OR: [{ memberId: m.id }, { memberId: null, groupId: null, sponsor: { memberId: m.id } }],
-      })
-    }
-
-    const entitySponsors: SponsorCsvRow[] = [...groupSponsors, ...groupMembers.flatMap((m) => m.sponsors)]
+    const collected = await sumMonetary({ fiscalYearId, ...groupTotal })
 
     return {
       memberId: member.id,
@@ -161,20 +155,18 @@ export async function buildMemberMailData(
     await prisma.member.update({ where: { id: member.id }, data: { statusToken: token } })
   }
 
+  const credited = donationsCreditedTo({ memberId: member.id })
   const sponsors = await prisma.sponsor.findMany({
-    where: { memberId: member.id },
+    where: sponsorsListedFor({ memberId: member.id }),
     orderBy: { lastName: 'asc' },
-    select: SPONSOR_CSV_SELECT,
+    select: sponsorCsvSelect(credited),
   })
   const targetRow = await prisma.memberTarget.findFirst({
     where: { memberId: member.id, fiscalYearId },
     select: { targetAmount: true },
   })
   const target = targetRow?.targetAmount ?? 0
-  const collected = await sumMonetary({
-    fiscalYearId,
-    OR: [{ memberId: member.id }, { memberId: null, sponsor: { memberId: member.id } }],
-  })
+  const collected = await sumMonetary({ fiscalYearId, ...credited })
 
   return {
     memberId: member.id,
