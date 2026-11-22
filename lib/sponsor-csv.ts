@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { buildCSV } from './csv'
 
 /**
@@ -20,6 +21,18 @@ export const SPONSOR_CSV_SELECT = {
   notes: true,
   donations: { select: { amount: true, fiscalYearId: true, type: true } },
 } as const
+
+/**
+ * Prisma select for a sponsor CSV row whose donations are limited to those
+ * matching `credited` (e.g. donations credited to one member or group), so the
+ * donation-summary columns count only that recipient's donations.
+ */
+export function sponsorCsvSelect(credited: Prisma.DonationWhereInput) {
+  return {
+    ...SPONSOR_CSV_SELECT,
+    donations: { where: credited, select: { amount: true, fiscalYearId: true, type: true } },
+  } as const
+}
 
 export type SponsorCsvRow = {
   company: string | null

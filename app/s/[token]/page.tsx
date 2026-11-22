@@ -10,6 +10,8 @@ import { type Locale } from '@/lib/i18n/config'
 interface InKindDonation {
   description: string
   date: string
+  /** Member the donation is credited to; null when credited to the group */
+  memberName: string | null
 }
 
 interface DonationHistoryEntry {
@@ -33,17 +35,6 @@ interface SponsorData {
   history: DonationHistoryEntry[]
 }
 
-interface MemberData {
-  id: string
-  name: string
-  progress: {
-    target: number
-    actual: number
-    percentage: number
-  }
-  sponsors: SponsorData[]
-}
-
 interface StatusData {
   type: 'member' | 'group'
   name: string
@@ -58,8 +49,12 @@ interface StatusData {
     percentage: number
   }
   sponsors?: SponsorData[]
-  members?: MemberData[]
   groupSponsors?: SponsorData[]
+}
+
+interface DissolvedData {
+  type: 'dissolved'
+  name: string
 }
 
 interface PageProps {
@@ -69,7 +64,7 @@ interface PageProps {
 // Inner component that uses translations
 function StatusPageContent({ token }: { token: string }) {
   const t = useTranslations('status')
-  const [data, setData] = useState<StatusData | null>(null)
+  const [data, setData] = useState<StatusData | DissolvedData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // Provided by the NextIntlClientProvider below, which detects the locale once
@@ -176,6 +171,14 @@ function StatusPageContent({ token }: { token: string }) {
     )
   }
 
+  if (data.type === 'dissolved') {
+    return (
+      <Container className="py-4">
+        <Alert variant="secondary" className="mb-0">{t('groupDissolved')}</Alert>
+      </Container>
+    )
+  }
+
   if (!data.fiscalYear) {
     return (
       <Container className="py-4">
@@ -189,23 +192,15 @@ function StatusPageContent({ token }: { token: string }) {
 
   const remaining = Math.max(0, data.progress.target - data.progress.actual)
 
-  // Collect ALL in-kind donations across all sponsors (group + members)
+  // Collect ALL in-kind donations across all listed sponsors. For a group the
+  // list already includes donations credited to the group's members.
   const collectAllInKindDonations = () => {
-    const allDonations: { description: string; date: string; sponsorName: string; memberName?: string }[] = []
+    const allDonations: (InKindDonation & { sponsorName: string })[] = []
 
     if (data.type === 'group') {
-      // Group sponsors
       data.groupSponsors?.forEach(sponsor => {
         sponsor.inKindDonations.forEach(d => {
           allDonations.push({ ...d, sponsorName: sponsor.name })
-        })
-      })
-      // Member sponsors
-      data.members?.forEach(member => {
-        member.sponsors.forEach(sponsor => {
-          sponsor.inKindDonations.forEach(d => {
-            allDonations.push({ ...d, sponsorName: sponsor.name, memberName: member.name })
-          })
         })
       })
     } else {
@@ -526,8 +521,8 @@ function StatusPageContent({ token }: { token: string }) {
       {/* Member or Group View */}
       {data.type === 'group' ? (
         <>
-          {/* Group-level sponsors section. Sponsors always belong to the group,
-              not to individual members, so there is no per-member breakdown. */}
+          {/* Group sponsors section: sponsors assigned to the group plus donors
+              credited to the group or its members; no per-member breakdown. */}
           {data.groupSponsors && data.groupSponsors.length > 0 && (
             renderSponsorTables(data.groupSponsors, 'group')
           )}

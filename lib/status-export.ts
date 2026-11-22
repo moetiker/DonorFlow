@@ -1,6 +1,13 @@
 import { prisma } from './db'
-import { getMemberDisplayName } from './utils'
-import { SPONSOR_CSV_SELECT, type SponsorCsvRow } from './sponsor-csv'
+import type { Prisma } from '@prisma/client'
+import { sponsorCsvSelect, type SponsorCsvRow } from './sponsor-csv'
+import {
+  donationsCreditedTo,
+  donationsCreditedToGroupTotal,
+  sponsorsAssignedTo,
+  recipientLabel,
+  type RecipientRef
+} from './crediting'
 
 /**
  * Shared data loading for the public status-link exports. All export formats
@@ -13,7 +20,7 @@ export const STATUS_TOKEN_LENGTH = 32
 
 export type StatusExportEntry = {
   sponsor: SponsorCsvRow
-  /** Member display name, or "<group> (Gruppe)" for group-level sponsors */
+  /** Member display name for a member link, "<group> (Gruppe)" for a group link */
   assignedTo: string
 }
 
@@ -26,9 +33,10 @@ export type StatusExportData = {
 }
 
 /**
- * Resolves a status token to the sponsor list it grants access to.
- * Returns null when the token belongs to neither a member nor a group, so
- * callers answer an unknown and an invalid token identically.
+ * Resolves a status token to the sponsor list it grants access to. Each
+ * sponsor's donations are limited to those credited to the link's recipient.
+ * Returns null when the token belongs to neither a member nor an active group,
+ * so callers answer an unknown and an invalid token identically.
  */
 export async function loadStatusExportData(token: string): Promise<StatusExportData | null> {
   // Current fiscal year - donation totals are scoped to it (matches status page)
@@ -40,56 +48,59 @@ export async function loadStatusExportData(token: string): Promise<StatusExportD
   const currentFiscalYearId = currentFiscalYear?.id ?? null
   const fiscalYearName = currentFiscalYear?.name ?? null
 
-  // Member link: the member's own sponsors
+  // Member link: sponsors assigned to the member plus donors credited to it
   const member = await prisma.member.findUnique({
     where: { statusToken: token },
-    select: {
-      firstName: true,
-      lastName: true,
-      sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT }
-    }
+    select: { id: true, firstName: true, lastName: true }
   })
 
   if (member) {
-    const memberName = getMemberDisplayName(member)
+    const ref: RecipientRef = { memberId: member.id }
+    const memberName = recipientLabel({ member, group: null })
+    const sponsors = await loadSponsorRows(sponsorsAssignedTo(ref), donationsCreditedTo(ref))
     return {
       name: memberName,
-      entries: member.sponsors.map((sponsor: SponsorCsvRow) => ({ sponsor, assignedTo: memberName })),
+      entries: sponsors.map(sponsor => ({ sponsor, assignedTo: memberName })),
       currentFiscalYearId,
       fiscalYearName
     }
   }
 
-  // Group link: group-level sponsors first, then every member's sponsors
+  // Group link: sponsors assigned to the group itself plus donors credited to
+  // the group or to any of its members. A dissolved group exports nothing.
   const group = await prisma.group.findUnique({
     where: { statusToken: token },
-    select: {
-      name: true,
-      sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT },
-      members: {
-        orderBy: { lastName: 'asc' },
-        select: {
-          firstName: true,
-          lastName: true,
-          sponsors: { orderBy: { lastName: 'asc' }, select: SPONSOR_CSV_SELECT }
-        }
-      }
-    }
+    select: { id: true, name: true, dissolvedAt: true, members: { select: { id: true } } }
   })
 
-  if (group) {
-    const entries: StatusExportEntry[] = []
-    for (const sponsor of group.sponsors) {
-      entries.push({ sponsor, assignedTo: `${group.name} (Gruppe)` })
+  if (group && !group.dissolvedAt) {
+    const sponsors = await loadSponsorRows(
+      sponsorsAssignedTo({ groupId: group.id }),
+      donationsCreditedToGroupTotal(group.id, group.members.map(m => m.id))
+    )
+    const assignedTo = recipientLabel({ member: null, group })
+    return {
+      name: group.name,
+      entries: sponsors.map(sponsor => ({ sponsor, assignedTo })),
+      currentFiscalYearId,
+      fiscalYearName
     }
-    for (const groupMember of group.members) {
-      const memberName = getMemberDisplayName(groupMember)
-      for (const sponsor of groupMember.sponsors) {
-        entries.push({ sponsor, assignedTo: memberName })
-      }
-    }
-    return { name: group.name, entries, currentFiscalYearId, fiscalYearName }
   }
 
   return null
+}
+
+/**
+ * Sponsors matching `assigned` plus everyone with a donation matching
+ * `credited`, sorted by name, with their donations limited to `credited`.
+ */
+function loadSponsorRows(
+  assigned: Prisma.SponsorWhereInput,
+  credited: Prisma.DonationWhereInput
+): Promise<SponsorCsvRow[]> {
+  return prisma.sponsor.findMany({
+    where: { OR: [assigned, { donations: { some: credited } }] },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }, { company: 'asc' }],
+    select: sponsorCsvSelect(credited)
+  })
 }

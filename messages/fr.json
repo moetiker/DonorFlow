@@ -527,7 +527,8 @@
     "exportLabel": "Liste d'adresses",
     "formatCsv": "CSV",
     "formatExcel": "Excel",
-    "formatPdf": "PDF"
+    "formatPdf": "PDF",
+    "groupDissolved": "Ce groupe a été dissous."
   },
   "mailing": {
     "title": "Informer les membres",
