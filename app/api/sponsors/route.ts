@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import {
+  DissolvedGroupError, replaceSponsorAssignments, sponsorAssignmentsInclude, toRecipientRefs
+} from '@/lib/sponsor-assignments'
 import { createSponsorSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
 
 export const GET = withApiRoute(async (request: NextRequest) => {
@@ -10,15 +13,10 @@ export const GET = withApiRoute(async (request: NextRequest) => {
 
   const sponsors = await prisma.sponsor.findMany({
     orderBy: { lastName: 'asc' },
-    ...(includeAll && {
-      include: {
-        member: true,
-        group: true,
-        _count: {
-          select: { donations: true }
-        }
-      }
-    })
+    include: {
+      ...sponsorAssignmentsInclude,
+      ...(includeAll && { _count: { select: { donations: true } } })
+    }
   })
 
   return NextResponse.json(serializeDates(sponsors))
@@ -39,25 +37,37 @@ export const POST = withApiRoute(async (request: NextRequest) => {
   const {
     company, salutation, firstName, lastName,
     street, postalCode, city, phone, email, notes,
-    memberId, groupId
+    assignments
   } = validation.data
 
-  const sponsor = await prisma.sponsor.create({
-    data: {
-      company: company || null,
-      salutation: salutation || null,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      street: street || null,
-      postalCode: postalCode || null,
-      city: city || null,
-      phone: phone || null,
-      email: email || null,
-      notes: notes || null,
-      memberId: memberId || null,
-      groupId: groupId || null
-    }
-  })
+  try {
+    const sponsor = await prisma.$transaction(async (tx) => {
+      const created = await tx.sponsor.create({
+        data: {
+          company: company || null,
+          salutation: salutation || null,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          street: street || null,
+          postalCode: postalCode || null,
+          city: city || null,
+          phone: phone || null,
+          email: email || null,
+          notes: notes || null
+        }
+      })
+      await replaceSponsorAssignments(tx, created.id, toRecipientRefs(assignments))
+      return tx.sponsor.findUniqueOrThrow({
+        where: { id: created.id },
+        include: sponsorAssignmentsInclude
+      })
+    })
 
-  return NextResponse.json(sponsor, { status: 201 })
+    return NextResponse.json(serializeDates(sponsor), { status: 201 })
+  } catch (error) {
+    if (error instanceof DissolvedGroupError) {
+      return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
+    }
+    throw error
+  }
 })

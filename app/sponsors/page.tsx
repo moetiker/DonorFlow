@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Card, Button, Table, Badge } from 'react-bootstrap'
+import { Container, Card, Button, Table } from 'react-bootstrap'
 import { Navbar } from '@/components/Navbar'
 import { SponsorModal } from '@/components/SponsorModal'
 import { SponsorDonationsModal } from '@/components/SponsorDonationsModal'
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { SearchBar } from '@/components/SearchBar'
 import { useState, useEffect, useCallback } from 'react'
 import { getSponsorDisplayName } from '@/lib/utils'
+import { recipientLabel } from '@/lib/crediting'
 import { useTranslations } from 'next-intl'
 import { useLocalizedFormatters } from '@/lib/i18n/formatters'
 
@@ -24,15 +25,18 @@ type Sponsor = {
   phone: string | null
   email: string | null
   notes: string | null
-  memberId: string | null
-  groupId: string | null
-  member?: { firstName: string; lastName: string }
-  group?: { name: string }
+  assignments: {
+    id: string
+    memberId: string | null
+    groupId: string | null
+    member: { id: string; firstName: string; lastName: string } | null
+    group: { id: string; name: string } | null
+  }[]
   _count: { donations: number }
 }
 
 type Member = { id: string; firstName: string; lastName: string }
-type Group = { id: string; name: string }
+type Group = { id: string; name: string; dissolvedAt?: string | null }
 
 // Helper function to display address
 function getSponsorAddress(sponsor: Sponsor) {
@@ -158,15 +162,11 @@ export default function SponsorsPage() {
     const searchLower = searchTerm.toLowerCase()
     const name = getSponsorDisplayName(sponsor).toLowerCase()
     const city = (sponsor.city || '').toLowerCase()
-    const memberName = sponsor.member
-      ? `${sponsor.member.firstName} ${sponsor.member.lastName}`.toLowerCase()
-      : ''
-    const groupName = sponsor.group ? sponsor.group.name.toLowerCase() : ''
+    const recipients = sponsor.assignments.map(a => recipientLabel(a).toLowerCase())
 
     return name.includes(searchLower) ||
            city.includes(searchLower) ||
-           memberName.includes(searchLower) ||
-           groupName.includes(searchLower)
+           recipients.some(r => r.includes(searchLower))
   })
 
   return (
@@ -246,18 +246,7 @@ export default function SponsorsPage() {
                       <td><strong>{getSponsorDisplayName(sponsor)}</strong></td>
                       <td className="text-muted">{sponsor.city || '-'}</td>
                       <td>
-                        {sponsor.member && (
-                          <>
-                            <Badge bg="success" className="me-1">{tCommon('member')}</Badge>
-                            <small>{sponsor.member.firstName} {sponsor.member.lastName}</small>
-                          </>
-                        )}
-                        {sponsor.group && (
-                          <>
-                            <Badge bg="info" className="me-1">{tCommon('group')}</Badge>
-                            <small>{sponsor.group.name}</small>
-                          </>
-                        )}
+                        <small>{sponsor.assignments.map(recipientLabel).join(', ')}</small>
                       </td>
                       <td className="donations-cell">
                         <span className="text-primary">

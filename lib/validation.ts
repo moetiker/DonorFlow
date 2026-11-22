@@ -100,7 +100,28 @@ export type UpdateDonationInput = z.infer<typeof updateDonationSchema>
 // Sponsor Schemas
 // ============================================================================
 
-export const createSponsorSchema = z.object({
+/** One recipient of a sponsor: exactly one of member or group. */
+export const sponsorAssignmentInputSchema = z.object({
+  memberId: z.string().optional().nullable(),
+  groupId: z.string().optional().nullable()
+})
+  .refine(data => data.memberId || data.groupId, { message: 'recipientRequired', path: ['memberId'] })
+  .refine(data => !(data.memberId && data.groupId), cannotAssignBothRefinement)
+
+const assignmentListSchema = z.array(sponsorAssignmentInputSchema)
+  .refine(list => list.length >= 1, { message: 'recipientRequired' })
+
+type AssignmentList = { assignments?: { memberId?: string | null; groupId?: string | null }[] }
+
+/** True when no member or group appears twice in the assignment list. */
+const hasNoDuplicateAssignments = (data: AssignmentList) => {
+  const keys = (data.assignments ?? []).map(a => (a.memberId ? `m:${a.memberId}` : `g:${a.groupId}`))
+  return new Set(keys).size === keys.length
+}
+
+const duplicateAssignmentRefinement = { message: 'duplicateAssignment', path: ['assignments'] }
+
+const sponsorBaseFields = {
   company: z.string().optional().nullable(),
   salutation: z.string().optional().nullable(),
   firstName: z.string().optional().nullable(),
@@ -110,30 +131,21 @@ export const createSponsorSchema = z.object({
   city: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   email: z.email().optional().nullable().or(z.literal('')),
-  notes: z.string().optional().nullable(),
-  memberId: z.string().optional().nullable(),
-  groupId: z.string().optional().nullable()
+  notes: z.string().optional().nullable()
+}
+
+export const createSponsorSchema = z.object({
+  ...sponsorBaseFields,
+  assignments: assignmentListSchema
 })
   .refine(data => data.lastName || data.company, { message: 'nameOrCompanyRequired', path: ['lastName'] })
-  .refine(requireMemberOrGroup, memberOrGroupRequiredRefinement)
-  .refine(preventBothMemberAndGroup, cannotAssignBothRefinement)
+  .refine(hasNoDuplicateAssignments, duplicateAssignmentRefinement)
 
 export const updateSponsorSchema = z.object({
-  company: z.string().optional().nullable(),
-  salutation: z.string().optional().nullable(),
-  firstName: z.string().optional().nullable(),
-  lastName: z.string().optional().nullable(),
-  street: z.string().optional().nullable(),
-  postalCode: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.email().optional().nullable().or(z.literal('')),
-  notes: z.string().optional().nullable(),
-  memberId: z.string().optional().nullable(),
-  groupId: z.string().optional().nullable()
+  ...sponsorBaseFields,
+  assignments: assignmentListSchema.optional()
 })
-  .refine(preventBothOnUpdate, cannotAssignBothRefinement)
-  .refine(requireMemberOrGroupOnUpdate, memberOrGroupRequiredRefinement)
+  .refine(hasNoDuplicateAssignments, duplicateAssignmentRefinement)
 
 export type CreateSponsorInput = z.infer<typeof createSponsorSchema>
 export type UpdateSponsorInput = z.infer<typeof updateSponsorSchema>

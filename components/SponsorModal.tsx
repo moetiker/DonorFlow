@@ -4,9 +4,22 @@ import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
+import { recipientLabel } from '@/lib/crediting'
+import { getMemberDisplayName } from '@/lib/utils'
 
 type Member = { id: string; firstName: string; lastName: string }
-type Group = { id: string; name: string }
+type Group = { id: string; name: string; dissolvedAt?: string | null }
+
+type Assignment = {
+  id?: string
+  memberId: string | null
+  groupId: string | null
+  member: { id: string; firstName: string; lastName: string } | null
+  group: { id: string; name: string } | null
+}
+
+/** One recipient row in the form; `value` is "m:<id>" or "g:<id>". */
+type RecipientRow = { value: string; label: string }
 
 type Sponsor = {
   id: string
@@ -20,8 +33,7 @@ type Sponsor = {
   phone: string | null
   email: string | null
   notes: string | null
-  memberId: string | null
-  groupId: string | null
+  assignments: Assignment[]
 }
 
 type Props = {
@@ -38,6 +50,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
   const tCommon = useTranslations('common')
   const tErrors = useTranslations('errors')
   const tDonations = useTranslations('donations')
+  const tValidation = useTranslations('validation.errors')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -53,10 +66,9 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     phone: '',
     email: '',
     notes: '',
-    assignmentType: 'member' as 'member' | 'group',
-    memberId: '',
-    groupId: ''
   })
+  const [recipients, setRecipients] = useState<RecipientRow[]>([])
+  const [pendingRecipient, setPendingRecipient] = useState('')
   const [donationData, setDonationData] = useState({
     amount: '',
     donationDate: new Date().toISOString().split('T')[0],
@@ -80,11 +92,13 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         phone: sponsor.phone || '',
         email: sponsor.email || '',
         notes: sponsor.notes || '',
-        assignmentType: sponsor.memberId ? 'member' : 'group',
-        memberId: sponsor.memberId || '',
-        groupId: sponsor.groupId || ''
       })
+      setRecipients((sponsor.assignments ?? []).map(a => ({
+        value: a.memberId ? `m:${a.memberId}` : `g:${a.groupId}`,
+        label: recipientLabel(a)
+      })))
     } else {
+      setRecipients([])
       setFormData({
         company: '',
         salutation: '',
@@ -95,12 +109,10 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         city: '',
         phone: '',
         email: '',
-        notes: '',
-        assignmentType: 'member',
-        memberId: '',
-        groupId: ''
+        notes: ''
       })
     }
+    setPendingRecipient('')
     setError('')
     setShowDeleteConfirm(false)
     setAddDonation(false)
@@ -128,8 +140,11 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         phone: formData.phone || null,
         email: formData.email || null,
         notes: formData.notes || null,
-        memberId: formData.assignmentType === 'member' ? formData.memberId : null,
-        groupId: formData.assignmentType === 'group' ? formData.groupId : null
+        assignments: recipients.map(r =>
+          r.value.startsWith('m:')
+            ? { memberId: r.value.slice(2) }
+            : { groupId: r.value.slice(2) }
+        )
       }
 
       const url = sponsor ? `/api/sponsors/${sponsor.id}` : '/api/sponsors'
@@ -143,7 +158,9 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || tErrors('saveFailed'))
+        throw new Error(
+          data.error === 'groupDissolved' ? tValidation('groupDissolved') : data.error || tErrors('saveFailed')
+        )
       }
 
       const sponsorResult = await response.json()
@@ -156,8 +173,9 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
           amount: parseFloat(donationData.amount),
           donationDate: donationData.donationDate,
           note: donationData.note || null,
-          memberId: formData.assignmentType === 'member' ? formData.memberId : null,
-          groupId: formData.assignmentType === 'group' ? formData.groupId : null
+          // The first donation is credited to the first listed recipient
+          memberId: recipients[0].value.startsWith('m:') ? recipients[0].value.slice(2) : null,
+          groupId: recipients[0].value.startsWith('g:') ? recipients[0].value.slice(2) : null
         }
 
         const donationResponse = await fetch('/api/donations', {
@@ -180,6 +198,21 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
       setLoading(false)
     }
   }
+
+  const addRecipient = () => {
+    if (!pendingRecipient || recipients.some(r => r.value === pendingRecipient)) return
+    const id = pendingRecipient.slice(2)
+    const label = pendingRecipient.startsWith('m:')
+      ? recipientLabel({ member: members.find(m => m.id === id) ?? null, group: null })
+      : recipientLabel({ member: null, group: groups.find(g => g.id === id) ?? null })
+    setRecipients([...recipients, { value: pendingRecipient, label }])
+    setPendingRecipient('')
+  }
+
+  const availableMembers = members.filter(m => !recipients.some(r => r.value === `m:${m.id}`))
+  const availableGroups = groups.filter(
+    g => !g.dissolvedAt && !recipients.some(r => r.value === `g:${g.id}`)
+  )
 
   const handleDelete = async () => {
     if (!sponsor) return
@@ -357,63 +390,61 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
 
           <Form.Group className="mb-3">
             <Form.Label>{t('assignedTo')} *</Form.Label>
-            <div className="mb-2">
-              <Form.Check
-                type="radio"
-                id="assignmentMember"
-                label={t('assignToMember')}
-                checked={formData.assignmentType === 'member'}
-                onChange={() => setFormData({ ...formData, assignmentType: 'member' })}
+            {recipients.length === 0 && (
+              <div className="text-muted small mb-2">{t('recipientRequiredHint')}</div>
+            )}
+            <ul className="list-group mb-2">
+              {recipients.map(r => (
+                <li
+                  key={r.value}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <span>{r.label}</span>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    aria-label={t('removeRecipient')}
+                    onClick={() => setRecipients(recipients.filter(x => x.value !== r.value))}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <div className="d-flex gap-2">
+              <Form.Select
+                aria-label={t('selectRecipient')}
+                value={pendingRecipient}
+                onChange={(e) => setPendingRecipient(e.target.value)}
                 disabled={loading}
-              />
-              <Form.Check
-                type="radio"
-                id="assignmentGroup"
-                label={t('assignToGroup')}
-                checked={formData.assignmentType === 'group'}
-                onChange={() => setFormData({ ...formData, assignmentType: 'group' })}
-                disabled={loading}
-              />
+              >
+                <option value="">-- {t('selectRecipient')} --</option>
+                <optgroup label={t('recipientMembers')}>
+                  {availableMembers.map(m => (
+                    <option key={m.id} value={`m:${m.id}`}>
+                      {getMemberDisplayName(m)}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label={t('recipientGroups')}>
+                  {availableGroups.map(g => (
+                    <option key={g.id} value={`g:${g.id}`}>
+                      {g.name}
+                    </option>
+                  ))}
+                </optgroup>
+              </Form.Select>
+              <Button
+                variant="outline-primary"
+                onClick={addRecipient}
+                disabled={loading || !pendingRecipient}
+              >
+                <i className="bi bi-plus-lg me-1"></i>
+                {t('addRecipient')}
+              </Button>
             </div>
           </Form.Group>
-
-          {formData.assignmentType === 'member' && (
-            <Form.Group className="mb-3">
-              <Form.Label>{tCommon('member')} *</Form.Label>
-              <Form.Select
-                value={formData.memberId}
-                onChange={(e) => setFormData({ ...formData, memberId: e.target.value })}
-                required
-                disabled={loading}
-              >
-                <option value="">-- {tCommon('member')} --</option>
-                {members.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.firstName} {m.lastName}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          )}
-
-          {formData.assignmentType === 'group' && (
-            <Form.Group className="mb-3">
-              <Form.Label>{tCommon('group')} *</Form.Label>
-              <Form.Select
-                value={formData.groupId}
-                onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                required
-                disabled={loading}
-              >
-                <option value="">-- {tCommon('group')} --</option>
-                {groups.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          )}
 
           {/* Optional first donation - only show for new sponsors */}
           {!sponsor && (
@@ -497,7 +528,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
               <Button variant="secondary" onClick={onHide} disabled={loading}>
                 {tCommon('cancel')}
               </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
+              <Button variant="primary" type="submit" disabled={loading || recipients.length === 0}>
                 {loading ? tCommon('saving') : tCommon('save')}
               </Button>
             </div>

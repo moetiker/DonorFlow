@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
+import { serializeDates } from '@/lib/utils'
+import {
+  DissolvedGroupError, replaceSponsorAssignments, sponsorAssignmentsInclude, toRecipientRefs
+} from '@/lib/sponsor-assignments'
 import { updateSponsorSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
 
 export const PUT = withApiRoute(async (
@@ -19,25 +23,41 @@ export const PUT = withApiRoute(async (
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const sponsor = await prisma.sponsor.update({
-    where: { id: sponsorId },
-    data: {
-      company: body.company,
-      salutation: body.salutation,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      street: body.street,
-      postalCode: body.postalCode,
-      city: body.city,
-      phone: body.phone,
-      email: body.email,
-      notes: body.notes,
-      memberId: body.memberId,
-      groupId: body.groupId
-    }
-  })
+  const { assignments } = validation.data
 
-  return NextResponse.json(sponsor)
+  try {
+    const sponsor = await prisma.$transaction(async (tx) => {
+      await tx.sponsor.update({
+        where: { id: sponsorId },
+        data: {
+          company: body.company,
+          salutation: body.salutation,
+          firstName: body.firstName,
+          lastName: body.lastName,
+          street: body.street,
+          postalCode: body.postalCode,
+          city: body.city,
+          phone: body.phone,
+          email: body.email,
+          notes: body.notes
+        }
+      })
+      if (assignments) {
+        await replaceSponsorAssignments(tx, sponsorId, toRecipientRefs(assignments))
+      }
+      return tx.sponsor.findUniqueOrThrow({
+        where: { id: sponsorId },
+        include: sponsorAssignmentsInclude
+      })
+    })
+
+    return NextResponse.json(serializeDates(sponsor))
+  } catch (error) {
+    if (error instanceof DissolvedGroupError) {
+      return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
+    }
+    throw error
+  }
 })
 
 export const DELETE = withApiRoute(async (
