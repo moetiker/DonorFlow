@@ -2,36 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import {
+  memberActual as memberActualFor,
+  groupActual as groupActualFor,
+  unassignedActual
+} from '@/lib/report-figures'
 
-// Helper to calculate donation totals from entities with sponsors
-type EntityWithSponsorDonations = {
-  sponsors: Array<{ donations: Array<{ amount: number | null }> }>
-}
-
-function calculateDonationTotal(entities: EntityWithSponsorDonations[]): number {
-  return entities.reduce((sum, entity) => {
-    const donations = entity.sponsors.flatMap(sponsor => sponsor.donations)
-    return sum + donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
-  }, 0)
-}
-
-// Helper for sponsors without nested sponsors structure
-type SponsorWithDonations = {
-  donations: Array<{ amount: number | null }>
-}
-
-function calculateSponsorDonationTotal(sponsors: SponsorWithDonations[]): number {
-  return sponsors.reduce((sum, sponsor) => {
-    return sum + sponsor.donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
-  }, 0)
-}
+const sum = (values: number[]) => values.reduce((acc, v) => acc + v, 0)
 
 export const GET = withApiRoute(async (_request: NextRequest) => {
   const now = new Date()
 
   const [memberCount, groupCount, sponsorCount, currentYear] = await Promise.all([
     prisma.member.count(),
-    prisma.group.count(),
+    prisma.group.count({ where: { dissolvedAt: null } }),
     prisma.sponsor.count(),
     prisma.fiscalYear.findFirst({
       where: {
@@ -70,57 +54,27 @@ export const GET = withApiRoute(async (_request: NextRequest) => {
     })
     totalTarget = allMemberTargets.reduce((sum, mt) => sum + mt.targetAmount, 0)
 
-    // Get members WITHOUT group membership (MONETARY donations only)
+    // Members WITHOUT group membership: MONETARY donations credited to them
+    const fiscalYearId = currentYear.id
     const members = await prisma.member.findMany({
       where: { groupId: null },
-      include: {
-        sponsors: {
-          include: {
-            donations: {
-              where: {
-                fiscalYearId: currentYear.id,
-                type: 'MONETARY'
-              }
-            }
-          }
-        }
-      }
+      select: { id: true }
     })
-    memberActual = calculateDonationTotal(members)
+    memberActual = sum(await Promise.all(
+      members.map(m => memberActualFor(prisma, m.id, fiscalYearId, 'MONETARY'))
+    ))
 
-    // Get group donations (MONETARY only)
+    // Groups (not dissolved): donations credited to the group and its members
     const groups = await prisma.group.findMany({
-      include: {
-        sponsors: {
-          include: {
-            donations: {
-              where: {
-                fiscalYearId: currentYear.id,
-                type: 'MONETARY'
-              }
-            }
-          }
-        }
-      }
+      where: { dissolvedAt: null },
+      select: { id: true }
     })
-    groupActual = calculateDonationTotal(groups)
+    groupActual = sum(await Promise.all(
+      groups.map(g => groupActualFor(prisma, g.id, fiscalYearId, 'MONETARY'))
+    ))
 
-    // Get unassigned donations (MONETARY only)
-    const unassignedSponsors = await prisma.sponsor.findMany({
-      where: {
-        memberId: null,
-        groupId: null
-      },
-      include: {
-        donations: {
-          where: {
-            fiscalYearId: currentYear.id,
-            type: 'MONETARY'
-          }
-        }
-      }
-    })
-    unassignedTotal = calculateSponsorDonationTotal(unassignedSponsors)
+    // Donations without a recipient (MONETARY only)
+    unassignedTotal = await unassignedActual(prisma, fiscalYearId, 'MONETARY')
 
     totalActual = memberActual + groupActual + unassignedTotal
   }

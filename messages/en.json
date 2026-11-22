@@ -407,7 +407,8 @@
     "inKindDonations": "In-Kind Donations",
     "description": "Description",
     "assignedTo": "Assigned To",
-    "date": "Date"
+    "date": "Date",
+    "dissolved": "(dissolved)"
   },
   "login": {
     "title": "Donor Management",

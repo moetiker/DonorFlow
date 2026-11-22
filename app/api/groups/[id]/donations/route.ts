@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { groupTotalWhere } from '@/lib/report-figures'
 
 export async function GET(
   request: NextRequest,
@@ -17,24 +19,12 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const yearParam = searchParams.get('year')
 
-    // Build where clause
-    const whereClause: any = {
-      OR: [
-        { groupId: groupId },
-        {
-          sponsor: {
-            groupId: groupId
-          }
-        }
-      ]
-    }
+    // The group's total: donations credited to the group and to its current members
+    const credited = await groupTotalWhere(prisma, groupId)
+    const whereClause: Prisma.DonationWhereInput = yearParam
+      ? { AND: [credited, { fiscalYearId: yearParam }] }
+      : credited
 
-    // Filter by fiscal year if provided
-    if (yearParam) {
-      whereClause.fiscalYearId = yearParam
-    }
-
-    // Get all donations assigned to this group (either via donation.groupId or sponsor.groupId)
     const donations = await prisma.donation.findMany({
       where: whereClause,
       include: {

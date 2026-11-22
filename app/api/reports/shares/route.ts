@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
+import { donationsCreditedTo } from '@/lib/crediting'
+import { inFiscalYear, memberActual, unassignedActual } from '@/lib/report-figures'
 
 export const GET = withApiRoute(async (request: NextRequest) => {
     const { searchParams } = new URL(request.url)
@@ -37,51 +39,33 @@ export const GET = withApiRoute(async (request: NextRequest) => {
       })
     }
 
-    // Get all members with their MONETARY donations and group info
+    // Each member's share = MONETARY donations credited to the member plus a
+    // linear share of the donations credited to the member's group itself.
     const members = await prisma.member.findMany({
       include: {
-        sponsors: {
-          include: {
-            donations: {
-              where: {
-                fiscalYearId: currentYear.id,
-                type: 'MONETARY'
-              }
-            }
-          }
-        },
         group: {
           include: {
-            sponsors: {
-              include: {
-                donations: {
-                  where: {
-                    fiscalYearId: currentYear.id,
-                    type: 'MONETARY'
-                  }
-                }
-              }
-            },
-            members: true
+            members: { select: { id: true } }
           }
         }
       }
     })
 
-    // Calculate shares for each member (MONETARY donations only)
-    const memberShares = members.map(member => {
-      let amount = 0
+    // Donations credited to each group itself (MONETARY), keyed by group id
+    const groups = await prisma.group.findMany({ include: { members: { select: { id: true } } } })
+    const groupOwnTotals = new Map<string, number>()
+    for (const group of groups) {
+      const where = inFiscalYear(donationsCreditedTo({ groupId: group.id }), currentYear.id, 'MONETARY')
+      const agg = await prisma.donation.aggregate({ where, _sum: { amount: true } })
+      groupOwnTotals.set(group.id, agg._sum.amount ?? 0)
+    }
 
-      // Add direct donations from member's sponsors
-      amount += member.sponsors.reduce((sum, sponsor) => {
-        return sum + sponsor.donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
-      }, 0)
+    const memberShares = (await Promise.all(members.map(async member => {
+      let amount = await memberActual(prisma, member.id, currentYear.id, 'MONETARY')
 
       // If member is in a group, add linear share of group donations
       if (member.group) {
-        const groupDonations = member.group.sponsors.reduce((sum, sponsor) => {
-          return sum + sponsor.donations.reduce((dSum, d) => dSum + (d.amount || 0), 0)
-        }, 0)
+        const groupDonations = groupOwnTotals.get(member.group.id) ?? 0
         const memberCount = member.group.members.length
         if (memberCount > 0) {
           amount += groupDonations / memberCount
@@ -95,21 +79,25 @@ export const GET = withApiRoute(async (request: NextRequest) => {
         amount: amount,
         groupName: member.group?.name
       }
-    }).filter(share => share.amount > 0)
+    }))).filter(share => share.amount > 0)
 
-    // Get unassigned MONETARY donations
-    const unassignedDonations = await prisma.donation.findMany({
-      where: {
-        fiscalYearId: currentYear.id,
-        type: 'MONETARY',
-        sponsor: {
-          memberId: null,
-          groupId: null
-        }
+    // Groups without members (e.g. dissolved ones) cannot pass their donations
+    // on to members; list them on their own so the total stays complete.
+    for (const group of groups) {
+      const amount = groupOwnTotals.get(group.id) ?? 0
+      if (group.members.length === 0 && amount > 0) {
+        memberShares.push({
+          id: group.id,
+          name: group.name,
+          type: 'member' as const,
+          amount,
+          groupName: undefined
+        })
       }
-    })
+    }
 
-    const unassignedTotal = unassignedDonations.reduce((sum, d) => sum + (d.amount || 0), 0)
+    // Donations without a recipient (MONETARY)
+    const unassignedTotal = await unassignedActual(prisma, currentYear.id, 'MONETARY')
 
     if (unassignedTotal > 0) {
       memberShares.push({

@@ -32,14 +32,13 @@ type Group = {
       }
     }>
   }>
-  sponsors?: Array<{
-    donations: Array<{
-      amount: number
-      fiscalYearId: string
-    }>
+  // The group's total: donations credited to the group and to its members
+  donations?: Array<{
+    amount: number | null
+    fiscalYearId: string | null
   }>
   _count?: {
-    sponsors: number
+    sponsorAssignments: number
   }
 }
 
@@ -166,7 +165,7 @@ export default function GroupsPage() {
 
     // Calculate total donations for the group in current fiscal year
     let totalAchieved = 0
-    if (group.sponsors) {
+    if (group.donations) {
       // Find current fiscal year from any member's targets
       let currentFiscalYearId = members
         .flatMap(m => m.memberTargets || [])
@@ -178,20 +177,18 @@ export default function GroupsPage() {
 
       // If no target found, try to get fiscal year from donations
       if (!currentFiscalYearId) {
-        const allDonations = group.sponsors.flatMap(s => s.donations)
+        const allDonations = group.donations
         if (allDonations.length > 0) {
-          currentFiscalYearId = allDonations[0].fiscalYearId
+          currentFiscalYearId = allDonations[0].fiscalYearId ?? undefined
         }
       }
 
       if (currentFiscalYearId) {
-        group.sponsors.forEach(sponsor => {
-          sponsor.donations
-            .filter(d => d.fiscalYearId === currentFiscalYearId)
-            .forEach(d => {
-              totalAchieved += d.amount
-            })
-        })
+        group.donations
+          .filter(d => d.fiscalYearId === currentFiscalYearId)
+          .forEach(d => {
+            totalAchieved += d.amount || 0
+          })
       }
     }
 
@@ -304,7 +301,7 @@ export default function GroupsPage() {
                           style={{ cursor: 'pointer' }}
                           className="text-primary"
                         >
-                          <strong>{group._count?.sponsors || 0}</strong> {t('sponsors')}
+                          <strong>{group._count?.sponsorAssignments || 0}</strong> {t('sponsors')}
                         </td>
                         <td
                           onClick={(e) => handleStatusClick(e, group)}

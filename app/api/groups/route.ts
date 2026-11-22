@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
 import { createGroupSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
 
+const donationFields = { amount: true, fiscalYearId: true, type: true } as const
+
+type GroupWithDonations = Prisma.GroupGetPayload<{
+  include: {
+    members: {
+      include: {
+        memberTargets: { include: { fiscalYear: true } }
+        donations: { select: typeof donationFields }
+      }
+    }
+    donations: { select: typeof donationFields }
+    _count: { select: { sponsorAssignments: true; members: true } }
+  }
+}>
+
 export const GET = withApiRoute(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
-  const includeAll = searchParams.get('include') === 'all'
+  // `include` may be repeated or comma-separated, e.g. include=all,dissolved
+  const includes = new Set(searchParams.getAll('include').flatMap(v => v.split(',')))
+  const includeAll = includes.has('all')
+  const includeDissolved = includes.has('dissolved')
 
   const groups = await prisma.group.findMany({
+    // Dissolved groups are hidden unless asked for; they carry dissolvedAt
+    where: includeDissolved ? undefined : { dissolvedAt: null },
     orderBy: { name: 'asc' },
     ...(includeAll && {
       include: {
@@ -18,22 +39,31 @@ export const GET = withApiRoute(async (request: NextRequest) => {
               include: {
                 fiscalYear: true
               }
-            }
+            },
+            donations: { select: donationFields }
           }
         },
-        sponsors: {
-          include: {
-            donations: true
-          }
-        },
+        donations: { select: donationFields },
         _count: {
-          select: { sponsors: true, members: true }
+          select: { sponsorAssignments: true, members: true }
         }
       }
     })
   })
 
-  return NextResponse.json(serializeDates(groups))
+  if (!includeAll) {
+    return NextResponse.json(serializeDates(groups))
+  }
+
+  // `donations` of a group = its total: donations credited to the group itself
+  // and to its current members.
+  const withTotals = (groups as GroupWithDonations[]).map(({ members, donations, ...group }) => ({
+    ...group,
+    members: members.map(({ donations: _memberDonations, ...member }) => member),
+    donations: [...donations, ...members.flatMap(m => m.donations)]
+  }))
+
+  return NextResponse.json(serializeDates(withTotals))
 })
 
 export const POST = withApiRoute(async (request: NextRequest) => {

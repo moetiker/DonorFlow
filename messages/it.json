@@ -407,7 +407,8 @@
     "inKindDonations": "Donazioni in natura",
     "description": "Descrizione",
     "assignedTo": "Assegnato a",
-    "date": "Data"
+    "date": "Data",
+    "dissolved": "(sciolto)"
   },
   "login": {
     "title": "Gestione donatori",

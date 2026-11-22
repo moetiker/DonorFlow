@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
+import { donationsCreditedTo, donationsCreditedToGroupTotal } from '@/lib/crediting'
+import { donationsWithoutRecipient, inFiscalYear } from '@/lib/report-figures'
 
 export const GET = withApiRoute(async () => {
   const now = new Date()
@@ -24,99 +27,55 @@ export const GET = withApiRoute(async () => {
     })
   }
 
-  // Get members with in-kind donations (members WITHOUT group membership)
-  const members = await prisma.member.findMany({
-    where: { groupId: null },
-    include: {
-      sponsors: {
-        include: {
-          donations: {
-            where: {
-              type: 'IN_KIND',
-              fiscalYearId: currentYear.id
-            }
-          }
-        }
-      }
-    }
-  })
-
-  const memberStats = members
-    .map(member => {
-      const donations = member.sponsors.flatMap(s => s.donations)
-      return {
-        member: {
-          id: member.id,
-          firstName: member.firstName,
-          lastName: member.lastName
-        },
-        count: donations.length,
-        donations: donations.map(d => ({
-          id: d.id,
-          description: d.description,
-          donationDate: d.donationDate,
-          note: d.note
-        }))
-      }
+  const inKind = (where: Prisma.DonationWhereInput) =>
+    prisma.donation.findMany({
+      where: inFiscalYear(where, currentYear.id, 'IN_KIND'),
+      select: { id: true, description: true, donationDate: true, note: true }
     })
-    .filter(stat => stat.count > 0)
-    .sort((a, b) => b.count - a.count)
 
-  // Get groups with in-kind donations
-  const groups = await prisma.group.findMany({
-    include: {
-      sponsors: {
-        include: {
-          donations: {
-            where: {
-              type: 'IN_KIND',
-              fiscalYearId: currentYear.id
-            }
-          }
-        }
+  // In-kind donations credited to members WITHOUT group membership
+  const members = await prisma.member.findMany({ where: { groupId: null } })
+
+  const memberStats = (await Promise.all(members.map(async member => {
+    const donations = await inKind(donationsCreditedTo({ memberId: member.id }))
+    return {
+      member: {
+        id: member.id,
+        firstName: member.firstName,
+        lastName: member.lastName
       },
-      members: true
+      count: donations.length,
+      donations
     }
-  })
-
-  const groupStats = groups
-    .map(group => {
-      const donations = group.sponsors.flatMap(s => s.donations)
-      return {
-        group: {
-          id: group.id,
-          name: group.name
-        },
-        count: donations.length,
-        memberCount: group.members.length,
-        donations: donations.map(d => ({
-          id: d.id,
-          description: d.description,
-          donationDate: d.donationDate,
-          note: d.note
-        }))
-      }
-    })
+  })))
     .filter(stat => stat.count > 0)
     .sort((a, b) => b.count - a.count)
 
-  // Get unassigned in-kind donations
-  const unassignedSponsors = await prisma.sponsor.findMany({
-    where: {
-      memberId: null,
-      groupId: null
-    },
-    include: {
-      donations: {
-        where: {
-          type: 'IN_KIND',
-          fiscalYearId: currentYear.id
-        }
-      }
-    }
+  // In-kind donations credited to groups (not dissolved) and their members
+  const groups = await prisma.group.findMany({
+    where: { dissolvedAt: null },
+    include: { members: true }
   })
 
-  const unassignedDonations = unassignedSponsors.flatMap(s => s.donations)
+  const groupStats = (await Promise.all(groups.map(async group => {
+    const donations = await inKind(
+      donationsCreditedToGroupTotal(group.id, group.members.map(m => m.id))
+    )
+    return {
+      group: {
+        id: group.id,
+        name: group.name
+      },
+      count: donations.length,
+      memberCount: group.members.length,
+      donations
+    }
+  })))
+    .filter(stat => stat.count > 0)
+    .sort((a, b) => b.count - a.count)
+
+  // In-kind donations without a recipient
+  const unassignedDonations = await inKind(donationsWithoutRecipient)
 
   return NextResponse.json(serializeDates({
     currentYear: {
@@ -131,11 +90,6 @@ export const GET = withApiRoute(async () => {
     memberStats,
     groupStats,
     unassignedCount: unassignedDonations.length,
-    unassignedDonations: unassignedDonations.map(d => ({
-      id: d.id,
-      description: d.description,
-      donationDate: d.donationDate,
-      note: d.note
-    }))
+    unassignedDonations
   }))
 })

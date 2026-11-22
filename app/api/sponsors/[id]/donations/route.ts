@@ -17,6 +17,11 @@ export async function GET(
 
     const donations = await prisma.donation.findMany({
       where: { sponsorId },
+      // The donation's own recipient, for its label in the donation form
+      include: {
+        member: { select: { id: true, firstName: true, lastName: true } },
+        group: { select: { id: true, name: true } }
+      },
       orderBy: { donationDate: 'desc' }
     })
 

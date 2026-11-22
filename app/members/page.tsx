@@ -32,14 +32,13 @@ type Member = {
       endDate: string
     }
   }>
-  sponsors?: Array<{
-    donations: Array<{
-      amount: number
-      fiscalYearId: string
-    }>
+  // Donations credited to the member
+  donations?: Array<{
+    amount: number | null
+    fiscalYearId: string | null
   }>
   _count: {
-    sponsors: number
+    sponsorAssignments: number
   }
 }
 
@@ -153,10 +152,10 @@ export default function MembersPage() {
       currentFiscalYearId = currentTarget.fiscalYear.id
     } else {
       // If no target, try to find fiscal year from donations
-      const allDonations = member.sponsors?.flatMap(s => s.donations) || []
+      const allDonations = member.donations || []
       if (allDonations.length > 0) {
         // For now, just use the fiscalYearId from any donation
-        currentFiscalYearId = allDonations[0].fiscalYearId
+        currentFiscalYearId = allDonations[0].fiscalYearId ?? undefined
       }
     }
 
@@ -165,12 +164,9 @@ export default function MembersPage() {
     }
 
     // Sum all donations for this member in the current fiscal year
-    const achieved = member.sponsors?.reduce((sum, sponsor) => {
-      const yearDonations = sponsor.donations
-        .filter(d => d.fiscalYearId === currentFiscalYearId)
-        .reduce((donSum, don) => donSum + don.amount, 0)
-      return sum + yearDonations
-    }, 0) || 0
+    const achieved = (member.donations || [])
+      .filter(d => d.fiscalYearId === currentFiscalYearId)
+      .reduce((sum, d) => sum + (d.amount || 0), 0)
 
     return {
       achieved,
@@ -261,7 +257,7 @@ export default function MembersPage() {
                           style={{ cursor: 'pointer' }}
                           className="text-primary"
                         >
-                          {t('sponsorCount', { count: member._count.sponsors })}
+                          {t('sponsorCount', { count: member._count.sponsorAssignments })}
                         </td>
                         <td
                           onClick={(e) => handleStatusClick(e, member)}

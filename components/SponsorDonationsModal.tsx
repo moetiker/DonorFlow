@@ -16,6 +16,16 @@ type Donation = {
   sponsorId: string
   memberId: string | null
   groupId: string | null
+  // The donation's own recipient
+  member?: { id: string; firstName: string; lastName: string } | null
+  group?: { id: string; name: string } | null
+}
+
+type Assignment = {
+  memberId: string | null
+  groupId: string | null
+  member: { id: string; firstName: string; lastName: string } | null
+  group: { id: string; name: string } | null
 }
 
 type Sponsor = {
@@ -24,8 +34,7 @@ type Sponsor = {
   salutation: string | null
   firstName: string | null
   lastName: string | null
-  member?: { id: string; firstName: string; lastName: string }
-  group?: { id: string; name: string }
+  assignments?: Assignment[]
 }
 
 type Member = {
@@ -37,6 +46,7 @@ type Member = {
 type Group = {
   id: string
   name: string
+  dissolvedAt?: string | null
 }
 
 type Props = {
@@ -104,7 +114,8 @@ export function SponsorDonationsModal({ show, sponsorId, sponsorName, onHide }: 
 
   const loadGroups = useCallback(async () => {
     try {
-      const response = await fetch('/api/groups')
+      // Dissolved groups too: a donation may already be credited to one
+      const response = await fetch('/api/groups?include=dissolved')
       const data = await response.json()
       setGroups(Array.isArray(data) ? data : [])
     } catch (error) {

@@ -18,13 +18,12 @@ export const GET = withApiRoute(async (request: NextRequest) => {
             fiscalYear: true
           }
         },
-        sponsors: {
-          include: {
-            donations: true
-          }
+        // Donations credited to the member (not those of its sponsors)
+        donations: {
+          select: { amount: true, fiscalYearId: true, type: true }
         },
         _count: {
-          select: { sponsors: true }
+          select: { sponsorAssignments: true }
         }
       }
     })

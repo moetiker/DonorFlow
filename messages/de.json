@@ -407,7 +407,8 @@
     "inKindDonations": "Sachspenden",
     "description": "Beschreibung",
     "assignedTo": "Zugeordnet zu",
-    "date": "Datum"
+    "date": "Datum",
+    "dissolved": "(aufgelöst)"
   },
   "login": {
     "title": "Gönnerverwaltung",

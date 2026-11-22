@@ -34,6 +34,7 @@ type InKindDonation = {
 type DetailData = {
   name: string
   type: 'member' | 'group'
+  dissolved: boolean
   target: number
   actual: number
   difference: number
@@ -79,11 +80,12 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
 
       // Get member/group name
       let name = ''
+      let dissolved = false
       let target = 0
       let type: 'member' | 'group' = memberId ? 'member' : 'group'
 
       if (memberId) {
-        const memberResponse = await fetch(`/api/members?include=all`)
+        const memberResponse = await fetch('/api/members')
         const members = await memberResponse.json()
         const member = members.find((m: any) => m.id === memberId)
         if (member) {
@@ -97,11 +99,13 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
           }
         }
       } else if (groupId) {
-        const groupResponse = await fetch(`/api/groups?include=all`)
+        // Dissolved groups still appear in reports of past fiscal years
+        const groupResponse = await fetch('/api/groups?include=dissolved')
         const groups = await groupResponse.json()
         const group = groups.find((g: any) => g.id === groupId)
         if (group) {
           name = group.name
+          dissolved = Boolean(group.dissolvedAt)
           // Get target for selected fiscal year
           const targetResponse = await fetch(`/api/reports${yearQuery}`)
           const reportData = await targetResponse.json()
@@ -151,13 +155,11 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
       const sponsorsResponse = await fetch('/api/sponsors?include=all')
       const allSponsors = await sponsorsResponse.json()
 
-      const assignedSponsors = allSponsors.filter((s: any) => {
-        if (memberId) {
-          return s.memberId === memberId
-        } else {
-          return s.groupId === groupId
-        }
-      })
+      const assignedSponsors = allSponsors.filter((s: any) =>
+        (s.assignments ?? []).some((a: { memberId: string | null; groupId: string | null }) =>
+          memberId ? a.memberId === memberId : a.groupId === groupId
+        )
+      )
 
       const sponsorsWithoutDonations = assignedSponsors.filter((s: any) => {
         return !sponsorMap.has(s.id)
@@ -166,6 +168,7 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
       setData({
         name,
         type,
+        dissolved,
         target,
         actual,
         difference,
@@ -205,6 +208,7 @@ export function PerformanceDetailModal({ show, memberId, groupId, fiscalYearId, 
       <Modal.Header closeButton>
         <Modal.Title>
           {data?.type === 'member' ? tCommon('member') : tCommon('group')}: {data?.name}
+          {data?.dissolved && ` ${t('dissolved')}`}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>

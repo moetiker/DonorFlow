@@ -78,7 +78,8 @@ export default function DonationsPage() {
         fetch(`/api/donations?include=all${typeParam}`),
         fetch('/api/sponsors?include=all'),
         fetch('/api/members'),
-        fetch('/api/groups')
+        // Dissolved groups too: a donation may already be credited to one
+        fetch('/api/groups?include=dissolved')
       ])
 
       const [donationsData, sponsorsData, membersData, groupsData] = await Promise.all([

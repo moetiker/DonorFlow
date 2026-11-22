@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { buildCSV } from '@/lib/csv'
+import { recipientLabel } from '@/lib/crediting'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +16,13 @@ export async function GET(request: NextRequest) {
     const sponsors = await prisma.sponsor.findMany({
       orderBy: { lastName: 'asc' },
       include: {
-        member: true,
-        group: true,
+        assignments: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            member: { select: { firstName: true, lastName: true } },
+            group: { select: { name: true } }
+          }
+        },
         donations: {
           select: {
             amount: true,
@@ -38,19 +44,16 @@ export async function GET(request: NextRequest) {
       'Telefon',
       'E-Mail',
       'Notizen',
-      'Zugeordnet zu (Typ)',
-      'Zugeordnet zu (Name)',
+      'Zugeordnet zu',
       'Anzahl Spenden',
       'Spendensumme'
     ]
 
     // Build CSV rows
     const rows = sponsors.map(sponsor => {
-      const assignedType = sponsor.memberId ? 'Mitglied' : sponsor.groupId ? 'Gruppe' : '-'
-      const assignedName = sponsor.member
-        ? `${sponsor.member.firstName} ${sponsor.member.lastName}`
-        : sponsor.group
-        ? sponsor.group.name
+      // All recipients of the sponsor, e.g. "Hans Müller, Team Nord (Gruppe)"
+      const assignedTo = sponsor.assignments.length > 0
+        ? sponsor.assignments.map(recipientLabel).join(', ')
         : '-'
 
       const donationCount = sponsor.donations.length
@@ -67,8 +70,7 @@ export async function GET(request: NextRequest) {
         sponsor.phone,
         sponsor.email,
         sponsor.notes,
-        assignedType,
-        assignedName,
+        assignedTo,
         donationCount,
         donationSum.toFixed(2)
       ]

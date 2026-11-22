@@ -31,6 +31,7 @@ type GroupStat = {
     id: string
     name: string
   }
+  dissolved?: boolean
   target: number
   actual: number
   difference: number
@@ -211,7 +212,7 @@ export default function PerformancePage() {
         yPosition += 5
 
         const groupTableData = groupStats.map(stat => [
-          stat.group.name,
+          stat.dissolved ? `${stat.group.name} ${t('dissolved')}` : stat.group.name,
           formatCurrency(stat.target),
           formatCurrency(stat.actual),
           formatCurrency(stat.difference),
@@ -539,6 +540,7 @@ export default function PerformancePage() {
                     >
                       <td>
                         <strong>{stat.group.name}</strong>
+                        {stat.dissolved && <span className="text-muted ms-1">{t('dissolved')}</span>}
                         <div className="small text-muted">
                           {stat.members.map(m => `${m.firstName} ${m.lastName}`).join(', ')}
                         </div>
