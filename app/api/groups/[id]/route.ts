@@ -58,10 +58,12 @@ export const DELETE = withApiRoute(async (
         throw new ClubPoolLockedError()
       }
 
+      // Re-credit the group's donations and hand sponsors left without a
+      // recipient to the club pool before deleting (see lib/club-pool.ts).
       await reassignToClubPool(tx, { groupId })
 
-      // Members lose their group via onDelete: SetNull, which is intended —
-      // a member without a group keeps their own sponsors.
+      // Members lose their group via onDelete: SetNull, which is intended:
+      // their own sponsors and donations stay with them.
       await tx.group.delete({ where: { id: groupId } })
     })
   } catch (error) {

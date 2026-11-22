@@ -3,7 +3,8 @@
 import { Modal, Button, Form } from 'react-bootstrap'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { DeleteConfirmModal } from './DeleteConfirmModal'
+import type { HandOver } from '@/lib/club-pool'
+import { DeleteConfirmModal, useHandOverText } from './DeleteConfirmModal'
 
 type Group = {
   id: string
@@ -29,6 +30,7 @@ type Props = {
 export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Props) {
   const t = useTranslations('members')
   const tCommon = useTranslations('common')
+  const handOverText = useHandOverText()
   const tErrors = useTranslations('errors')
   const tGroups = useTranslations('groups')
   const [firstName, setFirstName] = useState('')
@@ -41,7 +43,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [deleteImpact, setDeleteImpact] = useState<{ sponsors: number; poolName: string } | null>(null)
+  const [deleteImpact, setDeleteImpact] = useState<(HandOver & { poolName: string }) | null>(null)
 
   // Fill the form while rendering instead of in an effect, so the fields for a
   // newly selected member are correct on the very first render.
@@ -245,11 +247,7 @@ export function MemberEditModal({ show, member, onHide, onSave, onDelete }: Prop
         show={showDeleteConfirm}
         title={`${tCommon('delete')} ${tCommon('member')}`}
         message={t('deleteConfirm')}
-        detail={
-          deleteImpact && deleteImpact.sponsors > 0
-            ? tCommon('deleteHandover', { sponsors: deleteImpact.sponsors, poolName: deleteImpact.poolName })
-            : null
-        }
+        detail={deleteImpact ? handOverText(deleteImpact) : null}
         error={error}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
