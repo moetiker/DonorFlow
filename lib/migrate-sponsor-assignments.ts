@@ -10,6 +10,14 @@ export const DUPLICATE_MERGES: { keepId: string; mergeId: string }[] = [
   { keepId: 'cmhhxstgt008zqq7i6xupwh4q', mergeId: 'cmilvdqw4000626fq5t83wsv0' }, // duplicate sponsor record, case 2
 ]
 
+/**
+ * `Setting` key written when the migration succeeded. The legacy sponsor
+ * columns stay populated until they are dropped, so without this marker an
+ * assignment removed later (or a dissolved group) would be re-created from
+ * them at the next start.
+ */
+export const MIGRATION_MARKER_KEY = 'sponsorAssignmentsMigrated'
+
 export type TotalsDiff = { key: string; before: number; after: number }
 
 export type MigrationResult =
@@ -99,8 +107,13 @@ export function compareTotals(
   return diffs
 }
 
-/** True when some sponsor's legacy owner has no matching assignment or a donation has no recipient. */
+/**
+ * False once the migration marker exists. Otherwise true when some sponsor's
+ * legacy owner has no matching assignment or a donation has no recipient.
+ */
 async function needsMigration(client: PrismaClientOrTx): Promise<boolean> {
+  const marker = await client.setting.findUnique({ where: { key: MIGRATION_MARKER_KEY } })
+  if (marker) return false
   const unassigned = await findUnassignedOwners(client)
   if (unassigned.length > 0) return true
   const recipientless = await client.donation.count({ where: { memberId: null, groupId: null } })
@@ -180,7 +193,9 @@ async function mergeDuplicate(tx: PrismaClientOrTx, keepId: string, mergeId: str
  * 4. Compares credited totals per member/group and fiscal year before and after,
  *    and rolls everything back on any difference.
  *
- * Idempotent: returns `skipped` once nothing is left to migrate.
+ * On success it writes the `MIGRATION_MARKER_KEY` setting in the same
+ * transaction; every later run returns `skipped`. Before that, it also returns
+ * `skipped` when nothing is left to migrate.
  */
 export async function migrateSponsorAssignments(
   client: typeof prisma,
@@ -194,7 +209,9 @@ export async function migrateSponsorAssignments(
         const pool = await getClubPool(tx)
         const before = await computeTotals(tx, true, pool.id)
 
-        // 1. Assignments from the legacy owner columns
+        // 1. Assignments from the legacy owner columns. A sponsor with both a
+        //    legacy member and group gets both assignments; its inherited
+        //    donations go to the member (step 2), matching the legacy crediting.
         const missing = await findUnassignedOwners(tx)
         for (const m of missing) {
           await tx.sponsorAssignment.create({ data: m })
@@ -230,6 +247,17 @@ export async function migrateSponsorAssignments(
         const after = await computeTotals(tx, false, pool.id)
         const diffs = compareTotals(before, after)
         if (diffs.length > 0) throw new TotalsChangedError(diffs)
+
+        const migratedAt = new Date().toISOString()
+        await tx.setting.upsert({
+          where: { key: MIGRATION_MARKER_KEY },
+          create: {
+            key: MIGRATION_MARKER_KEY,
+            value: migratedAt,
+            description: 'Sponsor assignment migration completed'
+          },
+          update: { value: migratedAt }
+        })
 
         return {
           status: 'migrated' as const,

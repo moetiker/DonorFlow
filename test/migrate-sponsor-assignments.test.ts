@@ -1,7 +1,11 @@
 import { test, before, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { useTestDb, resetDb, seedBasics } from './helpers/test-db'
-import { compareTotals, migrateSponsorAssignments } from '../lib/migrate-sponsor-assignments'
+import {
+  compareTotals,
+  migrateSponsorAssignments,
+  MIGRATION_MARKER_KEY
+} from '../lib/migrate-sponsor-assignments'
 
 type Prisma = Awaited<ReturnType<typeof useTestDb>>
 let prisma: Prisma
@@ -115,6 +119,69 @@ test('second run is skipped', async () => {
   assert.equal(first.status, 'migrated')
   const second = await migrateSponsorAssignments(prisma)
   assert.deepEqual(second, { status: 'skipped' })
+})
+
+test('a removed assignment is not re-created on the next run', async () => {
+  const { groupA } = basics
+  const s = await prisma.sponsor.create({ data: { lastName: 'Removed', groupId: groupA.id } })
+  await prisma.donation.create({ data: { sponsorId: s.id, amount: 5, donationDate: new Date() } })
+
+  assert.equal((await migrateSponsorAssignments(prisma)).status, 'migrated')
+  assert.ok(await prisma.setting.findUnique({ where: { key: MIGRATION_MARKER_KEY } }))
+
+  // The legacy column still points at groupA, as it does during deployment 1.
+  await prisma.sponsorAssignment.deleteMany({ where: { sponsorId: s.id } })
+  const second = await migrateSponsorAssignments(prisma)
+
+  assert.deepEqual(second, { status: 'skipped' })
+  assert.equal(await prisma.sponsorAssignment.count({ where: { sponsorId: s.id } }), 0)
+})
+
+test('a recipient-less donation of an owner-less sponsor goes to the club pool', async t => {
+  const { pool, fy } = basics
+  const warn = t.mock.method(console, 'warn', () => {})
+  const s = await prisma.sponsor.create({ data: { lastName: 'Ownerless' } })
+  const d = await prisma.donation.create({
+    data: { sponsorId: s.id, amount: 15, donationDate: new Date(), fiscalYearId: fy.id }
+  })
+
+  const result = await migrateSponsorAssignments(prisma)
+
+  assert.equal(result.status, 'migrated')
+  const after = await prisma.donation.findUniqueOrThrow({ where: { id: d.id } })
+  assert.equal(after.groupId, pool.id)
+  assert.equal(after.memberId, null)
+  assert.equal(await prisma.sponsorAssignment.count({ where: { sponsorId: s.id } }), 0)
+  assert.equal(warn.mock.callCount(), 1)
+  assert.match(String(warn.mock.calls[0].arguments[0]), new RegExp(d.id))
+})
+
+test('a changed total rolls everything back and writes no marker', async () => {
+  const { groupA, fy } = basics
+  const s = await prisma.sponsor.create({ data: { lastName: 'Rollback', groupId: groupA.id } })
+  const d = await prisma.donation.create({
+    data: { sponsorId: s.id, amount: 20, donationDate: new Date(), fiscalYearId: fy.id }
+  })
+  // Fault injection: filling the recipient also bumps the amount.
+  await prisma.$executeRawUnsafe(
+    'CREATE TRIGGER bump_amount AFTER UPDATE OF groupId ON Donation ' +
+      'BEGIN UPDATE Donation SET amount = amount + 1 WHERE id = NEW.id; END'
+  )
+  try {
+    const result = await migrateSponsorAssignments(prisma)
+
+    assert.deepEqual(result, {
+      status: 'rolledBack',
+      diffs: [{ key: `group:${groupA.id}:${fy.id}`, before: 20, after: 21 }]
+    })
+  } finally {
+    await prisma.$executeRawUnsafe('DROP TRIGGER bump_amount')
+  }
+  const after = await prisma.donation.findUniqueOrThrow({ where: { id: d.id } })
+  assert.equal(after.amount, 20)
+  assert.equal(after.groupId, null)
+  assert.equal(await prisma.sponsorAssignment.count(), 0)
+  assert.equal(await prisma.setting.findUnique({ where: { key: MIGRATION_MARKER_KEY } }), null)
 })
 
 test('compareTotals reports a changed total', () => {
