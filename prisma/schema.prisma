@@ -29,6 +29,7 @@ model Member {
   // Beziehungen
   group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
   sponsors        Sponsor[]
+  sponsorAssignments SponsorAssignment[]
   memberTargets   MemberTarget[]
   donations       Donation[]        // Spenden, die direkt diesem Mitglied zugeordnet sind
 
@@ -43,10 +44,12 @@ model Group {
   updatedAt       DateTime          @updatedAt
   statusToken     String?           @unique  // Public status link for group
   isClubPool      Boolean           @default(false)  // Orphaned sponsors are re-assigned here
+  dissolvedAt     DateTime?         // Set when the group is dissolved; history is kept
 
   // Beziehungen
   members         Member[]
   sponsors        Sponsor[]
+  sponsorAssignments SponsorAssignment[]
   donations       Donation[]  // Spenden, die direkt dieser Gruppe zugeordnet sind
 }
 
@@ -93,7 +96,27 @@ model Sponsor {
   member          Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
   group           Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
   donations       Donation[]
+  assignments     SponsorAssignment[]
 
+  @@index([memberId])
+  @@index([groupId])
+}
+
+// Zuordnung eines Gönners zu einem Mitglied ODER einer Gruppe
+model SponsorAssignment {
+  id         String   @id @default(cuid())
+  sponsorId  String
+  memberId   String?
+  groupId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sponsor    Sponsor  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  member     Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  group      Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([sponsorId, memberId])
+  @@unique([sponsorId, groupId])
   @@index([memberId])
   @@index([groupId])
 }
