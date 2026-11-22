@@ -59,6 +59,8 @@ type Donation = {
   note: string | null
   memberId: string | null
   groupId: string | null
+  member?: { id: string; firstName: string; lastName: string } | null
+  group?: { id: string; name: string } | null
 }
 
 type Props = {
@@ -168,6 +170,19 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
       .filter(g => !g.dissolvedAt || donation?.groupId === g.id)
       .map(g => ({ value: `g:${g.id}`, label: recipientLabel({ member: null, group: g }) }))
   ].filter(o => !sponsorValues.has(o.value))
+
+  // Keep the donation's stored recipient selectable even if it is not offered
+  // above (e.g. a member or group missing from the lists).
+  const knownValues = new Set([...sponsorValues, ...otherOptions.map(o => o.value)])
+  const storedRecipient = donation && formData.recipient && !knownValues.has(formData.recipient)
+    ? [{
+        value: formData.recipient,
+        label: recipientLabel({
+          member: donation.member ?? null,
+          group: donation.group ?? { name: '' }
+        })
+      }]
+    : []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -307,6 +322,9 @@ export function DonationModal({ show, donation, sponsors, members, groups, onHid
                   ))}
                 </optgroup>
               )}
+              {storedRecipient.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
               <optgroup label={sponsorOptions.length > 0 ? t('otherRecipients') : t('assignment')}>
                 {otherOptions.map(o => (
                   <option key={o.value} value={o.value}>{o.label}</option>

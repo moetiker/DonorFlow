@@ -60,6 +60,20 @@ export async function isGroupDissolved(tx: PrismaTx, groupId: string): Promise<b
   return Boolean(group?.dissolvedAt)
 }
 
+/**
+ * True when a donation may be credited to the given group. A dissolved group is
+ * refused unless it is the donation's existing recipient (past donations stay
+ * editable).
+ */
+export async function isGroupAllowedForDonation(
+  tx: PrismaTx,
+  groupId: string,
+  currentGroupId: string | null
+): Promise<boolean> {
+  if (groupId === currentGroupId) return true
+  return !(await isGroupDissolved(tx, groupId))
+}
+
 /** Include clause that adds a sponsor's assignments with member and group names. */
 export const sponsorAssignmentsInclude = {
   assignments: {

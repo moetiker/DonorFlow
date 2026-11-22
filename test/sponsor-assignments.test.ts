@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { useTestDb, seedBasics } from './helpers/test-db'
-import { DissolvedGroupError, replaceSponsorAssignments } from '../lib/sponsor-assignments'
+import { DissolvedGroupError, isGroupAllowedForDonation, replaceSponsorAssignments } from '../lib/sponsor-assignments'
 import { createSponsorSchema } from '../lib/validation'
 
 test('replacing assignments keeps donations where they were credited', async () => {
@@ -80,4 +80,16 @@ test('createSponsorSchema rejects an empty list and duplicates', () => {
     }).success,
     true
   )
+})
+
+test('a donation keeps its dissolved group on edit but cannot be moved to one', async () => {
+  const prisma = await useTestDb()
+  const { groupA } = await seedBasics(prisma)
+  const other = await prisma.group.create({ data: { name: 'Gone' } })
+  await prisma.group.update({ where: { id: groupA.id }, data: { dissolvedAt: new Date() } })
+  await prisma.group.update({ where: { id: other.id }, data: { dissolvedAt: new Date() } })
+
+  assert.equal(await isGroupAllowedForDonation(prisma, groupA.id, groupA.id), true)
+  assert.equal(await isGroupAllowedForDonation(prisma, other.id, groupA.id), false)
+  assert.equal(await isGroupAllowedForDonation(prisma, other.id, null), false)
 })

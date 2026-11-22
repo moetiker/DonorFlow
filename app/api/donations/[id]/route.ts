@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { withApiRoute } from '@/lib/api-helpers'
 import { serializeDates } from '@/lib/utils'
-import { isGroupDissolved } from '@/lib/sponsor-assignments'
+import { isGroupAllowedForDonation } from '@/lib/sponsor-assignments'
 import { updateDonationSchema, validateRequestI18n, getLocaleFromRequest } from '@/lib/validation'
 
 export const PUT = withApiRoute(async (
@@ -35,7 +35,7 @@ export const PUT = withApiRoute(async (
   // The schema guarantees exactly one recipient whenever either key is sent.
   // An absent key counts as cleared, so the other column is written as null.
   const changesRecipient = memberId !== undefined || groupId !== undefined
-  if (changesRecipient && groupId && await isGroupDissolved(prisma, groupId)) {
+  if (changesRecipient && groupId && !(await isGroupAllowedForDonation(prisma, groupId, existingDonation.groupId))) {
     return NextResponse.json({ error: 'groupDissolved' }, { status: 400 })
   }
 
