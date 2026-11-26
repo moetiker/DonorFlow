@@ -1,0 +1,26 @@
+# pnpm settings. package.json carries no npm "overrides" any more; they live here.
+
+overrides:
+  # @prisma/config 7.10.1 pins effect to exactly 3.20.0, which npm audit flags
+  # high (ReDoS, fixed after 3.22.0). Prisma generate, db push, tsc and the
+  # tests run with 3.22.4.
+  "@prisma/config>effect": 3.22.4
+
+peerDependencyRules:
+  allowedVersions:
+    # next-auth 4 declares nodemailer ^7 as an optional peer; the app sends
+    # mail with nodemailer 10 directly and next-auth's email provider is unused.
+    next-auth>nodemailer: "10"
+
+# Install scripts pnpm may run. better-sqlite3 compiles its native module,
+# Prisma fetches its engines, esbuild installs the binary tsx uses. The rest
+# only print messages or probe for optional prebuilt binaries.
+allowBuilds:
+  better-sqlite3: true
+  prisma: true
+  "@prisma/engines": true
+  esbuild: true
+  "@parcel/watcher": false
+  "@swc/core": false
+  core-js: false
+  unrs-resolver: false

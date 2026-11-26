@@ -1,0 +1,16 @@
+{
+  "moving_major_tag": false,
+  "version_files": [
+    {
+      "path": "package.json",
+      "pattern": "\"version\"\\s*:\\s*\"[^\"]*\"",
+      "replacement": "\"version\": \"$VERSION\"",
+      "verify": "\"version\"\\s*:\\s*\"$VERSION\""
+    }
+  ],
+  "exceptions": {
+    "source-archive": "self-hosted web app; the owner deploys it from the release tag with deploy.sh, so no source archive is published",
+    "linux-packages": "self-hosted web app deployed with deploy.sh to a systemd user service; no package channel",
+    "homebrew": "self-hosted web app that runs as a server; brew is the wrong channel"
+  }
+}
