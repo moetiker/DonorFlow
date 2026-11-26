@@ -1,8 +1,14 @@
-import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import * as fs from 'fs'
 import * as path from 'path'
+
+// Load .env with Node itself, as prisma.config.ts does; dotenv is no dependency
+// of this project, and TypeScript 6 rejects the unresolved 'dotenv/config'
+// side-effect import (TS2882).
+if (fs.existsSync('.env')) {
+  process.loadEnvFile('.env')
+}
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || 'file:./prisma/prod.db'
