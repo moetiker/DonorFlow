@@ -4,6 +4,9 @@
 
 # DonorFlow
 
+[![CI](https://github.com/moetiker/DonorFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/moetiker/DonorFlow/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/moetiker/DonorFlow)](https://github.com/moetiker/DonorFlow/releases/latest)
+
 **Donation management for clubs and associations.**
 
 Track your patrons, set fiscal-year goals, watch the money come in live, and email every member a personalized donor letter in one click. Self-hosted, four languages.
@@ -46,10 +49,10 @@ The personalized email each member receives:
 
 ```bash
 cp .env.example .env                              # set NEXTAUTH_SECRET
-npm install
-npm run db:push
-DATABASE_URL="file:./dev.db" npm run db:seed      # demo data, login demo / demo1234
-npm run dev                                       # http://localhost:7526
+pnpm install
+pnpm db:push
+DATABASE_URL="file:./dev.db" pnpm db:seed         # demo data, login demo / demo1234
+pnpm dev                                          # http://localhost:7526
 ```
 
 The seed fills the database with an invented club and replaces whatever it holds. It refuses a `DATABASE_URL` that contains `prod`.
@@ -64,7 +67,7 @@ cp deploy/deploy-config.example.sh deploy/deploy-config.production.sh
 ./deploy.sh production
 ```
 
-It bumps the version, builds Linux binaries in a container, uploads and backs up the previous release, preserves the database/`.env`/logs, syncs the schema, and restarts the service.
+It deploys the checked-out release tag (it refuses any other commit), builds Linux binaries in a container, uploads and backs up the previous release, preserves the database/`.env`/logs, syncs the schema, and restarts the service.
 
 ## Database Model
 

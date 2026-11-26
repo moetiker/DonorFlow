@@ -1,10 +1,53 @@
 # Changelog
 
-All notable changes to DonorFlow will be documented in this file.
+All notable changes to DonorFlow are documented in this file.
 
-## [0.6.0] - 2026-05-11
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+except that the first subsection is called `New` rather than `Added`. The release
+workflow matches on `### New`; renaming it silently drops the section from the
+release notes.
 
-### Added
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### New
+
+### Changed
+
+- Dependencies are installed with pnpm (`pnpm install`) instead of npm; the server build uses pnpm as well.
+- Releases are made on GitHub through "Create release PR"; the version is no longer raised by the deployment.
+
+### Fixed
+
+## 0.6.21 - 2026-11-26
+
+### New
+
+- A patron can support several members and groups at once. Every donation is credited to exactly one member or group; the donation form pre-fills it from the patron's assignments.
+- Groups can be dissolved. Their members are released, and their donations stay in the reports and club totals.
+- One group can be flagged as the club pool. Patrons left without a recipient are handed over to it.
+- Member mailing: the season's letter (PDF) with status link and address list, or a reminder with the current figures that lists only the patrons who already paid. Sending runs in throttled batches and resumes after a restart.
+- Address lists as CSV, Excel and PDF on the status page and from the members and groups overviews.
+- Fiscal years can be renamed.
+- Demo seed for screenshots and local trials (`db:seed`, login `demo` / `demo1234`).
+
+### Changed
+
+- Status pages, exports, reports and the mailing count only a recipient's own donations; group status pages list only group-assigned patrons and group donors.
+- When a member or group is deleted, its donations go to the patron's remaining recipient, or to the club pool when none is left. Deleting says what is handed over.
+- The "not yet donated" list on status pages is grouped and highlights patrons who gave last year.
+- New theme and app icon; the login page shows the club name.
+- Next.js 16.4.6 and Nodemailer 10.1.4, with further dependency updates that close known advisories.
+
+### Fixed
+
+- Spreadsheet formulas in CSV exports are neutralised.
+- Findings of a security review are fixed.
+
+## 0.6.0 - 2026-05-11
+
+### New
 - **CSV Import API**: New import endpoint with upsert logic for bulk data updates
 - **Member Contact Fields**: Email and phone fields added to member forms
 - **Fiscal Year Filters**: Fiscal year selector added to performance reports, shares reports, and donations modal on groups page
@@ -34,9 +77,9 @@ All notable changes to DonorFlow will be documented in this file.
 - Remove dead code and improve UserModal consistency
 - Clean up repository structure for better maintainability
 
-## [0.5.0] - 2026-01-22
+## 0.5.0 - 2026-01-22
 
-### Added
+### New
 - **In-Kind Donations (Sachspenden)**
   - New donation type for non-monetary contributions
   - Description field for in-kind donations
@@ -75,7 +118,7 @@ All notable changes to DonorFlow will be documented in this file.
 - Added `.env.production.example` template
 - Deployment structure changed to `/path/current/` with backups
 
-## [0.2.1] - 2025-11-03
+## 0.2.1 - 2025-11-03
 
 ### Changed
 - **Performance Reports**: Group donations report now shows same columns as member report
@@ -89,9 +132,9 @@ All notable changes to DonorFlow will be documented in this file.
 - Group donations report table structure consistency
 - Achievement percentage logic for zero targets
 
-## [0.2.0] - 2025-11-03
+## 0.2.0 - 2025-11-03
 
-### Added
+### New
 - **Multi-language support** (German, English, French, Italian)
   - Browser language auto-detection
   - Language switcher in navigation
@@ -116,9 +159,9 @@ All notable changes to DonorFlow will be documented in this file.
 - Updated all pages and modals with useTranslations hooks
 - Implemented locale detection logic with regional support (de-AT, de-DE, de-CH → de)
 
-## [0.1.0] - 2025-11-02
+## 0.1.0 - 2025-11-02
 
-### Added
+### New
 - Initial release of DonorFlow
 - Member management with groups
 - Sponsor assignment (to member or group)
