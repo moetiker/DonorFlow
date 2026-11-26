@@ -78,7 +78,7 @@
     "eslint-config-next": "^16.4.6",
     "prisma": "~7.10.1",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": "24.x"
