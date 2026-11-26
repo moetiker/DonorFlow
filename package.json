@@ -29,6 +29,8 @@
     "build": "next build",
     "start": "next start -p 7526",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "prisma generate && pnpm lint && pnpm typecheck",
     "test": "tsx --test test/*.test.ts",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
@@ -38,14 +40,6 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed-demo.ts"
-  },
-  "overrides": {
-    "next-auth": {
-      "nodemailer": "$nodemailer"
-    },
-    "@prisma/config": {
-      "effect": "3.22.4"
-    }
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -85,5 +79,9 @@
     "prisma": "~7.10.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
-  }
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "pnpm@11.4.0"
 }

@@ -1,20 +1,17 @@
 # Build container for DonorFlow
 # This creates a reproducible build environment with Linux-native binaries
 
-# Package manifests with the version field pinned to 0.0.0. deploy.sh bumps the
-# version in package.json on every deploy; copying the manifests unchanged would
-# invalidate the dependency layer below each time and force a full `npm ci`.
+# Package manifests with the version field pinned to 0.0.0. Every release
+# rewrites the version in package.json; copying the manifests unchanged would
+# invalidate the dependency layer below each time and force a full install.
 # The real package.json still arrives with `COPY . .` before the build.
 FROM node:24-slim AS manifests
 WORKDIR /manifests
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN node -e "const fs = require('fs'); \
-  for (const f of ['package.json', 'package-lock.json']) { \
-    const j = JSON.parse(fs.readFileSync(f, 'utf8')); \
-    j.version = '0.0.0'; \
-    if (j.packages && j.packages['']) j.packages[''].version = '0.0.0'; \
-    fs.writeFileSync(f, JSON.stringify(j, null, 2) + '\n'); \
-  }"
+  const j = JSON.parse(fs.readFileSync('package.json', 'utf8')); \
+  j.version = '0.0.0'; \
+  fs.writeFileSync('package.json', JSON.stringify(j, null, 2) + '\\n');"
 
 FROM node:24-slim
 
@@ -27,17 +24,22 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Dependencies layer: only invalidated when the dependencies change, not on a
-# version bump (see the manifests stage). The npm cache mount persists
-# downloads across builds, so even a cache-busting install (changed
-# dependency) avoids re-downloading unchanged packages.
-COPY --from=manifests /manifests/ ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+# pnpm in the version package.json names (packageManager), through corepack.
+RUN corepack enable
 
-# Prisma client. The schema is copied *after* npm ci so schema edits do not
-# invalidate the (slow) dependency layer above.
+# Dependencies layer: only invalidated when the dependencies change, not on a
+# version bump (see the manifests stage). The pnpm store cache mount persists
+# downloads across builds, so even a cache-busting install (changed
+# dependency) avoids re-downloading unchanged packages. The store is copied,
+# not linked, into node_modules, because the mount is gone after this step.
+COPY --from=manifests /manifests/ ./
+RUN --mount=type=cache,target=/pnpm-store \
+    pnpm install --frozen-lockfile --store-dir /pnpm-store --package-import-method copy
+
+# Prisma client. The schema is copied *after* the install so schema edits do
+# not invalidate the (slow) dependency layer above.
 COPY prisma ./prisma/
-RUN DATABASE_URL="file:./dummy.db" npx prisma generate
+RUN DATABASE_URL="file:./dummy.db" pnpm exec prisma generate
 
 # Copy source files
 COPY . .
@@ -46,7 +48,7 @@ COPY . .
 # containing only the traced runtime dependencies — see output: 'standalone').
 # The .next/cache mount persists webpack's incremental build cache across builds,
 # so subsequent builds only recompile what actually changed.
-RUN --mount=type=cache,target=/app/.next/cache npm run build
+RUN --mount=type=cache,target=/app/.next/cache pnpm build
 
 # Assemble a minimal, self-contained deployable in /app/deploy-out.
 # This ships only what the standalone server needs plus the Prisma schema for
