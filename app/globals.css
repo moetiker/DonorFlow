@@ -430,3 +430,13 @@ h1, h2, h3, h4, h5, h6,
     font-size: 0.9rem;
   }
 }
+
+/* Recipient picker opens on top of the sponsor dialog: lift it and its backdrop
+   above the first dialog so that one is dimmed as well. */
+.modal-backdrop.recipient-picker-backdrop {
+  z-index: 1060;
+}
+
+.modal.recipient-picker {
+  z-index: 1065;
+}

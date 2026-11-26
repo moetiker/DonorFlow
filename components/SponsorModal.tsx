@@ -4,8 +4,8 @@ import { Modal, Form, Button, Alert } from 'react-bootstrap'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
+import { RecipientPickerModal } from './RecipientPickerModal'
 import { recipientLabel } from '@/lib/crediting'
-import { getMemberDisplayName } from '@/lib/utils'
 
 type Member = { id: string; firstName: string; lastName: string }
 type Group = { id: string; name: string; dissolvedAt?: string | null }
@@ -68,7 +68,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     notes: '',
   })
   const [recipients, setRecipients] = useState<RecipientRow[]>([])
-  const [pendingRecipient, setPendingRecipient] = useState('')
+  const [showRecipientPicker, setShowRecipientPicker] = useState(false)
   const [donationRecipient, setDonationRecipient] = useState('')
   const [donationData, setDonationData] = useState({
     amount: '',
@@ -113,7 +113,7 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         notes: ''
       })
     }
-    setPendingRecipient('')
+    setShowRecipientPicker(false)
     setDonationRecipient('')
     setError('')
     setShowDeleteConfirm(false)
@@ -200,14 +200,18 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
     }
   }
 
-  const addRecipient = () => {
-    if (!pendingRecipient || recipients.some(r => r.value === pendingRecipient)) return
-    const id = pendingRecipient.slice(2)
-    const label = pendingRecipient.startsWith('m:')
-      ? recipientLabel({ member: members.find(m => m.id === id) ?? null, group: null }, tCommon('group'))
-      : recipientLabel({ member: null, group: groups.find(g => g.id === id) ?? null }, tCommon('group'))
-    setRecipients([...recipients, { value: pendingRecipient, label }])
-    setPendingRecipient('')
+  const addRecipients = (values: string[]) => {
+    const added = values
+      .filter(value => !recipients.some(r => r.value === value))
+      .map(value => {
+        const id = value.slice(2)
+        const label = value.startsWith('m:')
+          ? recipientLabel({ member: members.find(m => m.id === id) ?? null, group: null }, tCommon('group'))
+          : recipientLabel({ member: null, group: groups.find(g => g.id === id) ?? null }, tCommon('group'))
+        return { value, label }
+      })
+    setRecipients([...recipients, ...added])
+    setShowRecipientPicker(false)
   }
 
   // One recipient receives the first donation; with several the user picks one
@@ -420,38 +424,14 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
                 </li>
               ))}
             </ul>
-            <div className="d-flex gap-2">
-              <Form.Select
-                aria-label={t('selectRecipient')}
-                value={pendingRecipient}
-                onChange={(e) => setPendingRecipient(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">-- {t('selectRecipient')} --</option>
-                <optgroup label={t('recipientMembers')}>
-                  {availableMembers.map(m => (
-                    <option key={m.id} value={`m:${m.id}`}>
-                      {getMemberDisplayName(m)}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label={t('recipientGroups')}>
-                  {availableGroups.map(g => (
-                    <option key={g.id} value={`g:${g.id}`}>
-                      {g.name}
-                    </option>
-                  ))}
-                </optgroup>
-              </Form.Select>
-              <Button
-                variant="outline-primary"
-                onClick={addRecipient}
-                disabled={loading || !pendingRecipient}
-              >
-                <i className="bi bi-plus-lg me-1"></i>
-                {t('addRecipient')}
-              </Button>
-            </div>
+            <Button
+              variant="outline-primary"
+              onClick={() => setShowRecipientPicker(true)}
+              disabled={loading}
+            >
+              <i className="bi bi-plus-lg me-1"></i>
+              {t('addRecipient')}
+            </Button>
           </Form.Group>
 
           {/* Optional first donation - only show for new sponsors */}
@@ -561,6 +541,14 @@ export function SponsorModal({ show, sponsor, members, groups, onHide, onSave }:
         </Modal.Footer>
       </Form>
     </Modal>
+
+    <RecipientPickerModal
+      show={showRecipientPicker}
+      members={availableMembers}
+      groups={availableGroups}
+      onCancel={() => setShowRecipientPicker(false)}
+      onConfirm={addRecipients}
+    />
 
     <DeleteConfirmModal
       show={showDeleteConfirm}
