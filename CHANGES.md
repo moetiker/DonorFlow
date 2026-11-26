@@ -15,10 +15,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+### Fixed
+
+## 0.6.22 - 2026-11-26
+
+### Changed
+
 - Dependencies are installed with pnpm (`pnpm install`) instead of npm; the server build uses pnpm as well.
 - Releases are made on GitHub through "Create release PR"; the version is no longer raised by the deployment.
-
-### Fixed
 
 ## 0.6.21 - 2026-11-26
 
