@@ -84,10 +84,6 @@ model Sponsor {
 
   notes           String?    // Kommentare / zusätzliche Infos
 
-  // Legacy single assignment, read only by the startup migration. Remove in deployment 2.
-  legacyMemberId  String?    @map("memberId")
-  legacyGroupId   String?    @map("groupId")
-
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
