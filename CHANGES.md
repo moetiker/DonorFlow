@@ -15,6 +15,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- In the sponsor dialog, "Add recipient" now opens a separate window listing all members and active groups. Several can be ticked at once, and OK adds them to "Assigned to" and closes the window.
+
 ### Fixed
 
 ## 0.6.23 - 2026-11-26
