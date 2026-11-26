@@ -22,8 +22,10 @@ Track your patrons, set fiscal-year goals, watch the money come in live, and ema
 | ![Dashboard](screenshots/dashboard.png) | ![Reports](screenshots/reports.png) |
 | **Public status link** (mobile, no login) | **Donor mailing** |
 | ![Status link](screenshots/status-link.png) | ![Mailing](screenshots/mailing.png) |
-| **Groups** — copy the status link, export the address list as CSV, Excel or PDF | **Members** |
+| **Groups**: copy the status link, export the address list as CSV, Excel or PDF; dissolved groups keep their history | **Members** |
 | ![Groups](screenshots/groups.png) | ![Members](screenshots/members.png) |
+| **Patrons**: one patron can support several members and groups | |
+| ![Patrons](screenshots/sponsors.png) | |
 
 The personalized email each member receives:
 
@@ -31,27 +33,30 @@ The personalized email each member receives:
 
 ## What it does
 
-- **Members & patrons** — organize members, auto-group families/sections, assign each sponsor to a member **or** group
-- **Donations & targets** — monetary + in-kind donations; one target per member per fiscal year; group target = sum of members
-- **Reports** — live dashboard and per-member/group performance with **PDF export**
-- **Status links** — public, tokenized, mobile-first progress pages per member and group
-- **Donor mailing** — upload the season's letter (PDF), then email selected members their status, patron list, and the letter + address CSV, throttled and resumable
-- **Four languages** — German, English, French, Italian, auto-detected, locale-aware formatting
-- **Self-hosted** — SQLite, no external services
+- **Members and patrons**: organize members in groups (families, sections); a patron can support several members and groups at once
+- **Donations and targets**: monetary and in-kind donations, each credited to exactly one member or group; one target per member per fiscal year; group target = sum of its members' targets
+- **Groups over time**: dissolve a group and its donations stay in the reports; a club pool group takes over patrons left without a recipient
+- **Reports**: live dashboard and per-member/group performance with **PDF export**
+- **Status links**: public, tokenized, mobile-first progress pages per member and group
+- **Member mailing**: email selected members the season's letter (PDF) with their status and address list, or a reminder with the current figures; throttled and resumable
+- **Four languages**: German, English, French, Italian, auto-detected, locale-aware formatting
+- **Self-hosted**: SQLite, no external services
 
 ## Quick Start
 
 ```bash
+cp .env.example .env                              # set NEXTAUTH_SECRET
 npm install
 npm run db:push
-npm run dev          # → http://localhost:7526  (login: admin / admin)
+DATABASE_URL="file:./dev.db" npm run db:seed      # demo data, login demo / demo1234
+npm run dev                                       # http://localhost:7526
 ```
 
-With [mise](https://mise.jdx.dev): `mise install && mise run setup && mise run dev`.
+The seed fills the database with an invented club and replaces whatever it holds. It refuses a `DATABASE_URL` that contains `prod`.
 
 ## Deployment
 
-Reproducible Podman build → tar → SSH to a systemd user service. Templates in [`deploy/`](deploy/).
+Reproducible Podman build, tar archive, SSH to a systemd user service. Templates in [`deploy/`](deploy/).
 
 ```bash
 cp deploy/deploy-config.example.sh deploy/deploy-config.production.sh
@@ -68,8 +73,9 @@ erDiagram
     Group ||--o{ Member : "has"
     Member ||--o{ MemberTarget : "sets"
     FiscalYear ||--o{ MemberTarget : "for"
-    Member ||--o{ Sponsor : "patron of"
-    Group ||--o{ Sponsor : "patron of"
+    Sponsor ||--|{ SponsorAssignment : "supports"
+    Member ||--o{ SponsorAssignment : "recipient"
+    Group ||--o{ SponsorAssignment : "recipient"
     Sponsor ||--o{ Donation : "gives"
     FiscalYear ||--o{ Donation : "in"
     Member ||--o{ Donation : "credited to"
@@ -77,7 +83,7 @@ erDiagram
     FiscalYear ||--o| DonorLetter : "letter"
 ```
 
-A sponsor belongs to a member **or** a group (exclusive) · targets are per member per fiscal year · one donor letter per fiscal year · one group may be flagged `isClubPool`, which is where sponsors are re-assigned when their member or group is deleted. `User`, `Setting` and `MailJob` stand alone — `MailJob` records a fiscal year id, but as a plain column, not a foreign key.
+A sponsor has one or more assignments, each to a member **or** a group. Every donation is credited to exactly one member or group. Targets are per member per fiscal year, and there is one donor letter per fiscal year. A group with `dissolvedAt` set is dissolved: it has no members, and its donations stay credited to it. One group may be flagged `isClubPool`; a sponsor whose last recipient is deleted is assigned to it. `User`, `Setting` and `MailJob` stand alone; `MailJob` records a fiscal year id as a plain column, not a foreign key.
 
 ---
 
