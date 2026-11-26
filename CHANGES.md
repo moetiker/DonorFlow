@@ -15,6 +15,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Updated nodemailer to 10.6.1, next-intl to 4.15.3, react-bootstrap-typeahead to 6.4.2 and TypeScript to 6.0.3.
+
 ### Fixed
 
 ## 0.6.22 - 2026-11-26
